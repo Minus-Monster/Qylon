@@ -35,6 +35,7 @@ public:
         currentScale = this->transform();
         emit currentRatio(this->transform().m11());
     }
+    bool isFit(){ return fitMode; }
 
 signals:
     void currentRatio(float ratio);

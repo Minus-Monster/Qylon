@@ -65,11 +65,16 @@ public:
             connect(buttonFit, &QPushButton::toggled, this, [=](bool on){
                 this->view->setFit(on);
 
+                buttonFit->setChecked(on);
                 buttonZoomIn->setEnabled(!on);
                 buttonZoomOut->setEnabled(!on);
                 buttonOriginal->setEnabled(!on);
             });
             buttonLayout->addWidget(buttonFit);
+            connect(this, &GraphicsWidget::updateWidget, this, [=](){
+                emit buttonFit->toggled(true);
+
+            });
         }
 #ifdef PCL_ENABLED
         if(isVTK){
@@ -235,6 +240,8 @@ public:
         }
         setImage(QImage(":/Qylon/Resources/Logo.png"));
     }
+signals:
+    void updateWidget();
 
 public slots:
     void setImage(const QImage image){
@@ -243,6 +250,7 @@ public slots:
     }
     void setFit(bool on){
         view->setFit(on);
+        emit updateWidget();
     }
 #ifdef PCL_ENABLED
     void setPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudData, QString pointCloudName){
