@@ -37,6 +37,7 @@ public:
     void initialize(int dmaCount=1);
     void reitialize(int dmaCount=1);
     Fg_Struct* getFg();
+    fg_apc_data *getAPC(int dmaIndex);
     QWidget *getWidget();
 
     void release();
@@ -47,6 +48,7 @@ signals:
 public slots:
     void singleGrab(int dmaIndex=0);
     void continuousGrab(int dmaIndex=0);
+    void sequentialGrab(int numFrame, int dmaIndex=0);
     void stopGrab(int dmaIndex=0);
 
 private:

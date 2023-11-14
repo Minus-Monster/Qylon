@@ -36,7 +36,7 @@ bool Qylon::Grabber::loadConfiguration(QString file){
     }
     auto error = Fg_loadConfig(currentFg, file.toStdString().c_str());
     if(0 > error){
-        Qylon::log("Grabber couldn't load a configuration file." + QString(Fg_getErrorDescription(currentFg, error)));
+        Qylon::log("Grabber couldn't load a configuration file. " + QString(Fg_getErrorDescription(currentFg, error)));
         return false;
     }
     Qylon::log(file + " is loaded");
@@ -85,6 +85,7 @@ void Qylon::Grabber::initialize(int dmaCount){
         apcData->ctrl.flags = FG_APC_DEFAULTS| FG_APC_IGNORE_STOP |  FG_APC_IGNORE_TIMEOUTS; //FG_APC_HIGH_PRIORITY
         apcData->ctrl.timeout = 500000;
         Fg_registerApcHandler(currentFg, i, &apcData->ctrl, FG_APC_CONTROL_BASIC);
+        apcDataList.push_back(apcData);
     }
     Qylon::log("Finished to initialize the grabber.");
 }
@@ -98,6 +99,11 @@ void Qylon::Grabber::reitialize(int dmaCount)
 Fg_Struct *Qylon::Grabber::getFg()
 {
     return currentFg;
+}
+
+Qylon::fg_apc_data *Qylon::Grabber::getAPC(int dmaIndex)
+{
+    return apcDataList.at(dmaIndex);
 }
 
 QWidget *Qylon::Grabber::getWidget()
@@ -125,7 +131,7 @@ void Qylon::Grabber::singleGrab(int dmaIndex)
     }
     Qylon::log("Try to capture an one shot.");
     auto val = Fg_AcquireEx(currentFg, dmaIndex, 1 ,ACQ_STANDARD, apcDataList.at(dmaIndex)->memBuf);
-    Qylon::log(Fg_getErrorDescription(currentFg, val));
+    if(val != 0) Qylon::log(Fg_getErrorDescription(currentFg, val));
 }
 
 void Qylon::Grabber::continuousGrab(int dmaIndex){
@@ -133,10 +139,21 @@ void Qylon::Grabber::continuousGrab(int dmaIndex){
         Qylon::log("Grabber is not initialized");
         return;
     }
-    Qylon::log("Continuous grabbing started.");
+    Qylon::log("DMA : " +QString::number(dmaIndex) +" Continuous grabbing started.");
     auto val= Fg_AcquireEx(currentFg, dmaIndex, GRAB_INFINITE ,ACQ_STANDARD, apcDataList.at(dmaIndex)->memBuf);
-    Qylon::log(Fg_getErrorDescription(currentFg, val));
+    if(val != 0) Qylon::log(Fg_getErrorDescription(currentFg, val));
 
+}
+
+void Qylon::Grabber::sequentialGrab(int numFrame, int dmaIndex)
+{
+    if(currentFg == nullptr){
+        Qylon::log("Grabber is not initialized");
+        return;
+    }
+    Qylon::log("DMA : " +QString::number(dmaIndex) +" Sequential grabbing started.");
+    auto val= Fg_AcquireEx(currentFg, dmaIndex, numFrame ,ACQ_STANDARD, apcDataList.at(dmaIndex)->memBuf);
+    if(val != 0) Qylon::log(Fg_getErrorDescription(currentFg, val));
 }
 
 void Qylon::Grabber::stopGrab(int dmaIndex){
