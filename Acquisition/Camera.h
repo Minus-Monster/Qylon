@@ -31,11 +31,13 @@ public:
     virtual ~Camera();
 
     const QImage &getImage() const;
+    const void *getBuffer() const;
 
     bool openCamera(QString cameraName);
     void closeCamera();
 
     void singleGrab();
+    void sequentialGrab(int numFrame);
     void continuousGrab();
     void stopGrab();
     bool isOpened();
@@ -78,6 +80,7 @@ private:
     mutable QMutex memberLock;
     mutable QMutex imageLock;
     QImage currentImage;
+    void* currentBuffer;
     QImage currentConfidence;
     QImage currentIntensity;
 

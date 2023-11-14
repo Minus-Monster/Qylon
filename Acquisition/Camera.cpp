@@ -104,6 +104,11 @@ const QImage &Qylon::Camera::getImage() const
     return currentImage;
 }
 
+const void *Qylon::Camera::getBuffer() const
+{
+    return currentBuffer;
+}
+
 
 /// Try to open a camera by the camera's friendly name.
 /// It will return True or False depending on the result.
@@ -181,8 +186,18 @@ void Qylon::Camera::singleGrab()
         if(!this->isOpened()) throw QString("Camera is not opened.");
         currentInstantCamera.AcquisitionMode.TrySetValue(Basler_UniversalCameraParams::AcquisitionMode_SingleFrame);
         currentInstantCamera.StartGrabbing(1, Pylon::GrabStrategy_OneByOne, Pylon::GrabLoop_ProvidedByInstantCamera);
-    }catch(const QString error){ parent->log("Single Grab Failed. " + error);}
-    catch(const Pylon::GenericException &e){ parent->log(("Single Grab Failed. " + QString::fromStdString(e.GetDescription())));}
+    }catch(const QString error){ parent->log("Single Grabbing Failed. " + error);}
+    catch(const Pylon::GenericException &e){ parent->log(("Single Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
+}
+
+void Qylon::Camera::sequentialGrab(int numFrame)
+{
+    try{
+        if(!this->isOpened()) throw QString("Camera is not opened.");
+        currentInstantCamera.AcquisitionMode.TrySetValue(Basler_UniversalCameraParams::AcquisitionMode_MultiFrame);
+        currentInstantCamera.StartGrabbing(numFrame, Pylon::GrabStrategy_OneByOne, Pylon::GrabLoop_ProvidedByInstantCamera);
+    }catch(const QString error){ parent->log("Sequential Grabbing Failed. " + error);}
+    catch(const Pylon::GenericException &e){ parent->log(("Sequential Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
 }
 
 void Qylon::Camera::continuousGrab()
@@ -191,8 +206,8 @@ void Qylon::Camera::continuousGrab()
         if(!this->isOpened()) throw QString("Camera is not opened.");
         currentInstantCamera.AcquisitionMode.TrySetValue(Basler_UniversalCameraParams::AcquisitionMode_Continuous);
         currentInstantCamera.StartGrabbing(Pylon::GrabStrategy_OneByOne, Pylon::GrabLoop_ProvidedByInstantCamera);
-    }catch(const QString error){ parent->log("Continuous Grab Failed. " + error);}
-    catch(const Pylon::GenericException &e){ parent->log(("Continuous Grab Failed. " + QString::fromStdString(e.GetDescription())));}
+    }catch(const QString error){ parent->log("Continuous Grabbing Failed. " + error);}
+    catch(const Pylon::GenericException &e){ parent->log(("Continuous Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
 }
 
 void Qylon::Camera::stopGrab()
@@ -347,9 +362,9 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
                     || (static_cast<uint32_t>( currentImage.height()) != grabResult->GetHeight()) ){
                 currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_RGB32 );
             }
+            currentBuffer = grabResult->GetBuffer();
             void *pBuffer = currentImage.bits();
             size_t bufferSize = currentImage.sizeInBytes();
-            Pylon::CFloatParameter(camera.GetNodeMap(),"ExposureTimeAbs").GetValue();
 
             formatConverter.OutputPixelFormat = Pylon::PixelType_BGRA8packed;
             formatConverter.Convert(pBuffer, bufferSize, grabResult);
