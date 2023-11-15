@@ -8,6 +8,7 @@ HEADERS +=              $$PWD/Qylon.h \
     $$PWD/Acquisition/CameraWidget.h \
     $$PWD/Acquisition/Grabber.h \
     $$PWD/Acquisition/GrabberWidget.h \
+    $$PWD/Modules/DebugConsole.h \
     $$PWD/Processing/IO.h \
     $$PWD/Processing/Image.h \
     $$PWD/Processing/QDC.h \

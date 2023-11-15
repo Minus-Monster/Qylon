@@ -14,6 +14,7 @@ public:
         layout.setSpacing(0);
         layout.setMargin(0);
         view = new GraphicsView;
+        view->setDragMode(QGraphicsView::ScrollHandDrag);
         labelCoordinate.setAlignment(Qt::AlignRight);
     }
     void initialize(bool isVTK=false){
