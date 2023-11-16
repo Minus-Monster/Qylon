@@ -3,32 +3,6 @@ QT += core
 INCLUDEPATH  += $$PWD
 DEFINES += QYLON
 
-HEADERS +=              $$PWD/Qylon.h \
-    $$PWD/Acquisition/Camera.h \
-    $$PWD/Acquisition/CameraWidget.h \
-    $$PWD/Acquisition/Grabber.h \
-    $$PWD/Acquisition/GrabberWidget.h \
-    $$PWD/Modules/DebugConsole.h \
-    $$PWD/Processing/IO.h \
-    $$PWD/Processing/Image.h \
-    $$PWD/Processing/QDC.h \
-    $$PWD/Processing/Sequence.h \
-    $$PWD/Modules/GraphicsWidget.h \
-    $$PWD/Modules/GraphicsVTKWidget.h \
-    $$PWD/Modules/GraphicsView.h \
-    $$PWD/Modules/GraphicsScene.h
-
-
-
-SOURCES += \
-    $$PWD/Acquisition/Camera.cpp \
-    $$PWD/Acquisition/CameraWidget.cpp \
-    $$PWD/Acquisition/Grabber.cpp \
-    $$PWD/Acquisition/GrabberWidget.cpp \
-    $$PWD/Processing/QDC.cpp \
-    $$PWD/Qylon.cpp
-
-
 macx{
     QMAKE_RPATHDIR += "/Library/Frameworks/"
     CONFIG-=app_bundle
@@ -85,19 +59,35 @@ win32 {
         LIBS += -L"$$(BASLER_FG_SDK_DIR)/lib" -L"$$(BASLER_FG_SDK_DIR)/lib/visualc"
         LIBS += -lclsersis -lGCBase_MD_VC141_v3_1_Basler_pylon -lGenApi_MD_VC141_v3_1_Basler_pylon -llog4cpp_MD_VC141_v3_1_Basler_pylon \
         -lLog_MD_VC141_v3_1_Basler_pylon -lsiso_genicam -lsiso_log -lXmlParser_MD_VC141_v3_1_Basler_pylon -lfglib5 -lsiso_hal -llibtiff -liolibrt -ldisplay_lib
-
-#clsersis.lib
-#iolibrt.lib
-#siso_log.lib
-#SLDeviceLib_d.lib
-#SLImage.lib
-#legacy_stdio_definitions.lib
-#PvDevice64.lib
     } else {
         LIBS += -L"$$(PYLON_DEV_DIR)/lib/win32"
         LIBS += -L"$$(BASLER_FG_SDK_DIR)/lib"
     }
 }
+
+HEADERS += $$PWD/Qylon.h \
+    $$PWD/Acquisition/Camera.h \
+    $$PWD/Acquisition/CameraWidget.h \
+    $$PWD/Acquisition/Grabber.h \
+    $$PWD/Acquisition/GrabberWidget.h \
+    $$PWD/Modules/DebugConsole.h \
+    $$PWD/Processing/IO.h \
+    $$PWD/Processing/Image.h \
+    $$PWD/Processing/QDC.h \
+    $$PWD/Processing/Sequence.h \
+    $$PWD/Modules/GraphicsWidget.h \
+    $$PWD/Modules/GraphicsVTKWidget.h \
+    $$PWD/Modules/GraphicsView.h \
+    $$PWD/Modules/GraphicsScene.h
+
+SOURCES += \
+    $$PWD/Acquisition/Camera.cpp \
+    $$PWD/Acquisition/CameraWidget.cpp \
+    $$PWD/Acquisition/Grabber.cpp \
+    $$PWD/Acquisition/GrabberWidget.cpp \
+    $$PWD/Processing/QDC.cpp \
+    $$PWD/Qylon.cpp
+
 
 RESOURCES += \
     $$PWD/Resources/Resources.qrc

@@ -1,23 +1,26 @@
 #ifndef DEBUGCONSOLE_H
 #define DEBUGCONSOLE_H
+#include "qdebug.h"
 #include <QPlainTextEdit>
 #include <QTextBlock>
 #include <QTextCursor>
 #include <QCoreApplication>
 
-class DebugConsole : public QPlainTextEdit{
+namespace Qylon{
+class DebugConsole : public QTextEdit{
     Q_OBJECT
 public:
     DebugConsole(){
         qRegisterMetaType<QTextBlock>("QTextBlock");
         qRegisterMetaType<QTextCursor>("QTextCursor");
         setWindowTitle("Debug Console");
+        setReadOnly(true);
     }
 public slots:
-    void appendText(const QString &text){
-        this->appendPlainText(text);
-        QCoreApplication::postEvent(this, new QEvent(QEvent::User));
+    virtual void append(QString message){
+//        qDebug() << message << sender();
+        QTextEdit::append(message);
     }
 };
-
+}
 #endif // DEBUGCONSOLE_H
