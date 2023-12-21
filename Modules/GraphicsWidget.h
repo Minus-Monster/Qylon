@@ -4,7 +4,6 @@
 
 #include "GraphicsView.h"
 #include "GraphicsScene.h"
-#include <QElapsedTimer>
 namespace Qylon{
 class GraphicsWidget : public QWidget{
     Q_OBJECT
@@ -255,12 +254,8 @@ public slots:
     }
 #ifdef PCL_ENABLED
     void setPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudData, QString pointCloudName){
-        QElapsedTimer time;
-        qDebug() << "Recieved";
-        time.start();
         scene->VTKWidget->setPointCloud(cloudData, pointCloudName);
         view->viewport()->update();
-        qDebug() << time.elapsed();
     }
 #endif
 

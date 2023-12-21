@@ -17,7 +17,9 @@ set(QYLON_SOURCES
 add_library(${PROJECT_NAME} SHARED ${QYLON_SOURCES}
     Modules/GraphicsScene.h
     Modules/GraphicsVTKWidget.h
-    Modules/GraphicsWidget.h)
+    Modules/GraphicsWidget.h
+    Processing/vTools.h Processing/vTools.cpp
+)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 get_target_property(INCLUDE_DIRS ${PROJECT_NAME} INCLUDE_DIRECTORIES)
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
@@ -38,11 +40,22 @@ find_path(pylon_cmake Findpylon.cmake
 list(APPEND CMAKE_MODULE_PATH ${pylon_cmake})
 # Locate pylon.
 find_package(pylon 6.3.0 REQUIRED)
+
 if(pylon_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC pylon::pylon)
     target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
 endif()
 
+# vTools
+find_path(pylon_vTools FindpylonDataProcessing.cmake
+    HINTS "/opt/pylon/share/pylon/Samples/pylonDataProcessing/C++/cmake"
+)
+list(APPEND CMAKE_MODULE_PATH ${pylon_vTools})
+find_package(pylonDataProcessing REQUIRED)
+
+if(pylonDataProcessing_FOUND)
+    target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
+endif()
 #FRAME GRABBER
 #include(/opt/basler/cmake/modules/SisoLibDir.cmake)
 #FILE(TO_CMAKE_PATH "$ENV{BASLER_FG_SDK_DIR}" BASLER_FG_SDK_DIR)

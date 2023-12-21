@@ -69,6 +69,14 @@ Qylon::Camera *Qylon::Qylon::addCamera(){
     return obj;
 }
 
+Qylon::vTools *Qylon::Qylon::addVTools()
+{
+    vTools *obj = new vTools(this);
+    log("new Qylon vTools generated");
+
+    return obj;
+}
+
 #ifdef GRABBER_ENABLED
 Qylon::Grabber *Qylon::Qylon::addGrabber(int boardNumIndex)
 {

@@ -6,6 +6,7 @@
 #include <QTime>
 
 #include "Acquisition/Camera.h"
+#include "Processing/vTools.h"
 #ifdef GRABBER_ENABLED
 #include "Acquisition/Grabber.h"
 #endif
@@ -28,6 +29,7 @@ public:
     const Pylon::CDeviceInfo getCameraIndexfromName(QString cameraName);
     const Pylon::CDeviceInfo getCameraIndexfromNumber(unsigned int number);
     Camera *addCamera();
+    vTools *addVTools();
 #ifdef GRABBER_ENABLED
     Grabber *addGrabber(int boardNumIndex =0);
 #endif
