@@ -19,11 +19,14 @@ add_library(${PROJECT_NAME} SHARED ${QYLON_SOURCES}
     Modules/GraphicsVTKWidget.h
     Modules/GraphicsWidget.h
     Processing/vTools.h Processing/vTools.cpp
+    Processing/OutputCommunication.h Processing/OutputCommunication.cpp
+    Processing/SerialCommunication.h Processing/SerialCommunication.cpp
+    Processing/SerialCommunicationWidget.h Processing/SerialCommunicationWidget.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 get_target_property(INCLUDE_DIRS ${PROJECT_NAME} INCLUDE_DIRECTORIES)
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
-target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
 
 #PYLON
 # Locate the cmake find module for pylon ...

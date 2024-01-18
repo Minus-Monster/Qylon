@@ -286,8 +286,8 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
             auto container = grabResult->GetDataContainer();
             for(size_t i = 0; i < container.GetDataComponentCount(); ++i){
                 auto component = container.GetDataComponent(i);
-                switch (component.GetComponentType()){
                 if(component.IsValid()){
+                switch (component.GetComponentType()){
                 case Pylon::ComponentType_Intensity:{
                         try{
                             currentIntensity = QImage((const uchar *)component.GetData(), component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
