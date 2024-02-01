@@ -268,7 +268,6 @@ signals:
 
 public slots:
     void setImage(const QImage image){
-        image.save("/home/minwoo/Downloads/save2.jpg");
         scene->Pixmap.setPixmap(QPixmap::fromImage(image));
         scene->setSceneRect(0, 0, image.width(), image.height());
     }

@@ -24,6 +24,7 @@ add_library(${PROJECT_NAME} SHARED ${QYLON_SOURCES}
     Processing/SerialCommunicationWidget.h Processing/SerialCommunicationWidget.cpp
     Resources.qrc
 )
+
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 get_target_property(INCLUDE_DIRS ${PROJECT_NAME} INCLUDE_DIRECTORIES)
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
@@ -43,7 +44,7 @@ find_path(pylon_cmake Findpylon.cmake
 # ... and extend the cmake module path accordingly.
 list(APPEND CMAKE_MODULE_PATH ${pylon_cmake})
 # Locate pylon.
-find_package(pylon 6.3.0 REQUIRED)
+find_package(pylon 7.4.0 REQUIRED)
 
 if(pylon_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC pylon::pylon)
