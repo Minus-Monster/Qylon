@@ -53,6 +53,7 @@ endif()
 # vTools
 find_path(pylon_vTools FindpylonDataProcessing.cmake
     HINTS "/opt/pylon/share/pylon/Samples/pylonDataProcessing/C++/cmake"
+    HINTS "$ENV{PYLON_DEV_DIR}/Samples/pylonDataProcessing/C++/cmake"
 )
 list(APPEND CMAKE_MODULE_PATH ${pylon_vTools})
 find_package(pylonDataProcessing REQUIRED)
@@ -142,23 +143,23 @@ endif()
 
 
 
-#### RELEASE SETUP
+### RELEASE SETUP
 
-#set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-## Install the Qylon library
-#install(TARGETS ${PROJECT_NAME}
-#    LIBRARY DESTINATION lib
-#    ARCHIVE DESTINATION lib
-#    RUNTIME DESTINATION bin
-#    INCLUDES DESTINATION include
-#)
-## Install the header files
-#install(FILES Qylon.h DESTINATION include)
-## Install the Acquisition directory with matching header files
-#install(DIRECTORY Acquisition
-#    DESTINATION include
-#    FILES_MATCHING PATTERN "*.h"
-#    PATTERN "*CMakeFiles*" EXCLUDE
-#)
-#set(QYLON_INCLUDE_DIR include)
-#set(QYLON_LIBRARY_DIR lib)
+set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+# Install the Qylon library
+install(TARGETS ${PROJECT_NAME}
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+# Install the header files
+install(FILES Qylon.h DESTINATION include)
+# Install the Acquisition directory with matching header files
+install(DIRECTORY Acquisition
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h"
+    PATTERN "*CMakeFiles*" EXCLUDE
+)
+set(QYLON_INCLUDE_DIR include)
+set(QYLON_LIBRARY_DIR lib)
