@@ -22,6 +22,7 @@ add_library(${PROJECT_NAME} SHARED ${QYLON_SOURCES}
     Processing/OutputCommunication.h Processing/OutputCommunication.cpp
     Processing/SerialCommunication.h Processing/SerialCommunication.cpp
     Processing/SerialCommunicationWidget.h Processing/SerialCommunicationWidget.cpp
+    Resources.qrc
 )
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 get_target_property(INCLUDE_DIRS ${PROJECT_NAME} INCLUDE_DIRECTORIES)

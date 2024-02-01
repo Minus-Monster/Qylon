@@ -1,6 +1,9 @@
 #ifndef GRAPHICSWIDGET_H
 #define GRAPHICSWIDGET_H
 #include <QWidget>
+#include <QSpacerItem>
+#include <QDoubleSpinBox>
+#include <QLineEdit>
 
 #include "GraphicsView.h"
 #include "GraphicsScene.h"
@@ -9,6 +12,7 @@ class GraphicsWidget : public QWidget{
     Q_OBJECT
 public:
     GraphicsWidget(){
+        setWindowIcon(QIcon(":/Resources/Icon.png"));
         setLayout(&layout);
         layout.setSpacing(0);
         layout.setMargin(0);
@@ -21,10 +25,10 @@ public:
         view->setScene(scene);
         QHBoxLayout *buttonLayout = new QHBoxLayout;
         {
-            buttonLayout->addWidget(&labelRatio);
-
-            QPushButton *buttonZoomIn = new QPushButton("+");
+            buttonLayout->addSpacerItem(new QSpacerItem(0,0, QSizePolicy::Expanding,QSizePolicy::Expanding));
+            QPushButton *buttonZoomIn = new QPushButton(QIcon(":/Resources/Icon/zoom-in.png"), "");
             buttonZoomIn->setFixedWidth(30);
+            buttonZoomIn->setFlat(true);
             connect(buttonZoomIn, &QPushButton::clicked, this, [=](){
                 if(isVTK){
 #ifdef PCL_ENABLED
@@ -34,8 +38,9 @@ public:
             });
             buttonLayout->addWidget(buttonZoomIn);
 
-            QPushButton *buttonZoomOut = new QPushButton("-");
+            QPushButton *buttonZoomOut = new QPushButton(QIcon(":/Resources/Icon/zoom-out.png"), "");
             buttonZoomOut->setFixedWidth(30);
+            buttonZoomOut->setFlat(true);
             connect(buttonZoomOut, &QPushButton::clicked, this, [=](){
                 if(isVTK){
 #ifdef PCL_ENABLED
@@ -46,8 +51,9 @@ public:
             buttonLayout->addWidget(buttonZoomOut);
 
 //            QPushButton *buttonOriginal = new QPushButton("↺");
-            QPushButton *buttonOriginal = new QPushButton("R");
+            QPushButton *buttonOriginal = new QPushButton(QIcon(":/Resources/Icon/original.png"), "");
             buttonOriginal->setFixedWidth(30);
+            buttonOriginal->setFlat(true);
             connect(buttonOriginal, &QPushButton::clicked, this, [=](){
                 if(isVTK){
 #ifdef PCL_ENABLED
@@ -58,7 +64,8 @@ public:
             buttonLayout->addWidget(buttonOriginal);
 
 //            QPushButton *buttonFit = new QPushButton("↔");
-            QPushButton *buttonFit = new QPushButton("F");
+            QPushButton *buttonFit = new QPushButton(QIcon(":/Resources/Icon/fit.png"), "");
+            buttonFit->setFlat(true);
             buttonFit->setFixedWidth(30);
             buttonFit->setCheckable(true);
             buttonFit->setChecked(false);
@@ -69,6 +76,7 @@ public:
                 buttonZoomIn->setEnabled(!on);
                 buttonZoomOut->setEnabled(!on);
                 buttonOriginal->setEnabled(!on);
+                doubleSpinBoxRatio.setEnabled(!on);
             });
             buttonLayout->addWidget(buttonFit);
             connect(this, &GraphicsWidget::updateWidget, this, [=](){
@@ -76,8 +84,8 @@ public:
 
             });
         }
-#ifdef PCL_ENABLED
         if(isVTK){
+#ifdef PCL_ENABLED
             QPushButton *buttonUp = new QPushButton("↑");
             {
                 buttonUp->setFixedWidth(30);
@@ -112,10 +120,10 @@ public:
             }
 
             /*
-//            QLabel *lbl = new QLabel;
-//            connect(this->scene->VTKWidget, &GraphicsVTKWidget::currentCameraPosition, this, [=](QString text){
-//                lbl->setText(text);
-//            });
+            QLabel *lbl = new QLabel;
+            connect(this->scene->VTKWidget, &GraphicsVTKWidget::currentCameraPosition, this, [=](QString text){
+                lbl->setText(text);
+            });
             QHBoxLayout *spinLayout = new QHBoxLayout;
             QDoubleSpinBox *spinPosX = new QDoubleSpinBox;
             spinPosX->setRange(-10000, 10000);
@@ -207,12 +215,27 @@ public:
 
             layout.addLayout(spinLayout);
 */
-        }
 #endif
+        }
+
+        // Ratio spinbox
+        doubleSpinBoxRatio.setRange(0, 99999);
+        doubleSpinBoxRatio.setValue(100);
+        doubleSpinBoxRatio.setSuffix(" %");
+        doubleSpinBoxRatio.setFixedWidth(70);
+        doubleSpinBoxRatio.setDecimals(1);
+        doubleSpinBoxRatio.setButtonSymbols(QAbstractSpinBox::NoButtons);
+        doubleSpinBoxRatio.setAlignment(Qt::AlignRight);
+        connect(&doubleSpinBoxRatio, &QDoubleSpinBox::editingFinished, this, [=](){
+            this->view->setRatio(doubleSpinBoxRatio.value()/100);
+        });
+
+        buttonLayout->addWidget(&doubleSpinBoxRatio);
         layout.addLayout(buttonLayout);
 
         // Putting Graphics View
         layout.addWidget(view);
+        layout.setStretch(1, 99);
 
         // Setting a status bar
         if(!isVTK){
@@ -232,19 +255,20 @@ public:
                 this->labelCoordinate.setStyleSheet(style);
             });
             connect(view, &GraphicsView::currentRatio, this, [=](float ratio){
-                this->labelRatio.setText("Ratio : " + QString::number(ratio*100) + "%");
+                this->doubleSpinBoxRatio.setValue(ratio*100);
             });
             QHBoxLayout *pixelInfoLayout = new QHBoxLayout;
             pixelInfoLayout->addWidget(&labelCoordinate);
             layout.addLayout(pixelInfoLayout);
         }
-        setImage(QImage(":/Qylon/Resources/Logo.png"));
+        setImage(QImage(":/Resources/Logo.png"));
     }
 signals:
     void updateWidget();
 
 public slots:
     void setImage(const QImage image){
+        image.save("/home/minwoo/Downloads/save2.jpg");
         scene->Pixmap.setPixmap(QPixmap::fromImage(image));
         scene->setSceneRect(0, 0, image.width(), image.height());
     }
@@ -263,7 +287,7 @@ private:
     GraphicsView *view;
     GraphicsScene *scene;
     QLabel labelCoordinate = QLabel("(X:0 Y:0)");
-    QLabel labelRatio = QLabel("Ratio : 100%");
+    QDoubleSpinBox doubleSpinBoxRatio;
 
     QVBoxLayout layout;
 };

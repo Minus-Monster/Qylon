@@ -19,18 +19,36 @@ void Qylon::vTools::loadRecipe(QString path)
         currentRecipe.RegisterAllOutputsObserver(this, Pylon::RegistrationMode_ReplaceAll);
 
     }catch (const GenICam_3_1_Basler_pylon::GenericException &e){
-        this->parent->log("vTools faced an error" + QString(e.GetDescription()));
+        this->parent->log("vTools faced an error " + QString(e.GetDescription()));
     }
 }
 
 void Qylon::vTools::startRecipe()
 {
-    currentRecipe.Start();
+    start();
+    qDebug() << "Recipe started";
 }
 
 void Qylon::vTools::stopRecipe()
 {
     currentRecipe.Stop();
+    requestInterruption();
+    this->terminate();
+
+    qDebug() << "Recipe stopped";
+}
+
+void Qylon::vTools::run()
+{
+    if(!currentRecipe.IsLoaded()) return;
+    currentRecipe.Start();
+    while(!isInterruptionRequested()){
+        if(this->getWaitObject().Wait(5000)){
+            GenApi_3_1_Basler_pylon::AutoLock scopedLock(_memberLock);
+            emit finished();
+            this->_waitObject.Reset();
+        }
+    }
 }
 
 void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon::DataProcessing::CVariantContainer valueContainer, const Pylon::DataProcessing::CUpdate &update, intptr_t userProvidedId)
@@ -39,6 +57,7 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
     PYLON_UNUSED(update);
     PYLON_UNUSED(userProvidedId);
 
+    outputText.clear();
     Pylon::CPylonImage pImage;
     QList<QRect> boundaries;
     QList<QPair<QRectF, double>> rectangles;
@@ -50,7 +69,19 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
             case Pylon::DataProcessing::EVariantDataType::VariantDataType_Boolean:{ qDebug() << "Boolean";} break;
             case Pylon::DataProcessing::VariantDataType_Int64:{ qDebug() << "Int";} break;
             case Pylon::DataProcessing::VariantDataType_UInt64:{ qDebug() << "UInt";} break;
-            case Pylon::DataProcessing::VariantDataType_String:{ qDebug() << "String";} break;
+            case Pylon::DataProcessing::VariantDataType_String:{
+                qDebug() << "String";
+                if(value.second.IsArray()){
+                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
+                        outputText += value.second.GetArrayValue(i).ToString();
+                        if(i!= value.second.GetNumArrayValues()-1){
+                            outputText += "==";
+                        }
+                    }
+                }else{
+                    outputText = value.second.ToString();
+                }
+            } break;
             case Pylon::DataProcessing::VariantDataType_Float:{ qDebug() << "Float";} break;
             case Pylon::DataProcessing::VariantDataType_PylonImage:{
                 qDebug() << "Image";
@@ -113,16 +144,11 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
             }
         }
         if(pImage.IsValid()){
-            qDebug() << "Is BGR?" << Pylon::IsBGR(pImage.GetPixelType());
-            if(Pylon::IsBGR(pImage.GetPixelType())){
-                outputImage = QImage(pImage.GetWidth(), pImage.GetHeight(), QImage::Format_RGB32);
+            outputImage = QImage(pImage.GetWidth(), pImage.GetHeight(), QImage::Format_RGB32);
+            Pylon::CImageFormatConverter converter;
+            converter.OutputPixelFormat = Pylon::PixelType_BGRA8packed;
+            converter.Convert(outputImage.bits(), outputImage.sizeInBytes(), pImage);
 
-                Pylon::CImageFormatConverter converter;
-                converter.OutputPixelFormat = Pylon::PixelType_BGRA8packed;
-                converter.Convert(outputImage.bits(), outputImage.sizeInBytes(), pImage);
-            }else{
-                outputImage = QImage((uchar*)pImage.GetBuffer(),pImage.GetWidth(), pImage.GetHeight(), QImage::Format_RGB32);
-            }
             QPainter painter(&outputImage);
             painter.setBrush(Qt::NoBrush);
 
@@ -166,14 +192,12 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
         }else{
             qDebug() << "Image is not valid";
         }
-        emit finished();
+
+        GenApi_3_1_Basler_pylon::AutoLock scopedLock(_memberLock);
+        _waitObject.Signal();
     }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
         qDebug() << e.GetDescription();
     }
-
 }
 
-Qylon::Qylon *Qylon::vTools::getQylon()
-{
-    return parent;
-}
+

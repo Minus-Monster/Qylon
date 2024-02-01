@@ -1,52 +1,43 @@
 #ifndef VTOOLS_H
 #define VTOOLS_H
 
-#include "qimage.h"
+#include <QImage>
 #include <QObject>
+#include <QThread>
+#include <QMutexLocker>
 #include <pylondataprocessing/PylonDataProcessingIncludes.h>
 
 namespace Qylon{
 class Qylon;
-class vTools : public QObject, public Pylon::DataProcessing::IOutputObserver
+class vTools : public QThread, public Pylon::DataProcessing::IOutputObserver
 {
     Q_OBJECT
 public:
-    struct SizeInfo{
-        double width=-1.;
-        double height=-1.;
-        double rad=-1.;
-        struct Center{
-            double x=-1.;
-            double y=-1.;
-        };
-        Center center;
-    };
-    struct Composite{
-        QImage image;
-        QList<QString> stringValues;
-        QList<SizeInfo> boundaries;
-        QList<bool> booleans;
-        QList<double> doubles;
-        QList<float> floats;
-        QList<int> integers;
-        QList<unsigned int> uIntegers;
-    };
     vTools(Qylon *parentQylon=nullptr);
     void loadRecipe(QString path);
     void startRecipe();
     void stopRecipe();
+    void run() override;
 
     void OutputDataPush(Pylon::DataProcessing::CRecipe &recipe,
                         Pylon::DataProcessing::CVariantContainer valueContainer,
                         const Pylon::DataProcessing::CUpdate &update,
                         intptr_t userProvidedId) override;
-    Qylon *getQylon();
-
-    const QImage &getImage(){ return outputImage; }
+    Qylon *getQylon(){
+        return parent;
+    }
+    const QImage &getImage(){
+        return outputImage;
+    }
+    const QString &getOutputText(){
+        return outputText;
+    }
+    const Pylon::WaitObject& getWaitObject(){
+        return _waitObject;
+    }
 
 signals:
     void finished();
-
 
 private:
     Qylon *parent = nullptr;
@@ -55,6 +46,7 @@ private:
     Pylon::WaitObjectEx _waitObject;
 
     QImage outputImage;
+    QString outputText;
 };
 }
 
