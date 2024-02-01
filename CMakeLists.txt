@@ -13,8 +13,6 @@ set(QYLON_SOURCES
     Acquisition/GrabberWidget.h
     Acquisition/GrabberWidget.cpp
     Modules/GraphicsView.h
-)
-add_library(${PROJECT_NAME} SHARED ${QYLON_SOURCES}
     Modules/GraphicsScene.h
     Modules/GraphicsVTKWidget.h
     Modules/GraphicsWidget.h
@@ -24,6 +22,7 @@ add_library(${PROJECT_NAME} SHARED ${QYLON_SOURCES}
     Processing/SerialCommunicationWidget.h Processing/SerialCommunicationWidget.cpp
     Resources.qrc
 )
+add_library(${PROJECT_NAME} SHARED ${QYLON_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 get_target_property(INCLUDE_DIRS ${PROJECT_NAME} INCLUDE_DIRECTORIES)
