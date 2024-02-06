@@ -1,45 +1,69 @@
 cmake_minimum_required(VERSION 3.14)
 
 project(Qylon)
-set(QYLON_SOURCES
-    Qylon.cpp
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+set(QYLON_HEADERS
     Qylon.h
     Acquisition/Camera.h
-    Acquisition/Camera.cpp
     Acquisition/CameraWidget.h
-    Acquisition/CameraWidget.cpp
     Acquisition/Grabber.h
-    Acquisition/Grabber.cpp
     Acquisition/GrabberWidget.h
-    Acquisition/GrabberWidget.cpp
     Modules/GraphicsView.h
     Modules/GraphicsScene.h
     Modules/GraphicsVTKWidget.h
     Modules/GraphicsWidget.h
-    Processing/vTools.h Processing/vTools.cpp
-    Processing/OutputCommunication.h Processing/OutputCommunication.cpp
-    Processing/SerialCommunication.h Processing/SerialCommunication.cpp
-    Processing/SerialCommunicationWidget.h Processing/SerialCommunicationWidget.cpp
+    Processing/vTools.h
+    Processing/OutputCommunication.h
+    Processing/SerialCommunication.h
+    Processing/SerialCommunicationWidget.h
+)
+set(QYLON_SOURCES
+    Qylon.cpp
+    Acquisition/Camera.cpp
+    Acquisition/CameraWidget.cpp
+    Acquisition/Grabber.cpp
+    Acquisition/GrabberWidget.cpp
+    Processing/vTools.cpp
+    Processing/OutputCommunication.cpp
+    Processing/SerialCommunication.cpp
+    Processing/SerialCommunicationWidget.cpp
     Resources.qrc
 )
-add_library(${PROJECT_NAME} SHARED ${QYLON_SOURCES})
+add_library(${PROJECT_NAME} SHARED ${QYLON_HEADERS} ${QYLON_SOURCES})
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-get_target_property(INCLUDE_DIRS ${PROJECT_NAME} INCLUDE_DIRECTORIES)
+
+set(INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
+file(MAKE_DIRECTORY ${INCLUDE_DIR})
+
+# Copy headers to the include folder
+foreach(HEADER ${QYLON_HEADERS})
+    configure_file(${HEADER} ${INCLUDE_DIR}/${HEADER} COPYONLY)
+endforeach()
+
+# Add the include directory to the project
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
+
+
+# Qt Loading
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
 
-#PYLON
+# Pylon Loading
 # Locate the cmake find module for pylon ...
 find_path(pylon_cmake Findpylon.cmake
     HINTS "$ENV{PYLON_DEV_DIR}/lib/cmake"
-          "$ENV{PYLON_ROOT}/lib/cmake"
-          "$ENV{PYLON_ROOT}/Development/lib/cmake"
-          "$ENV{ProgramFiles}/Basler/pylon 7/Development/lib/cmake"
-          "$ENV{ProgramFiles}/Basler/pylon 6/Development/lib/cmake"
-          "$ENV{ProgramFiles}/Basler/pylon 5/Development/lib/cmake"
-          "/opt/pylon/lib/cmake"
-        )
+    "$ENV{PYLON_ROOT}/lib/cmake"
+    "$ENV{PYLON_ROOT}/Development/lib/cmake"
+    "$ENV{ProgramFiles}/Basler/pylon 7/Development/lib/cmake"
+    "$ENV{ProgramFiles}/Basler/pylon 6/Development/lib/cmake"
+    "$ENV{ProgramFiles}/Basler/pylon 5/Development/lib/cmake"
+    "/opt/pylon/lib/cmake"
+)
 # ... and extend the cmake module path accordingly.
 list(APPEND CMAKE_MODULE_PATH ${pylon_cmake})
 # Locate pylon.
@@ -57,57 +81,33 @@ find_path(pylon_vTools FindpylonDataProcessing.cmake
 )
 list(APPEND CMAKE_MODULE_PATH ${pylon_vTools})
 find_package(pylonDataProcessing REQUIRED)
-
 if(pylonDataProcessing_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
 endif()
-#FRAME GRABBER
-#include(/opt/basler/cmake/modules/SisoLibDir.cmake)
-#FILE(TO_CMAKE_PATH "$ENV{BASLER_FG_SDK_DIR}" BASLER_FG_SDK_DIR)
-#FIND_PATH(FgLib5_INCLUDE_DIR fgrab_define.h
-#        PATHS
-#        "$ENV{FGLIB5}/include"
-#        "${CMAKE_INSTALL_PREFIX}/include"
-#        "${BASLER_FG_SDK_DIR}/include"
-#        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Basler\\FGSDK;Info]/include"
-#)
+
+
 find_path(grabber_cmake FindFgLib5.cmake
     HINTS "$ENV{BASLER_FG_SDK_DIR}/lib/cmake"
 )
 list(APPEND CMAKE_MODULE_PATH ${grabber_cmake})
-#SISO_LIB_DIR("${BASLER_FG_SDK_DIR}/lib" LIB_DIRS COMPILER_LIB_DIR)
 find_library(FgLib5_LIBRARY NAMES fglib5
-        PATHS
-        "$ENV{FGLIB5}/lib"
-        "$ENV{FGLIB5}"
-        "${CMAKE_INSTALL_PREFIX}/lib"
-        ${LIB_DIRS}
-        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Basler\\FGSDK;Info]/lib/${COMPILER_LIB_DIR}"
-        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Basler\\FGSDK;Info]/lib"
+    PATHS
+    "$ENV{FGLIB5}/lib"
+    "$ENV{FGLIB5}"
+    "${CMAKE_INSTALL_PREFIX}/lib"
+    ${LIB_DIRS}
+    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Basler\\FGSDK;Info]/lib/${COMPILER_LIB_DIR}"
+    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Basler\\FGSDK;Info]/lib"
 )
-#IF (FgLib5_INCLUDE_DIR AND EXISTS "${FgLib5_INCLUDE_DIR}/fgrab_define.h")
-#        FILE(STRINGS "${FgLib5_INCLUDE_DIR}/fgrab_define.h" FGLIB_H_VERSION REGEX "^#define[ \\t]*FGLIB_VERSION_STRING[ \\t]*\"[^\"]*\"")
-#        IF (FGLIB_H_VERSION)
-#                STRING(REGEX REPLACE "^#define FGLIB_VERSION_STRING[ \\t]*\"([^\"]*)\".*" "\\1" FgLib5_VERSION_STRING "${FGLIB_H_VERSION}")
-#        ENDIF (FGLIB_H_VERSION)
-#ENDIF (FgLib5_INCLUDE_DIR AND EXISTS "${FgLib5_INCLUDE_DIR}/fgrab_define.h")
-#INCLUDE(FindPackageHandleStandardArgs)
-#IF (CMAKE_VERSION VERSION_LESS 2.8.4)
-#        FIND_PACKAGE_HANDLE_STANDARD_ARGS(FgLib5 DEFAULT_MSG FGLIB5_LIBRARY FGLIB5_INCLUDE_DIR)
-#ELSE (CMAKE_VERSION VERSION_LESS 2.8.4)
-#        FIND_PACKAGE_HANDLE_STANDARD_ARGS(FgLib5
-#                        REQUIRED_VARS FgLib5_LIBRARY FgLib5_INCLUDE_DIR
-#                        VERSION_VAR FgLib5_VERSION_STRING)
-#ENDIF (CMAKE_VERSION VERSION_LESS 2.8.4)
-
 if(FgLib5_FOUND)
-        SET(FgLib5_LIBRARIES ${FgLib5_LIBRARY})
-        SET(FGLIB5_FOUND ${FgLib5_FOUND})
-        SET(FGLIB5_INCLUDE_DIR ${FgLib5_INCLUDE_DIR})
-        SET(FGLIB5_LIBRARY ${FgLib5_LIBRARY})
-        SET(FGLIB5_LIBRARIES ${FgLib5_LIBRARIES})
-        target_include_directories(${PROJECT_NAME} PUBLIC /opt/basler/include)
-        target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
+    message(STATUS "Frame grabber SDK found")
+    SET(FgLib5_LIBRARIES ${FgLib5_LIBRARY})
+    SET(FGLIB5_FOUND ${FgLib5_FOUND})
+    SET(FGLIB5_INCLUDE_DIR ${FgLib5_INCLUDE_DIR})
+    SET(FGLIB5_LIBRARY ${FgLib5_LIBRARY})
+    SET(FGLIB5_LIBRARIES ${FgLib5_LIBRARIES})
+    target_include_directories(${PROJECT_NAME} PUBLIC /opt/basler/include)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
 endif(FgLib5_FOUND)
 
 
@@ -141,25 +141,3 @@ if(PCL_FOUND)
 endif()
 
 
-
-
-### RELEASE SETUP
-
-set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-# Install the Qylon library
-install(TARGETS ${PROJECT_NAME}
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
-)
-# Install the header files
-install(FILES Qylon.h DESTINATION include)
-# Install the Acquisition directory with matching header files
-install(DIRECTORY Acquisition
-    DESTINATION include
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN "*CMakeFiles*" EXCLUDE
-)
-set(QYLON_INCLUDE_DIR include)
-set(QYLON_LIBRARY_DIR lib)
