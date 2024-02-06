@@ -19,6 +19,7 @@ public:
         view = new GraphicsView;
         view->setDragMode(QGraphicsView::ScrollHandDrag);
         labelCoordinate.setAlignment(Qt::AlignRight);
+        labelCoordinate.setText("(X:0 Y:0)");
     }
     void initialize(bool isVTK=false){
         scene = new GraphicsScene(isVTK);
@@ -285,7 +286,7 @@ public slots:
 private:
     GraphicsView *view;
     GraphicsScene *scene;
-    QLabel labelCoordinate = QLabel("(X:0 Y:0)");
+    QLabel labelCoordinate;
     QDoubleSpinBox doubleSpinBoxRatio;
 
     QVBoxLayout layout;
