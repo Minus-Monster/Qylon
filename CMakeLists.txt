@@ -29,18 +29,21 @@ set(QYLON_SOURCES
     Processing/OutputCommunication.cpp
     Processing/SerialCommunication.cpp
     Processing/SerialCommunicationWidget.cpp
-    Resources.qrc
 )
-add_library(${PROJECT_NAME} SHARED ${QYLON_HEADERS} ${QYLON_SOURCES})
-
-
 set(INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 file(MAKE_DIRECTORY ${INCLUDE_DIR})
-
 # Copy headers to the include folder
 foreach(HEADER ${QYLON_HEADERS})
     configure_file(${HEADER} ${INCLUDE_DIR}/${HEADER} COPYONLY)
 endforeach()
+
+set(QYLON_RESOURCES Resources.qrc)
+qt5_add_resources(QYLON_RESOURCES_RCC ${QYLON_RESOURCES})
+
+# Making DLL
+# add_library(${PROJECT_NAME} SHARED ${QYLON_HEADERS} ${QYLON_SOURCES})
+## ALTERNATIVE WAY TO MAKE SLL
+add_library(${PROJECT_NAME} STATIC ${QYLON_HEADERS} ${QYLON_SOURCES} ${QYLON_RESOURCES_RCC})
 
 # Add the include directory to the project
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -52,6 +55,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 # Qt Loading
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
+
+
 
 # Pylon Loading
 # Locate the cmake find module for pylon ...
