@@ -4,6 +4,7 @@
 #include <QSpacerItem>
 #include <QDoubleSpinBox>
 #include <QLineEdit>
+#include <QToolBar>
 
 #include "GraphicsView.h"
 #include "GraphicsScene.h"
@@ -11,259 +12,174 @@ namespace Qylon{
 class GraphicsWidget : public QWidget{
     Q_OBJECT
 public:
-    GraphicsWidget(){
+    GraphicsWidget(QWidget *parent = nullptr){
+        setParent(parent);
         setWindowIcon(QIcon(":/Resources/Icon.png"));
+
+        toolBar.setWindowTitle("Image Tools");
+        toolBar.layout()->setSpacing(1);
+        toolBar.layout()->setContentsMargins(0,0,0,0);
         setLayout(&layout);
         layout.setSpacing(0);
         layout.setMargin(0);
+
         view = new GraphicsView;
         view->setDragMode(QGraphicsView::ScrollHandDrag);
-        labelCoordinate.setAlignment(Qt::AlignRight);
-        labelCoordinate.setText("(X:0 Y:0)");
+        labelCoordinate.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        labelCoordinate.setText(" X 0\n Y 0");
+        labelCoordinate.setFixedWidth(60);
+        labelPixelColor.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        labelPixelColor.setText(" RGB\n [0,0,0]");
+        labelPixelColor.setFixedWidth(95);
+        lineEditPixelColor.setFixedWidth(24);
+        lineEditPixelColor.setReadOnly(true);
     }
     void initialize(bool isVTK=false){
         scene = new GraphicsScene(isVTK);
         view->setScene(scene);
-        QHBoxLayout *buttonLayout = new QHBoxLayout;
+
+        QWidget *spacer = new QWidget;
+        toolBar.addWidget(spacer);
+        spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+        QDoubleSpinBox *doubleSpinBoxRatio = new QDoubleSpinBox;
         {
-            buttonLayout->addSpacerItem(new QSpacerItem(0,0, QSizePolicy::Expanding,QSizePolicy::Expanding));
-            QPushButton *buttonZoomIn = new QPushButton(QIcon(":/Resources/Icon/zoom-in.png"), "");
-            buttonZoomIn->setFixedWidth(30);
-            buttonZoomIn->setFlat(true);
-            connect(buttonZoomIn, &QPushButton::clicked, this, [=](){
-                if(isVTK){
-#ifdef PCL_ENABLED
-                    this->scene->VTKWidget->setScale(1.2);
-#endif
-                }else this->view->setScale(1.2);
+            doubleSpinBoxRatio->setRange(0, 9999.9);
+            doubleSpinBoxRatio->setValue(100);
+            doubleSpinBoxRatio->setSuffix(" %");
+            doubleSpinBoxRatio->setFixedWidth(75);
+            doubleSpinBoxRatio->setDecimals(1);
+            doubleSpinBoxRatio->setSingleStep(10);
+            doubleSpinBoxRatio->setAlignment(Qt::AlignRight);
+            connect(doubleSpinBoxRatio, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](){
+                this->view->setRatio(doubleSpinBoxRatio->value()/100);
             });
-            buttonLayout->addWidget(buttonZoomIn);
-
-            QPushButton *buttonZoomOut = new QPushButton(QIcon(":/Resources/Icon/zoom-out.png"), "");
-            buttonZoomOut->setFixedWidth(30);
-            buttonZoomOut->setFlat(true);
-            connect(buttonZoomOut, &QPushButton::clicked, this, [=](){
-                if(isVTK){
-#ifdef PCL_ENABLED
-                    this->scene->VTKWidget->setScale(0.8);
-#endif
-                }else this->view->setScale(0.8);
-            });
-            buttonLayout->addWidget(buttonZoomOut);
-
-//            QPushButton *buttonOriginal = new QPushButton("↺");
-            QPushButton *buttonOriginal = new QPushButton(QIcon(":/Resources/Icon/original.png"), "");
-            buttonOriginal->setFixedWidth(30);
-            buttonOriginal->setFlat(true);
-            connect(buttonOriginal, &QPushButton::clicked, this, [=](){
-                if(isVTK){
-#ifdef PCL_ENABLED
-                    this->scene->VTKWidget->resetScale();
-#endif
-                }else this->view->resetScale();
-            });
-            buttonLayout->addWidget(buttonOriginal);
-
-//            QPushButton *buttonFit = new QPushButton("↔");
-            QPushButton *buttonFit = new QPushButton(QIcon(":/Resources/Icon/fit.png"), "");
-            buttonFit->setFlat(true);
-            buttonFit->setFixedWidth(30);
-            buttonFit->setCheckable(true);
-            buttonFit->setChecked(false);
-            connect(buttonFit, &QPushButton::toggled, this, [=](bool on){
-                this->view->setFit(on);
-
-                buttonFit->setChecked(on);
-                buttonZoomIn->setEnabled(!on);
-                buttonZoomOut->setEnabled(!on);
-                buttonOriginal->setEnabled(!on);
-                doubleSpinBoxRatio.setEnabled(!on);
-            });
-            buttonLayout->addWidget(buttonFit);
-            connect(this, &GraphicsWidget::updateWidget, this, [=](){
-                emit buttonFit->toggled(true);
-
+            connect(view, &GraphicsView::currentRatio, this, [=](float ratio) {
+                doubleSpinBoxRatio->setValue(ratio * 100);
             });
         }
-        if(isVTK){
+        QPushButton *buttonZoomIn = new QPushButton(QIcon(":/Resources/Icon/zoom-in.png"), "");
+        buttonZoomIn->setFixedWidth(30);
+        buttonZoomIn->setFlat(true);
+        connect(buttonZoomIn, &QPushButton::clicked, this, [=](){
+            if(isVTK){
 #ifdef PCL_ENABLED
+                this->scene->VTKWidget->setScale(1.2);
+#endif
+            }else this->view->setScale(1.2);
+        });
+        toolBar.addWidget(buttonZoomIn);
+
+        QPushButton *buttonZoomOut = new QPushButton(QIcon(":/Resources/Icon/zoom-out.png"), "");
+        buttonZoomOut->setFixedWidth(30);
+        buttonZoomOut->setFlat(true);
+        connect(buttonZoomOut, &QPushButton::clicked, this, [=](){
+            if(isVTK){
+#ifdef PCL_ENABLED
+                this->scene->VTKWidget->setScale(0.8);
+#endif
+            }else this->view->setScale(0.8);
+        });
+        toolBar.addWidget(buttonZoomOut);
+
+        QPushButton *buttonOriginal = new QPushButton(QIcon(":/Resources/Icon/original.png"), "");
+        buttonOriginal->setFixedWidth(30);
+        buttonOriginal->setFlat(true);
+        connect(buttonOriginal, &QPushButton::clicked, this, [=](){
+            if(isVTK){
+#ifdef PCL_ENABLED
+                this->scene->VTKWidget->resetScale();
+#endif
+            }else this->view->resetScale();
+        });
+        toolBar.addWidget(buttonOriginal);
+
+        QPushButton *buttonFit = new QPushButton(QIcon(":/Resources/Icon/fit.png"), "");
+        buttonFit->setFlat(true);
+        buttonFit->setFixedWidth(30);
+        buttonFit->setCheckable(true);
+        buttonFit->setChecked(false);
+        connect(buttonFit, &QPushButton::toggled, this, [=](bool on){
+            if(on) currentRatioValue = doubleSpinBoxRatio->value();
+            this->view->setFit(on);
+
+
+            buttonFit->setChecked(on);
+            buttonZoomIn->setEnabled(!on);
+            buttonZoomOut->setEnabled(!on);
+            buttonOriginal->setEnabled(!on);
+            doubleSpinBoxRatio->setEnabled(!on);
+            if(!on) doubleSpinBoxRatio->setValue(currentRatioValue);
+        });
+        toolBar.addWidget(buttonFit);
+        connect(this, &GraphicsWidget::updateWidget, this, [=](){
+            emit buttonFit->toggled(true);
+        });
+        toolBar.addSeparator();
+        toolBar.addWidget(doubleSpinBoxRatio);
+
+#ifdef PCL_ENABLED
+        if(isVTK){
             QPushButton *buttonUp = new QPushButton("↑");
             {
                 buttonUp->setFixedWidth(30);
                 connect(buttonUp, &QPushButton::clicked, this, [=](){
                     this->scene->VTKWidget->setViewUp();
                 });
-                buttonLayout->addWidget(buttonUp);
+                toolBar.addWidget(buttonUp);
             }
             QPushButton *buttonDown = new QPushButton("↓");
             {
                 buttonDown->setFixedWidth(30);
-                connect(buttonDown, &QPushButton::clicked, this, [=](){
-                    this->scene->VTKWidget->seViewDown();
-                });
-                buttonLayout->addWidget(buttonDown);
+                connect(buttonDown, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->seViewDown(); });
+                toolBar.addWidget(buttonDown);
             }
             QPushButton *buttonLeft = new QPushButton("←");
             {
                 buttonLeft->setFixedWidth(30);
-                connect(buttonLeft, &QPushButton::clicked, this, [=](){
-                    this->scene->VTKWidget->setViewLeft();
-                });
-                buttonLayout->addWidget(buttonLeft);
+                connect(buttonLeft, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->setViewLeft(); });
+                toolBar.addWidget(buttonLeft);
             }
             QPushButton *buttonRight = new QPushButton("→");
             {
                 buttonRight->setFixedWidth(30);
-                connect(buttonRight, &QPushButton::clicked, this, [=](){
-                    this->scene->VTKWidget->setViewRight();
-                });
-                buttonLayout->addWidget(buttonRight);
+                connect(buttonRight, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->setViewRight(); });
+                toolBar.addWidget(buttonRight);
             }
-
-            /*
-            QLabel *lbl = new QLabel;
-            connect(this->scene->VTKWidget, &GraphicsVTKWidget::currentCameraPosition, this, [=](QString text){
-                lbl->setText(text);
-            });
-            QHBoxLayout *spinLayout = new QHBoxLayout;
-            QDoubleSpinBox *spinPosX = new QDoubleSpinBox;
-            spinPosX->setRange(-10000, 10000);
-            spinPosX->setValue(0);
-            QDoubleSpinBox *spinPosY = new QDoubleSpinBox;
-            spinPosY->setRange(-10000, 10000);
-            spinPosY->setValue(0);
-            QDoubleSpinBox *spinPosZ = new QDoubleSpinBox;
-            spinPosZ->setRange(-10000, 10000);
-            spinPosZ->setValue(-500);
-            QDoubleSpinBox *spinFocalX = new QDoubleSpinBox;
-            spinFocalX->setRange(-10000, 10000);
-            spinFocalX->setValue(0);
-            QDoubleSpinBox *spinFocalY = new QDoubleSpinBox;
-            spinFocalY->setRange(-10000, 10000);
-            spinFocalY->setValue(0);
-            QDoubleSpinBox *spinFocalZ = new QDoubleSpinBox;
-            spinFocalZ->setRange(-10000, 10000);
-            spinFocalZ->setValue(0);
-            QDoubleSpinBox *spinViewX = new QDoubleSpinBox;
-            QDoubleSpinBox *spinViewY = new QDoubleSpinBox;
-            QDoubleSpinBox *spinViewZ = new QDoubleSpinBox;
-
-            spinViewX->setRange(-1.0, 1.0);
-            spinViewX->setSingleStep(0.05);
-            spinViewX->setValue(0);
-            spinViewY->setRange(-1.0, 1.0);
-            spinViewY->setSingleStep(0.05);
-            spinViewY->setValue(-1);
-            spinViewZ->setRange(-1.0, 1.0);
-            spinViewZ->setSingleStep(0.05);
-            spinViewZ->setValue(0);
-
-            connect(spinPosX,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
-                this->scene->VTKWidget->viewer->setCameraPosition(spinPosX->value(), spinPosY->value(), spinPosZ->value(),
-                                                        spinFocalX->value(), spinFocalY->value(), spinFocalZ->value(),
-                                                          spinViewX->value(), spinViewY->value(), spinViewZ->value());
-            });
-            connect(spinPosY,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
-                this->scene->VTKWidget->viewer->setCameraPosition(spinPosX->value(), spinPosY->value(), spinPosZ->value(),
-                                                                  spinFocalX->value(), spinFocalY->value(), spinFocalZ->value(),
-                                                                  spinViewX->value(), spinViewY->value(), spinViewZ->value());
-            });
-            connect(spinPosZ,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
-                this->scene->VTKWidget->viewer->setCameraPosition(spinPosX->value(), spinPosY->value(), spinPosZ->value(),
-                                                                  spinFocalX->value(), spinFocalY->value(), spinFocalZ->value(),
-                                                                  spinViewX->value(), spinViewY->value(), spinViewZ->value());
-            });
-            connect(spinFocalX,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
-                this->scene->VTKWidget->viewer->setCameraPosition(spinPosX->value(), spinPosY->value(), spinPosZ->value(),
-                                                                  spinFocalX->value(), spinFocalY->value(), spinFocalZ->value(),
-                                                                  spinViewX->value(), spinViewY->value(), spinViewZ->value());
-            });
-            connect(spinFocalY,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
-                this->scene->VTKWidget->viewer->setCameraPosition(spinPosX->value(), spinPosY->value(), spinPosZ->value(),
-                                                                  spinFocalX->value(), spinFocalY->value(), spinFocalZ->value(),
-                                                                  spinViewX->value(), spinViewY->value(), spinViewZ->value());
-            });
-            connect(spinFocalZ,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
-                this->scene->VTKWidget->viewer->setCameraPosition(spinPosX->value(), spinPosY->value(), spinPosZ->value(),
-                                                                  spinFocalX->value(), spinFocalY->value(), spinFocalZ->value(),
-                                                                  spinViewX->value(), spinViewY->value(), spinViewZ->value());
-            });
-            connect(spinViewX,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
-                this->scene->VTKWidget->viewer->setCameraPosition(spinPosX->value(), spinPosY->value(), spinPosZ->value(),
-                                                                  spinFocalX->value(), spinFocalY->value(), spinFocalZ->value(),
-                                                                  spinViewX->value(), spinViewY->value(), spinViewZ->value());
-            });
-            connect(spinViewY,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
-                this->scene->VTKWidget->viewer->setCameraPosition(spinPosX->value(), spinPosY->value(), spinPosZ->value(),
-                                                                  spinFocalX->value(), spinFocalY->value(), spinFocalZ->value(),
-                                                                  spinViewX->value(), spinViewY->value(), spinViewZ->value());
-            });
-            connect(spinViewZ,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
-                this->scene->VTKWidget->viewer->setCameraPosition(spinPosX->value(), spinPosY->value(), spinPosZ->value(),
-                                                                  spinFocalX->value(), spinFocalY->value(), spinFocalZ->value(),
-                                                                  spinViewX->value(), spinViewY->value(), spinViewZ->value());
-            });
-
-            spinLayout->addWidget(spinPosX);
-            spinLayout->addWidget(spinPosY);
-            spinLayout->addWidget(spinPosZ);
-            spinLayout->addWidget(spinFocalX);
-            spinLayout->addWidget(spinFocalY);
-            spinLayout->addWidget(spinFocalZ);
-            spinLayout->addWidget(spinViewX);
-            spinLayout->addWidget(spinViewY);
-            spinLayout->addWidget(spinViewZ);
-
-            layout.addLayout(spinLayout);
-*/
-#endif
         }
-
-        // Ratio spinbox
-        doubleSpinBoxRatio.setRange(0, 99999);
-        doubleSpinBoxRatio.setValue(100);
-        doubleSpinBoxRatio.setSuffix(" %");
-        doubleSpinBoxRatio.setFixedWidth(70);
-        doubleSpinBoxRatio.setDecimals(1);
-        doubleSpinBoxRatio.setButtonSymbols(QAbstractSpinBox::NoButtons);
-        doubleSpinBoxRatio.setAlignment(Qt::AlignRight);
-        connect(&doubleSpinBoxRatio, &QDoubleSpinBox::editingFinished, this, [=](){
-            this->view->setRatio(doubleSpinBoxRatio.value()/100);
-        });
-
-        buttonLayout->addWidget(&doubleSpinBoxRatio);
-        layout.addLayout(buttonLayout);
-
-        // Putting Graphics View
-        layout.addWidget(view);
-        layout.setStretch(1, 99);
-
-        // Setting a status bar
-        if(!isVTK){
-            connect(scene, &GraphicsScene::currentPos, this, [=](QPointF point){
+#endif
+        if (!isVTK) {
+            connect(scene, &GraphicsScene::currentPos, this, [=](QPointF point) {
                 auto rPos = point.toPoint();
                 int r, g, b = 0;
                 this->scene->Pixmap.pixmap().toImage().pixelColor(rPos.x(), rPos.y()).getRgb(&r, &g, &b);
-                QString coord = "(X:" + QString::number(rPos.x()) + " Y:" + QString::number(rPos.y()) + ")";
-                QString color = "(R:" + QString::number(r) + " G:" + QString::number(g) + " B:" + QString::number(b) + ")";
+                QString coord = " X " + QString::number(rPos.x()) +"\n Y " + QString::number(rPos.y());
+                QString color = " RGB\n [" + QString::number(r) +"," + QString::number(g) + "," + QString::number(b) + "]";
 
-                this->labelCoordinate.setText(coord + " " + color);
+                this->labelCoordinate.setText(coord);
 
-                auto corr = (int)((r+g+b)/3) > 150 ? 0 : 255;
-                QString style = QString("QLabel { background-color : rgb(") + QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + QString("); color : rgb(") +
-                        QString::number(corr) + QString(", ") + QString::number(corr) + QString(", ") + QString::number(corr) + QString("); }");
+                auto corr = (int)((r + g + b) / 3) > 150 ? 0 : 255;
+                QString style =  QString("QLineEdit { background-color : rgb(") + QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + QString("); }");
 
-                this->labelCoordinate.setStyleSheet(style);
+                this->labelPixelColor.setText(color);
+                this->lineEditPixelColor.setStyleSheet(style);
             });
-            connect(view, &GraphicsView::currentRatio, this, [=](float ratio){
-                this->doubleSpinBoxRatio.setValue(ratio*100);
-            });
-            QHBoxLayout *pixelInfoLayout = new QHBoxLayout;
-            pixelInfoLayout->addWidget(&labelCoordinate);
-            layout.addLayout(pixelInfoLayout);
+            toolBar.addSeparator();
+            toolBar.addWidget(&labelCoordinate);
+            toolBar.addWidget(&lineEditPixelColor);
+            toolBar.addWidget(&labelPixelColor);
         }
+
+        // Putting Graphics View
+        layout.addWidget(&toolBar);
+        layout.addWidget(view);
+
         setImage(QImage(":/Resources/Logo.png"));
     }
+    void setToolBarEnable(bool on){
+        toolBar.setHidden(!on);
+    }
+
 signals:
     void updateWidget();
 
@@ -287,7 +203,10 @@ private:
     GraphicsView *view;
     GraphicsScene *scene;
     QLabel labelCoordinate;
-    QDoubleSpinBox doubleSpinBoxRatio;
+    QLabel labelPixelColor;
+    QLineEdit lineEditPixelColor;
+    QToolBar toolBar;
+    double currentRatioValue = 100.;
 
     QVBoxLayout layout;
 };
