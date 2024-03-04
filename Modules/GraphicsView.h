@@ -8,6 +8,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
+#include <QScrollBar>
 
 
 namespace Qylon{
@@ -16,6 +17,7 @@ class GraphicsView : public QGraphicsView {
 public:
     GraphicsView(){
         setMouseTracking(true);
+        setFrameShape(Shape::StyledPanel);
     }
     void setRatio(float ratio){
         QTransform matrix = QTransform(ratio, 0, 0, ratio, 0, 0);
@@ -45,7 +47,7 @@ public slots:
         fitMode = on;
         if(on) resizeEvent(nullptr);
         else setTransform(currentScale);
-//        currentScale = this->transform();
+        //        currentScale = this->transform();
         emit currentRatio(this->transform().m11());
     }
 
@@ -57,6 +59,31 @@ protected:
     void resizeEvent(QResizeEvent *) override{
         if(fitMode) fitInView(this->scene()->sceneRect(), Qt::KeepAspectRatio);
         updateSceneRect(this->viewport()->rect());
+    }
+    void drawBackground(QPainter *painter, const QRectF &rect) override{
+        QGraphicsView::drawBackground(painter, rect);
+
+        // Save the current painter transform
+        QTransform originalTransform = painter->transform();
+
+        // Temporarily reset the transform to ignore any scaling (zoom)
+        painter->resetTransform();
+
+        // Now calculate the position based on the original rect and the current zoom level
+        QImage logo(":/Resources/Logo.png");
+        QPointF center = originalTransform.map(rect.center()); // Map center using the original transform
+        int x = center.x() - (logo.width() / 2.0);
+        int y = center.y() - (logo.height() / 2.0);
+
+        // Adjust coordinates to account for the current scroll position of the view
+        x -= this->horizontalScrollBar()->value();
+        y -= this->verticalScrollBar()->value();
+
+        // Draw the pixmap without the scaling effect
+        painter->drawPixmap(x, y, QPixmap::fromImage(logo));
+
+        // Restore the original painter transform
+        painter->setTransform(originalTransform);
     }
 };
 

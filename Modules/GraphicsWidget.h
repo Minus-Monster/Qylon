@@ -30,7 +30,7 @@ public:
         labelCoordinate.setFixedWidth(60);
         labelPixelColor.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         labelPixelColor.setText(" RGB\n [0,0,0]");
-        labelPixelColor.setFixedWidth(95);
+        labelPixelColor.setFixedWidth(98);
         lineEditPixelColor.setFixedWidth(24);
         lineEditPixelColor.setReadOnly(true);
     }
@@ -62,7 +62,7 @@ public:
         buttonZoomIn->setFixedWidth(30);
         buttonZoomIn->setFlat(true);
         connect(buttonZoomIn, &QPushButton::clicked, this, [=](){
-            if(isVTK){
+        if(isVTK){
 #ifdef PCL_ENABLED
                 this->scene->VTKWidget->setScale(1.2);
 #endif
@@ -102,7 +102,6 @@ public:
         connect(buttonFit, &QPushButton::toggled, this, [=](bool on){
             if(on) currentRatioValue = doubleSpinBoxRatio->value();
             this->view->setFit(on);
-
 
             buttonFit->setChecked(on);
             buttonZoomIn->setEnabled(!on);
@@ -173,8 +172,6 @@ public:
         // Putting Graphics View
         layout.addWidget(&toolBar);
         layout.addWidget(view);
-
-        setImage(QImage(":/Resources/Logo.png"));
     }
     void setToolBarEnable(bool on){
         toolBar.setHidden(!on);
