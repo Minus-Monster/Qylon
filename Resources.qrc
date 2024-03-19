@@ -18,5 +18,6 @@
         <file>Resources/Icon/icons8-rs-232-male-48.png</file>
         <file>Resources/Icon/icons8-stop-48.png</file>
         <file>Resources/Icon/icons8-stop-circled-48.png</file>
+        <file>Resources/Icon/icons8-crosshair-48.png</file>
     </qresource>
 </RCC>

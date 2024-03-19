@@ -40,6 +40,15 @@ public:
 
         QWidget *spacer = new QWidget;
         toolBar.addWidget(spacer);
+
+        QPushButton *buttonGridLine = new QPushButton(QIcon(":/Resources/Icon/icons8-crosshair-48.png"), "");
+        buttonGridLine->setFixedWidth(30);
+        buttonGridLine->setFlat(true);
+        buttonGridLine->setCheckable(true);
+        toolBar.addWidget(buttonGridLine);
+
+
+        toolBar.addSeparator();
         spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
         QDoubleSpinBox *doubleSpinBoxRatio = new QDoubleSpinBox;
