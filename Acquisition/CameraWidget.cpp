@@ -12,22 +12,28 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     setWindowTitle("Basler pylon Camera Configuration");
     setWindowIcon(QIcon(":/Qylon/Resources/Icon.png"));
     list = new QComboBox;
-    list->setMinimumWidth(200);
+    list->setMinimumWidth(120);
     widget = new QTreeWidget;
     widget->setHeaderLabels(QStringList() << "Features" << "Value");
 
     name_tag = new QLabel("Camera : ");
     status = new QLabel("Camera Status : ");
-    refreshButton = new QPushButton("Refresh");
+    refreshButton = new QPushButton(QIcon(":/Resources/Icon/icons8-refresh-48.png"),"");
+    refreshButton->setFlat(true);
+    refreshButton->setToolTip("Refresh");
     connect(refreshButton, &QPushButton::clicked, this, [=](bool){
         this->updateCameraList();
     });
-    connectButton = new QPushButton("Connect");
+    connectButton = new QPushButton(QIcon(":/Resources/Icon/icons8-connect-48.png"),"");
+    connectButton->setFlat(true);
+    connectButton->setToolTip("Connect");
     connect(connectButton, &QPushButton::clicked, this, [=](bool){
         this->connectCamera();
     });
 
-    disconnectButton = new QPushButton("Disconnect");
+    disconnectButton = new QPushButton(QIcon(":/Resources/Icon/icons8-disconnected-48.png"),"");
+    disconnectButton->setFlat(true);
+    disconnectButton->setToolTip("Disconnect");
     disconnectButton->setEnabled(false);
     connect(disconnectButton, &QPushButton::clicked, this, [=](bool){
         this->disconnectCamera();
@@ -136,7 +142,7 @@ void Qylon::CameraWidget::widgetGenerator(GenApi_3_1_Basler_pylon::INodeMap *nod
         generateChildrenWidgetItem(item, children);
     }
     widget->expandToDepth(0);
-    widget->header()->resizeSection(0,280);
+    widget->header()->resizeSection(0,200);
 }
 
 void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, GenApi_3_1_Basler_pylon::NodeList_t children)

@@ -1,6 +1,7 @@
 #ifndef GRAPHICSVIEW_H
 #define GRAPHICSVIEW_H
 
+#include <QGraphicsRectItem>
 #include <QDoubleSpinBox>
 #include <QDebug>
 #include <QObject>
@@ -25,6 +26,27 @@ public:
         currentScale = matrix;
         emit currentRatio(this->transform().m11());
     }
+    void setCrossHair(bool on){
+        crossHair = on;
+        if(on){
+            if(lineH == nullptr) lineH = new QGraphicsLineItem;
+            if(lineV == nullptr) lineV = new QGraphicsLineItem;
+
+            QPen pen;
+            pen.setColor(QColor(0,255,0));
+            pen.setWidth(3);
+            lineH->setPen(pen);
+            lineV->setPen(pen);
+
+            lineH->setLine(0,this->scene()->sceneRect().height()/2, this->scene()->sceneRect().width() ,this->scene()->sceneRect().height()/2);
+            lineV->setLine(this->scene()->sceneRect().width()/2,0,this->scene()->sceneRect().width()/2, this->scene()->sceneRect().height());
+            this->scene()->addItem(lineH);
+            this->scene()->addItem(lineV);
+        }else{
+            this->scene()->removeItem(lineH);
+            this->scene()->removeItem(lineV);
+        }
+    }
     void setScale(float zoomPercent){ // 1 = 100%, 1.5 = 150%, 0.5 = 50%
         QTransform matrix = this->transform();
         matrix.scale(zoomPercent, zoomPercent);
@@ -47,17 +69,23 @@ public slots:
         fitMode = on;
         if(on) resizeEvent(nullptr);
         else setTransform(currentScale);
-        //        currentScale = this->transform();
         emit currentRatio(this->transform().m11());
     }
 
 private:
     bool fitMode = false;
+    bool crossHair = false;
+    QGraphicsLineItem *lineH = nullptr;
+    QGraphicsLineItem *lineV = nullptr;
     QTransform currentScale = QTransform(1,0,0,1,0,0);
 
 protected:
     void resizeEvent(QResizeEvent *) override{
         if(fitMode) fitInView(this->scene()->sceneRect(), Qt::KeepAspectRatio);
+        if(crossHair){
+            lineH->setLine(0,this->scene()->sceneRect().height()/2, this->scene()->sceneRect().width() ,this->scene()->sceneRect().height()/2);
+            lineV->setLine(this->scene()->sceneRect().width()/2,0,this->scene()->sceneRect().width()/2, this->scene()->sceneRect().height());
+        }
         updateSceneRect(this->viewport()->rect());
     }
     void drawBackground(QPainter *painter, const QRectF &rect) override{

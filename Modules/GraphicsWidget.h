@@ -45,7 +45,11 @@ public:
         buttonGridLine->setFixedWidth(30);
         buttonGridLine->setFlat(true);
         buttonGridLine->setCheckable(true);
+        buttonGridLine->setToolTip("Crosshair");
         toolBar.addWidget(buttonGridLine);
+        connect(buttonGridLine, &QPushButton::clicked, this, [=](bool on){
+            this->view->setCrossHair(on);
+        });
 
 
         toolBar.addSeparator();
@@ -60,6 +64,7 @@ public:
             doubleSpinBoxRatio->setDecimals(1);
             doubleSpinBoxRatio->setSingleStep(10);
             doubleSpinBoxRatio->setAlignment(Qt::AlignRight);
+            doubleSpinBoxRatio->setToolTip("Scale");
             connect(doubleSpinBoxRatio, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](){
                 this->view->setRatio(doubleSpinBoxRatio->value()/100);
             });
@@ -70,6 +75,7 @@ public:
         QPushButton *buttonZoomIn = new QPushButton(QIcon(":/Resources/Icon/zoom-in.png"), "");
         buttonZoomIn->setFixedWidth(30);
         buttonZoomIn->setFlat(true);
+        buttonZoomIn->setToolTip("Zoom In");
         connect(buttonZoomIn, &QPushButton::clicked, this, [=](){
         if(isVTK){
 #ifdef PCL_ENABLED
@@ -82,6 +88,7 @@ public:
         QPushButton *buttonZoomOut = new QPushButton(QIcon(":/Resources/Icon/zoom-out.png"), "");
         buttonZoomOut->setFixedWidth(30);
         buttonZoomOut->setFlat(true);
+        buttonZoomOut->setToolTip("Zoom Out");
         connect(buttonZoomOut, &QPushButton::clicked, this, [=](){
             if(isVTK){
 #ifdef PCL_ENABLED
@@ -94,6 +101,7 @@ public:
         QPushButton *buttonOriginal = new QPushButton(QIcon(":/Resources/Icon/original.png"), "");
         buttonOriginal->setFixedWidth(30);
         buttonOriginal->setFlat(true);
+        buttonOriginal->setToolTip("100%");
         connect(buttonOriginal, &QPushButton::clicked, this, [=](){
             if(isVTK){
 #ifdef PCL_ENABLED
@@ -108,6 +116,7 @@ public:
         buttonFit->setFixedWidth(30);
         buttonFit->setCheckable(true);
         buttonFit->setChecked(false);
+        buttonFit->setToolTip("Fit");
         connect(buttonFit, &QPushButton::toggled, this, [=](bool on){
             if(on) currentRatioValue = doubleSpinBoxRatio->value();
             this->view->setFit(on);

@@ -19,5 +19,6 @@
         <file>Resources/Icon/icons8-stop-48.png</file>
         <file>Resources/Icon/icons8-stop-circled-48.png</file>
         <file>Resources/Icon/icons8-crosshair-48.png</file>
+        <file>Resources/Icon/icons8-refresh-48.png</file>
     </qresource>
 </RCC>
