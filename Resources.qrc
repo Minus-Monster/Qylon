@@ -20,5 +20,9 @@
         <file>Resources/Icon/icons8-stop-circled-48.png</file>
         <file>Resources/Icon/icons8-crosshair-48.png</file>
         <file>Resources/Icon/icons8-refresh-48.png</file>
+        <file>Resources/Icon/icons8-save-48.png</file>
+        <file>Resources/Icon/icons8-document-48.png</file>
+        <file>Resources/Icon/icons8-image-file-add-48.png</file>
+        <file>Resources/Icon/icons8-save-as-48.png</file>
     </qresource>
 </RCC>
