@@ -6,6 +6,7 @@
 #include <QLineEdit>
 #include <QToolBar>
 #include <QFileDialog>
+#include <QStatusBar>
 
 #include "GraphicsView.h"
 #include "GraphicsScene.h"
@@ -20,6 +21,9 @@ public:
         toolBar.setWindowTitle("Image Tools");
         toolBar.layout()->setSpacing(1);
         toolBar.setIconSize(QSize(20,20));
+
+        statusBar.setSizeGripEnabled(false);
+
         setLayout(&layout);
         layout.setSpacing(0);
         layout.setMargin(0);
@@ -48,7 +52,7 @@ public:
         toolBar.addAction(actionSave);
         connect(actionSave, &QAction::triggered, this, [=](){
             auto filePath = QFileDialog::getSaveFileName(this, "Save the current image", QDir::currentPath(), "Image(*.png *.jpg *.bmp)");
-            this->scene->Pixmap.pixmap().save(filePath);
+            this->currentImage.save(filePath);
         });
 
 
@@ -173,15 +177,16 @@ public:
                 this->labelPixelColor.setText(color);
                 this->lineEditPixelColor.setStyleSheet(style);
             });
-            toolBar.addSeparator();
-            toolBar.addWidget(&labelCoordinate);
-            toolBar.addWidget(&lineEditPixelColor);
-            toolBar.addWidget(&labelPixelColor);
+            statusBar.addWidget(&labelCoordinate);
+            statusBar.addWidget(&lineEditPixelColor);
+            statusBar.addWidget(&labelPixelColor);
+            statusBar.addWidget(&labelImageInformation);
         }
 
         // Putting Graphics View
         layout.addWidget(&toolBar);
         layout.addWidget(view);
+        layout.addWidget(&statusBar);
     }
     void setToolBarEnable(bool on){
         toolBar.setHidden(!on);
@@ -192,6 +197,8 @@ signals:
 
 public slots:
     void setImage(const QImage image){
+        currentImage = image;
+        labelImageInformation.setText(QString::number(image.depth()) + "-bit, " + QString::number(image.width()) + "x" + QString::number(image.height()) + " ");
         scene->Pixmap.setPixmap(QPixmap::fromImage(image));
         scene->setSceneRect(0, 0, image.width(), image.height());
     }
@@ -211,8 +218,11 @@ private:
     GraphicsScene *scene;
     QLabel labelCoordinate;
     QLabel labelPixelColor;
+    QLabel labelImageInformation;
     QLineEdit lineEditPixelColor;
     QToolBar toolBar;
+    QStatusBar statusBar;
+    QImage currentImage;
     double currentRatioValue = 100.;
 
     QVBoxLayout layout;
