@@ -57,7 +57,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::convertGrabResultToPointCl
     const auto* pIntensity = (const uint16_t*)intensityComponent.GetData();
 
 
-//    cv::Mat range = cv::Mat(rangeComponent.GetHeight(), rangeComponent.GetWidth(), CV_32FC3, (void*)rangeComponent.GetData());
+    //    cv::Mat range = cv::Mat(rangeComponent.GetHeight(), rangeComponent.GetWidth(), CV_32FC3, (void*)rangeComponent.GetData());
 
     // Set the points.
     for (size_t i = 0; i < height * width; ++i, ++pSrcPoint, ++pIntensity)
@@ -287,8 +287,8 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
             for(size_t i = 0; i < container.GetDataComponentCount(); ++i){
                 auto component = container.GetDataComponent(i);
                 if(component.IsValid()){
-                switch (component.GetComponentType()){
-                case Pylon::ComponentType_Intensity:{
+                    switch (component.GetComponentType()){
+                    case Pylon::ComponentType_Intensity:{
                         try{
                             currentIntensity = QImage((const uchar *)component.GetData(), component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
                             //Point Cloud
@@ -337,7 +337,7 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
                         break;
                     case Pylon::ComponentType_Undefined:
                         break;
-                }}
+                    }}
             }
             //PointCloud
             for(size_t i=0; i< height*width; ++i, ++srcPoint, ++srcIntensity){
@@ -358,16 +358,32 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
 #endif
     }else{
         try{
-            if( (static_cast<uint32_t>(currentImage.width()) != grabResult->GetWidth())
-                    || (static_cast<uint32_t>( currentImage.height()) != grabResult->GetHeight()) ){
-                currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_RGB32 );
-            }
-            currentBuffer = grabResult->GetBuffer();
-            void *pBuffer = currentImage.bits();
-            size_t bufferSize = currentImage.sizeInBytes();
+            // Initializing QImage type
+            GenApi_3_1_Basler_pylon::CEnumerationPtr pixelFormat = camera.GetNodeMap().GetNode("PixelFormat");
+            QString currentPixelFormat = pixelFormat->ToString().c_str();
+            if(currentPixelFormat == "Mono8"){
+                currentImage = QImage(reinterpret_cast<const uchar*>(grabResult->GetBuffer()), grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_Grayscale8);
+            }else if(currentPixelFormat == "Mono12"){
+//                currentImage = QImage(reinterpret_cast<const uchar*>(grabResult->GetBuffer()), grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_Grayscale16);
+                currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_Grayscale16);
+                currentBuffer = grabResult->GetBuffer();
+                void *pBuffer = currentImage.bits();
+                size_t bufferSize = currentImage.sizeInBytes();
 
-            formatConverter.OutputPixelFormat = Pylon::PixelType_BGRA8packed;
-            formatConverter.Convert(pBuffer, bufferSize, grabResult);
+                formatConverter.OutputPixelFormat = Pylon::PixelType_Mono16;
+                formatConverter.Convert(pBuffer, bufferSize, grabResult);
+            }
+            else{
+                currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_RGB32 );
+                currentBuffer = grabResult->GetBuffer();
+                void *pBuffer = currentImage.bits();
+                size_t bufferSize = currentImage.sizeInBytes();
+
+                formatConverter.OutputPixelFormat = Pylon::PixelType_BGRA8packed;
+                formatConverter.Convert(pBuffer, bufferSize, grabResult);
+            }
+
+
         }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
             //        qDebug() << "hEre fuck " << e.what();
         }

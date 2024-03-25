@@ -60,6 +60,9 @@ public:
         emit currentRatio(this->transform().m11());
     }
     bool isFit(){ return fitMode; }
+    void removeBackground(){
+
+    }
 
 signals:
     void currentRatio(float ratio);

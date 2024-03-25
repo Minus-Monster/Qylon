@@ -14,10 +14,12 @@ set(QYLON_HEADERS
     Modules/GraphicsScene.h
     Modules/GraphicsVTKWidget.h
     Modules/GraphicsWidget.h
+    Modules/TiffReader.h
     Processing/vTools.h
     Processing/OutputCommunication.h
     Processing/SerialCommunication.h
     Processing/SerialCommunicationWidget.h
+
 )
 set(QYLON_SOURCES
     Qylon.cpp
@@ -54,6 +56,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 # Qt Loading
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
+
+find_package(TIFF REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC TIFF::TIFF)
 
 # Pylon Loading
 # Locate the cmake find module for pylon ...

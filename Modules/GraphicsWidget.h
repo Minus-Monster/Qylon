@@ -7,7 +7,10 @@
 #include <QToolBar>
 #include <QFileDialog>
 #include <QStatusBar>
+#include <QMessageBox>
+#include <QImageReader>
 
+#include "TiffReader.h"
 #include "GraphicsView.h"
 #include "GraphicsScene.h"
 namespace Qylon{
@@ -47,12 +50,31 @@ public:
         spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         toolBar.addWidget(spacer);
 
+        QAction *actionLoad = new QAction(QIcon(":/Resources/Icon/icons8-image-file-add-48.png"),"");
+        actionLoad->setToolTip("Load an image");
+        toolBar.addAction(actionLoad);
+        connect(actionLoad, &QAction::triggered, this, [=](){
+            auto fileName = QFileDialog::getOpenFileName(this, "Load an image", QDir::currentPath(), "Image(*.png *.jpg *.jpeg *bmp *.tiff *.tif)");
+            if(fileName.isEmpty()) return;
+
+            if(fileName.contains(".tiff") || fileName.contains(".tif")){
+                qDebug() << "This image is needed tiff converting";
+                this->setImage(openTiff(fileName));
+            }else this->setImage(QImage(fileName));
+        });
+
         QAction *actionSave = new QAction(QIcon(":/Resources/Icon/icons8-save-as-48.png"), "");
         actionSave->setToolTip("Save the current image");
         toolBar.addAction(actionSave);
         connect(actionSave, &QAction::triggered, this, [=](){
-            auto filePath = QFileDialog::getSaveFileName(this, "Save the current image", QDir::currentPath(), "Image(*.png *.jpg *.bmp)");
-            this->currentImage.save(filePath);
+            auto filePath = QFileDialog::getSaveFileName(this, "Save the current image", QDir::currentPath() + "/untitled.png", "Image(*.png *.jpg *.bmp)");
+            if(filePath.isEmpty()) return;
+
+            if(this->currentImage.save(filePath)){
+                QMessageBox::information(this, "", "This current image was successfully saved.");
+            }else{
+                QMessageBox::critical(this, "", "Saving image is failed.");
+            }
         });
 
 
@@ -167,14 +189,13 @@ public:
                 int r, g, b = 0;
                 this->scene->Pixmap.pixmap().toImage().pixelColor(rPos.x(), rPos.y()).getRgb(&r, &g, &b);
                 QString coord = " X " + QString::number(rPos.x()) +"\n Y " + QString::number(rPos.y());
-                QString color = " RGB\n [" + QString::number(r) +"," + QString::number(g) + "," + QString::number(b) + "]";
-
                 this->labelCoordinate.setText(coord);
+
+                QString color = " RGB\n [" + QString::number(r) +"," + QString::number(g) + "," + QString::number(b) + "]";
+                this->labelPixelColor.setText(color);
 
                 auto corr = (int)((r + g + b) / 3) > 150 ? 0 : 255;
                 QString style =  QString("QLineEdit { background-color : rgb(") + QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + QString("); }");
-
-                this->labelPixelColor.setText(color);
                 this->lineEditPixelColor.setStyleSheet(style);
             });
             statusBar.addWidget(&labelCoordinate);
