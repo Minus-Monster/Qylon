@@ -67,13 +67,13 @@ public:
         actionSave->setToolTip("Save the current image");
         toolBar.addAction(actionSave);
         connect(actionSave, &QAction::triggered, this, [=](){
-            auto filePath = QFileDialog::getSaveFileName(this, "Save the current image", QDir::currentPath() + "/untitled.png", "Image(*.png *.jpg *.bmp)");
+            auto filePath = QFileDialog::getSaveFileName(this, "Save the current image", QDir::currentPath() + "/untitled.png", "Image(*.png *.jpg *.bmp *.tif *.tiff)");
             if(filePath.isEmpty()) return;
 
             if(this->currentImage.save(filePath)){
                 QMessageBox::information(this, "", "This current image was successfully saved.");
             }else{
-                QMessageBox::critical(this, "", "Saving image is failed.");
+                QMessageBox::critical(this, "", "Failed to save this current image.");
             }
         });
 
@@ -106,7 +106,7 @@ public:
         QAction *actionZoomIn = new QAction(QIcon(":/Resources/Icon/zoom-in.png"), "");
         actionZoomIn->setToolTip("Zoom In");
         connect(actionZoomIn, &QAction::triggered, this, [=](){
-        if(isVTK){
+            if(isVTK){
 #ifdef PCL_ENABLED
                 this->scene->VTKWidget->setScale(1.2);
 #endif
@@ -191,12 +191,33 @@ public:
                 QString coord = " X " + QString::number(rPos.x()) +"\n Y " + QString::number(rPos.y());
                 this->labelCoordinate.setText(coord);
 
-                QString color = " RGB\n [" + QString::number(r) +"," + QString::number(g) + "," + QString::number(b) + "]";
-                this->labelPixelColor.setText(color);
 
                 auto corr = (int)((r + g + b) / 3) > 150 ? 0 : 255;
                 QString style =  QString("QLineEdit { background-color : rgb(") + QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + QString("); }");
                 this->lineEditPixelColor.setStyleSheet(style);
+
+                QString color;
+                if(currentImage.depth() == 16){
+                    if(currentImage.allGray()){
+                        color = QString::number(currentImage.pixelColor(rPos.x(), rPos.y()).value());
+                        const int bytes = (currentImage.depth() + 7) / 8;
+                        assert(bytes > 0);
+                        const QByteArray data((const char*)(currentImage.bits() +
+                                                            rPos.y() *currentImage.bytesPerLine() +
+                                                            (rPos.x() * currentImage.depth() + 7)/8),
+                                              bytes);
+                        color = QString::number(data.toHex().toLong(nullptr, 16)) +" (" + "0x" + data.toHex().toUpper()+ ")";
+                    }else{
+                        qDebug() << "16bit color image setting is not set yet";
+                    }
+                }else{
+                    if(currentImage.allGray()){
+                        color = QString::number(currentImage.pixelColor(rPos.x(), rPos.y()).value());
+                    }else{
+                        color = " RGB\n [" + QString::number(r) +"," + QString::number(g) + "," + QString::number(b) + "]";
+                    }
+                }
+                this->labelPixelColor.setText(color);
             });
             statusBar.addWidget(&labelCoordinate);
             statusBar.addWidget(&lineEditPixelColor);
@@ -219,7 +240,11 @@ signals:
 public slots:
     void setImage(const QImage image){
         currentImage = image;
-        labelImageInformation.setText(QString::number(image.depth()) + "-bit, " + QString::number(image.width()) + "x" + QString::number(image.height()) + " ");
+        labelImageInformation.setText(QString::number(image.depth()) + "-bit, " +
+                                      QString((image.isGrayscale()) ? "Mono" : "Color") +
+                                      ", " +
+                                      QString::number(image.width()) + "x" +
+                                      QString::number(image.height()));
         scene->Pixmap.setPixmap(QPixmap::fromImage(image));
         scene->setSceneRect(0, 0, image.width(), image.height());
     }

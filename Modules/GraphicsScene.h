@@ -4,6 +4,7 @@
 #include <QGraphicsPixmapItem>
 #include <QGraphicsSceneMouseEvent>
 #include "GraphicsVTKWidget.h"
+#include <cmath>
 
 namespace Qylon{
 class GraphicsScene : public QGraphicsScene{
@@ -54,10 +55,11 @@ protected:
 #endif
             return;
         }
-        if(event->scenePos().x() < 0) return;
-        if(event->scenePos().y() < 0 ) return;
-        if(event->scenePos().x() >= sceneRect().width()) return;
-        if(event->scenePos().y() >= sceneRect().height()) return;
+        if(event->scenePos().toPoint().x() < 0) return;
+        if(event->scenePos().toPoint().y() < 0 ) return;
+        if(event->scenePos().toPoint().x() >= sceneRect().width()) return;
+        if(event->scenePos().toPoint().y() >= sceneRect().height()) return;
+
         emit currentPos(event->scenePos());
         movePoint = event->scenePos();
     }
@@ -70,10 +72,11 @@ protected:
 #endif
             return;
         }
-        if(event->scenePos().x() < 0) return;
-        if(event->scenePos().y() < 0 ) return;
-        if(event->scenePos().x() >= sceneRect().width()) return;
-        if(event->scenePos().y() >= sceneRect().height()) return;
+        if(event->scenePos().toPoint().x() < 0) return;
+        if(event->scenePos().toPoint().y() < 0 ) return;
+        if(event->scenePos().toPoint().x() >= sceneRect().width()) return;
+        if(event->scenePos().toPoint().y() >= sceneRect().height()) return;
+
 
         pressPoint = event->scenePos();
         pressed = true;
@@ -87,10 +90,11 @@ protected:
 #endif
             return;
         }
-        if(event->scenePos().x() < 0) return;
-        if(event->scenePos().y() < 0 ) return;
-        if(event->scenePos().x() >= sceneRect().width()) return;
-        if(event->scenePos().y() >= sceneRect().height()) return;
+        if(event->scenePos().toPoint().x() < 0) return;
+        if(event->scenePos().toPoint().y() < 0 ) return;
+        if(event->scenePos().toPoint().x() >= sceneRect().width()) return;
+        if(event->scenePos().toPoint().y() >= sceneRect().height()) return;
+
         pressed = false;
     }
 };
