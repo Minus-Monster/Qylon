@@ -359,29 +359,26 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
     }else{
         try{
             // Initializing QImage type
-            GenApi_3_1_Basler_pylon::CEnumerationPtr pixelFormat = camera.GetNodeMap().GetNode("PixelFormat");
-            QString currentPixelFormat = pixelFormat->ToString().c_str();
+            QString currentPixelFormat = static_cast<GenApi_3_1_Basler_pylon::CEnumerationPtr>(camera.GetNodeMap().GetNode("PixelFormat"))->ToString().c_str();
+
             if(currentPixelFormat == "Mono8"){
-                currentImage = QImage(reinterpret_cast<const uchar*>(grabResult->GetBuffer()), grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_Grayscale8);
-            }else if(currentPixelFormat == "Mono12"){
-//                currentImage = QImage(reinterpret_cast<const uchar*>(grabResult->GetBuffer()), grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_Grayscale16);
+                currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_Grayscale8);
+                currentBuffer = grabResult->GetBuffer();
+
+                formatConverter.OutputPixelFormat = Pylon::PixelType_Mono8;
+            }else if(currentPixelFormat == "Mono12" || currentPixelFormat == "Mono16" ){
                 currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_Grayscale16);
                 currentBuffer = grabResult->GetBuffer();
-                void *pBuffer = currentImage.bits();
-                size_t bufferSize = currentImage.sizeInBytes();
 
                 formatConverter.OutputPixelFormat = Pylon::PixelType_Mono16;
-                formatConverter.Convert(pBuffer, bufferSize, grabResult);
             }
             else{
                 currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_RGB32 );
                 currentBuffer = grabResult->GetBuffer();
-                void *pBuffer = currentImage.bits();
-                size_t bufferSize = currentImage.sizeInBytes();
 
                 formatConverter.OutputPixelFormat = Pylon::PixelType_BGRA8packed;
-                formatConverter.Convert(pBuffer, bufferSize, grabResult);
             }
+            formatConverter.Convert(currentImage.bits(), currentImage.sizeInBytes(), grabResult);
 
 
         }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
