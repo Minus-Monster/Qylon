@@ -9,8 +9,9 @@
 #include <QStatusBar>
 #include <QMessageBox>
 #include <QImageReader>
-
+#ifdef TIFF_ENABLED
 #include "TiffReader.h"
+#endif
 #include "GraphicsView.h"
 #include "GraphicsScene.h"
 namespace Qylon{
@@ -59,7 +60,9 @@ public:
 
             if(fileName.contains(".tiff") || fileName.contains(".tif")){
                 qDebug() << "This image is needed tiff converting";
+#ifdef TIFF_ENABLED
                 this->setImage(openTiff(fileName));
+#endif
             }else this->setImage(QImage(fileName));
         });
 
@@ -110,7 +113,7 @@ public:
 #ifdef PCL_ENABLED
                 this->scene->VTKWidget->setScale(1.2);
 #endif
-            }else this->view->setScale(1.2);
+            }else this->view->setScale((float)1.2);
         });
         toolBar.addAction(actionZoomIn);
 
@@ -121,7 +124,7 @@ public:
 #ifdef PCL_ENABLED
                 this->scene->VTKWidget->setScale(0.8);
 #endif
-            }else this->view->setScale(0.8);
+            }else this->view->setScale((float)0.8);
         });
         toolBar.addAction(actionZoomOut);
 
@@ -192,7 +195,7 @@ public:
                 this->labelCoordinate.setText(coord);
 
 
-                auto corr = (int)((r + g + b) / 3) > 150 ? 0 : 255;
+                // auto corr = (int)((r + g + b) / 3) > 150 ? 0 : 255;
                 QString style =  QString("QLineEdit { background-color : rgb(") + QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + QString("); }");
                 this->lineEditPixelColor.setStyleSheet(style);
 

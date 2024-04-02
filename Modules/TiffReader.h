@@ -2,6 +2,7 @@
 #define TIFFREADER_H
 #include <QImage>
 #include <QDebug>
+#ifdef TIFF_ENABLED
 #include "tiffio.h"
 
 
@@ -76,4 +77,5 @@ inline const QImage openTiff(QString filePath){
 }
 
 }
+#endif
 #endif // TIFFREADER_H

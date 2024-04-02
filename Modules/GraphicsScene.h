@@ -3,8 +3,10 @@
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsSceneMouseEvent>
+#include <QDebug>
+#ifdef PCL_ENABLED
 #include "GraphicsVTKWidget.h"
-#include <cmath>
+#endif
 
 namespace Qylon{
 class GraphicsScene : public QGraphicsScene{

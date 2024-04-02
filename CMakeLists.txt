@@ -57,8 +57,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
 
-find_package(TIFF REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC TIFF::TIFF)
+find_package(TIFF QUIET)
+if(TIFF_FOUND)
+    target_link_libraries(${PROJECT_NAME} PUBLIC TIFF::TIFF)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC TIFF_ENABLED)
+endif()
 
 # Pylon Loading
 # Locate the cmake find module for pylon ...
