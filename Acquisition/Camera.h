@@ -1,5 +1,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
+#ifdef PYLON_ENABLED
 
 #ifdef PCL_ENABLED
 #include <pcl/visualization/cloud_viewer.h>
@@ -122,4 +123,5 @@ protected:
 };
 }
 
+#endif
 #endif // CAMERA_H

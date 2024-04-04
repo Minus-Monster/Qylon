@@ -1,3 +1,4 @@
+#ifdef PYLON_ENABLED
 #include "Qylon.h"
 #include "Camera.h"
 #include "CameraWidget.h"
@@ -453,3 +454,4 @@ QMutex *Qylon::Camera::drawLock() const
 Qylon::Qylon *Qylon::Camera::getQylon(){
     return parent;
 }
+#endif

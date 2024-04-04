@@ -1,5 +1,6 @@
-
+#ifdef PYLON_ENABLED
 #include "Acquisition/Camera.h"
+#endif
 #include <Qylon.h>
 
 void Qylon::Qylon::log(QString strings){
@@ -17,10 +18,12 @@ Qylon::Qylon::Qylon(){
 }
 
 Qylon::Qylon::~Qylon(){
+#ifdef PYLON_ENABLED
     for(Camera *obj : qAsConst(objectList)){
         delete obj;
     }
     Pylon::PylonTerminate();
+#endif
     deleteLater();
 }
 
@@ -28,7 +31,7 @@ void Qylon::Qylon::initialize(){
     /// pylon API initializes
     /// This function should be called only once when Qylon class generated
     /// Also Qylon should be declared only one time on the program
-
+#ifdef PYLON_ENABLED
     Pylon::PylonAutoInitTerm initTerm;
 
     Pylon::PylonInitialize();
@@ -38,8 +41,10 @@ void Qylon::Qylon::initialize(){
     log("Enumerating Basler devices");
     devices = new Pylon::DeviceInfoList_t;
 //    tlFactory->EnumerateDevices(*devices);
+#endif
 }
 
+#ifdef PYLON_ENABLED
 void Qylon::Qylon::updateCameraList(){
     /// The camera list will be updated in this function
     /// All camera name(QString) are written in "cameraList"
@@ -76,25 +81,6 @@ Qylon::vTools *Qylon::Qylon::addVTools()
     return obj;
 }
 
-#ifdef GRABBER_ENABLED
-Qylon::Grabber *Qylon::Qylon::addGrabber(int boardNumIndex)
-{
-    Grabber *obj = new Grabber(this, boardNumIndex);
-    grabberList.push_back(obj);
-
-    log("new Qylon Grabber generated");
-    return obj;
-}
-#endif
-
-//Qylon::QDC::QDC *Qylon::Qylon::addQDC()
-//{
-//    QDC::QDC *engine = new QDC::QDC;
-//    log("new QDC Engined generated");
-
-//    return engine;
-//}
-
 QStringList Qylon::Qylon::getCameraList()
 {
     return cameraList;
@@ -124,3 +110,15 @@ const Pylon::CDeviceInfo Qylon::Qylon::getCameraIndexfromNumber(unsigned int num
     }
     return Pylon::CDeviceInfo();
 }
+#endif
+
+#ifdef GRABBER_ENABLED
+Qylon::Grabber *Qylon::Qylon::addGrabber(int boardNumIndex)
+{
+    Grabber *obj = new Grabber(this, boardNumIndex);
+    grabberList.push_back(obj);
+
+    log("new Qylon Grabber generated");
+    return obj;
+}
+#endif

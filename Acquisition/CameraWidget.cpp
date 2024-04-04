@@ -1,3 +1,4 @@
+#ifdef PYLON_ENABLED
 #include "CameraWidget.h"
 #include "Camera.h"
 #include "Qylon.h"
@@ -421,5 +422,5 @@ void Qylon::CameraWidget::statusMessage(QString message)
     status->setText("Camera Status : " + message);
 }
 
-
+#endif
 

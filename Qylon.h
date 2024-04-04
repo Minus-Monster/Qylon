@@ -4,9 +4,10 @@
 #include <QDebug>
 #include <QThread>
 #include <QTime>
-
+#ifdef PYLON_ENABLED
 #include "Acquisition/Camera.h"
 #include "Processing/vTools.h"
+#endif
 #ifdef GRABBER_ENABLED
 #include "Acquisition/Grabber.h"
 #endif
@@ -22,14 +23,16 @@ public:
     ~Qylon();
     static void log(QString strings);
     void initialize();
-    void updateCameraList();
 
     //pylon setting
+#ifdef PYLON_ENABLED
+    void updateCameraList();
     QStringList getCameraList();
     const Pylon::CDeviceInfo getCameraIndexfromName(QString cameraName);
     const Pylon::CDeviceInfo getCameraIndexfromNumber(unsigned int number);
     Camera *addCamera();
     vTools *addVTools();
+#endif
 #ifdef GRABBER_ENABLED
     Grabber *addGrabber(int boardNumIndex =0);
 #endif
@@ -40,13 +43,14 @@ signals:
     void updatedCameraInformation();
 
 private:
-
     //pylon setting
+#ifdef PYLON_ENABLED
     Pylon::CTlFactory *tlFactory;
     Pylon::DeviceInfoList_t *devices = nullptr;
     QList<Camera*> objectList;
     QList<Grabber*> grabberList;
     QStringList cameraList;
+#endif
 };
 }
 

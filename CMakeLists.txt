@@ -77,11 +77,12 @@ find_path(pylon_cmake Findpylon.cmake
 # ... and extend the cmake module path accordingly.
 list(APPEND CMAKE_MODULE_PATH ${pylon_cmake})
 # Locate pylon.
-find_package(pylon 7.4.0 REQUIRED)
+find_package(pylon 7.4.0 QUIET)
 
 if(pylon_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC pylon::pylon)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
+    # target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
+    message(STATUS "pylon SDK found")
 endif()
 
 # vTools
@@ -93,11 +94,14 @@ list(APPEND CMAKE_MODULE_PATH ${pylon_vTools})
 find_package(pylonDataProcessing REQUIRED)
 if(pylonDataProcessing_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
+    message(STATUS "pylonDataProcessing SDK found")
 endif()
 
-
+#Grabber
 find_path(grabber_cmake FindFgLib5.cmake
     HINTS "$ENV{BASLER_FG_SDK_DIR}/lib/cmake"
+    HINTS "$ENV{BASLER_FG_SDK_DIR}/cmake"
+    HINTS "$ENV{BASLER_FG_SDK_DIR}/cmake/modules"
 )
 list(APPEND CMAKE_MODULE_PATH ${grabber_cmake})
 find_library(FgLib5_LIBRARY NAMES fglib5

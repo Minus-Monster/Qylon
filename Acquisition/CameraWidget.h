@@ -1,6 +1,6 @@
 #ifndef CAMERAWIDGET_H
 #define CAMERAWIDGET_H
-
+#ifdef PYLON_ENABLED
 #include <QObject>
 #include <QWidget>
 #include <QTreeWidget>
@@ -49,5 +49,5 @@ private:
 };
 }
 
-
+#endif
 #endif // CAMERAWIDGET_H
