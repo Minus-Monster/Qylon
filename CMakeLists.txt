@@ -59,6 +59,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5
 
 find_package(TIFF QUIET)
 if(TIFF_FOUND)
+    message(STATUS "LibTIFF found")
     target_link_libraries(${PROJECT_NAME} PUBLIC TIFF::TIFF)
     target_compile_definitions(${PROJECT_NAME} PUBLIC TIFF_ENABLED)
 endif()
@@ -74,14 +75,11 @@ find_path(pylon_cmake Findpylon.cmake
     "$ENV{ProgramFiles}/Basler/pylon 5/Development/lib/cmake"
     "/opt/pylon/lib/cmake"
 )
-# ... and extend the cmake module path accordingly.
 list(APPEND CMAKE_MODULE_PATH ${pylon_cmake})
-# Locate pylon.
 find_package(pylon 7.4.0 QUIET)
-
 if(pylon_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC pylon::pylon)
-    # target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
     message(STATUS "pylon SDK found")
 endif()
 
@@ -98,29 +96,13 @@ if(pylonDataProcessing_FOUND)
 endif()
 
 #Grabber
-find_path(grabber_cmake FindFgLib5.cmake
-    HINTS "$ENV{BASLER_FG_SDK_DIR}/lib/cmake"
-    HINTS "$ENV{BASLER_FG_SDK_DIR}/cmake"
-    HINTS "$ENV{BASLER_FG_SDK_DIR}/cmake/modules"
-)
-list(APPEND CMAKE_MODULE_PATH ${grabber_cmake})
-find_library(FgLib5_LIBRARY NAMES fglib5
-    PATHS
-    "$ENV{FGLIB5}/lib"
-    "$ENV{FGLIB5}"
-    "${CMAKE_INSTALL_PREFIX}/lib"
-    ${LIB_DIRS}
-    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Basler\\FGSDK;Info]/lib/${COMPILER_LIB_DIR}"
-    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Basler\\FGSDK;Info]/lib"
-)
+file(TO_CMAKE_PATH "$ENV{BASLER_FG_SDK_DIR}" BASLER_FG_SDK_DIR)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_INSTALL_PREFIX}/cmake/modules" "${BASLER_FG_SDK_DIR}/cmake/modules")
+find_package(FgLib5 QUIET)
 if(FgLib5_FOUND)
     message(STATUS "Frame grabber SDK found")
-    SET(FgLib5_LIBRARIES ${FgLib5_LIBRARY})
-    SET(FGLIB5_FOUND ${FgLib5_FOUND})
-    SET(FGLIB5_INCLUDE_DIR ${FgLib5_INCLUDE_DIR})
-    SET(FGLIB5_LIBRARY ${FgLib5_LIBRARY})
-    SET(FGLIB5_LIBRARIES ${FgLib5_LIBRARIES})
-    target_include_directories(${PROJECT_NAME} PUBLIC /opt/basler/include)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${FgLib5_INCLUDE_DIR})
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${FgLib5_LIBRARY})
     target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
 endif(FgLib5_FOUND)
 
