@@ -47,9 +47,12 @@ private:
 #ifdef PYLON_ENABLED
     Pylon::CTlFactory *tlFactory;
     Pylon::DeviceInfoList_t *devices = nullptr;
-    QList<Camera*> objectList;
+    QList<Camera*> cameraList;
+    QList<vTools*> vToolsList;
+    QStringList currentCameraList;
+#endif
+#ifdef GRABBER_ENABLED
     QList<Grabber*> grabberList;
-    QStringList cameraList;
 #endif
 };
 }

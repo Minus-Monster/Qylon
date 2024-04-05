@@ -19,7 +19,7 @@ Qylon::Qylon::Qylon(){
 
 Qylon::Qylon::~Qylon(){
 #ifdef PYLON_ENABLED
-    for(Camera *obj : qAsConst(objectList)){
+    for(Camera *obj : qAsConst(cameraList)){
         delete obj;
     }
     Pylon::PylonTerminate();
@@ -54,10 +54,10 @@ void Qylon::Qylon::updateCameraList(){
     auto cnt = tlFactory->EnumerateDevices(*devices);
     log("Found " + QString::number(cnt) + " Camera(s)");
 
-    cameraList.clear();
+    currentCameraList.clear();
     for(size_t i=0; i < devices->size(); i++){
         QString text = devices->at(i).GetFriendlyName().c_str();
-        cameraList.push_back(text);
+        currentCameraList.push_back(text);
     }
 
     emit updatedCameraInformation();
@@ -66,7 +66,7 @@ void Qylon::Qylon::updateCameraList(){
 
 Qylon::Camera *Qylon::Qylon::addCamera(){
     Camera *obj = new Camera(this);
-    objectList.push_back(obj);
+    cameraList.push_back(obj);
 
     log("new Qylon camera generated");
 
@@ -76,6 +76,7 @@ Qylon::Camera *Qylon::Qylon::addCamera(){
 Qylon::vTools *Qylon::Qylon::addVTools()
 {
     vTools *obj = new vTools(this);
+    vToolsList.push_back(obj);
     log("new Qylon vTools generated");
 
     return obj;
@@ -83,7 +84,7 @@ Qylon::vTools *Qylon::Qylon::addVTools()
 
 QStringList Qylon::Qylon::getCameraList()
 {
-    return cameraList;
+    return currentCameraList;
 }
 
 const Pylon::CDeviceInfo Qylon::Qylon::getCameraIndexfromName(QString cameraName)

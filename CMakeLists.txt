@@ -19,7 +19,6 @@ set(QYLON_HEADERS
     Processing/OutputCommunication.h
     Processing/SerialCommunication.h
     Processing/SerialCommunicationWidget.h
-
 )
 set(QYLON_SOURCES
     Qylon.cpp
@@ -52,11 +51,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-
 # Qt Loading
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
 
+# TIFF Loading
 find_package(TIFF QUIET)
 if(TIFF_FOUND)
     message(STATUS "LibTIFF found")
@@ -80,7 +79,7 @@ find_package(pylon 7.4.0 QUIET)
 if(pylon_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC pylon::pylon)
     target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
-    message(STATUS "pylon SDK found")
+    message(STATUS "pylon SDK ${pylon_VERSION} found")
 endif()
 
 # vTools
@@ -95,19 +94,19 @@ if(pylonDataProcessing_FOUND)
     message(STATUS "pylonDataProcessing SDK found")
 endif()
 
-#Grabber
+# Grabber Loading
 file(TO_CMAKE_PATH "$ENV{BASLER_FG_SDK_DIR}" BASLER_FG_SDK_DIR)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_INSTALL_PREFIX}/cmake/modules" "${BASLER_FG_SDK_DIR}/cmake/modules")
 find_package(FgLib5 QUIET)
 if(FgLib5_FOUND)
-    message(STATUS "Frame grabber SDK found")
+    add_definitions(${SISOPLATFORM_DEFINITIONS})
+    message(STATUS "Frame grabber SDK ${FgLib5_VERSION_STRING} found")
     target_include_directories(${PROJECT_NAME} PUBLIC ${FgLib5_INCLUDE_DIR})
     target_link_libraries(${PROJECT_NAME} PUBLIC ${FgLib5_LIBRARY})
     target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
 endif(FgLib5_FOUND)
 
-
-#OPENCV
+# OPENCV Loading
 find_package(OpenCV QUIET)
 if(OpenCV_FOUND)
     message(STATUS "OpenCV ${OpenCV_VERSION} found")
@@ -120,7 +119,7 @@ if(OpenCV_FOUND)
     )
 endif()
 
-#PCL
+# PCL Loading
 find_package(PCL 1.13 QUIET COMPONENTS common io filters visualization)
 if(PCL_FOUND)
     message(STATUS "PCL ${PCL_VERSION} found")
