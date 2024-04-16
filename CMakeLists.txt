@@ -34,8 +34,11 @@ set(QYLON_SOURCES
 set(QYLON_RESOURCES
     Resources.qrc
 )
+# Qt Loading
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
 qt5_add_resources(QYLON_RESOURCES_RCC ${QYLON_RESOURCES})
 add_library(${PROJECT_NAME} STATIC ${QYLON_HEADERS} ${QYLON_SOURCES} ${QYLON_RESOURCES_RCC})
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
 
 set(INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 file(MAKE_DIRECTORY ${INCLUDE_DIR})
@@ -51,9 +54,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# Qt Loading
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
-target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
 
 # TIFF Loading
 find_package(TIFF QUIET)
@@ -121,7 +121,6 @@ if(OpenCV_FOUND)
     #     $<INSTALL_INTERFACE:include>
     # )
 endif()
-
 
 # PCL Loading
 find_package(PCL 1.13 QUIET COMPONENTS common io filters visualization)
