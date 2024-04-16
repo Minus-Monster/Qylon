@@ -382,7 +382,7 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
             formatConverter.Convert(currentImage.bits(), currentImage.sizeInBytes(), grabResult);
 
 
-        }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+        }catch(const GenICam_3_1_Basler_pylon::GenericException &){
             //        qDebug() << "hEre fuck " << e.what();
         }
         emit grabbed();

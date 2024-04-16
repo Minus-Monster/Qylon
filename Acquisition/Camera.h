@@ -6,9 +6,6 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#endif
-#ifdef OPENCV_ENABLED
-#include <opencv2/highgui.hpp>
 #include <pylon/BlazeInstantCamera.h>
 #endif
 

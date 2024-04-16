@@ -162,24 +162,24 @@ public:
 
 #ifdef PCL_ENABLED
         if(isVTK){
-            QPushButton *buttonUp = new QPushButton("↑");
+            QPushButton *buttonUp = new QPushButton("Up");
             {
                 connect(buttonUp, &QPushButton::clicked, this, [=](){
                     this->scene->VTKWidget->setViewUp();
                 });
                 toolBar.addWidget(buttonUp);
             }
-            QPushButton *buttonDown = new QPushButton("↓");
+            QPushButton *buttonDown = new QPushButton("Down");
             {
                 connect(buttonDown, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->seViewDown(); });
                 toolBar.addWidget(buttonDown);
             }
-            QPushButton *buttonLeft = new QPushButton("←");
+            QPushButton *buttonLeft = new QPushButton("Left");
             {
                 connect(buttonLeft, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->setViewLeft(); });
                 toolBar.addWidget(buttonLeft);
             }
-            QPushButton *buttonRight = new QPushButton("→");
+            QPushButton *buttonRight = new QPushButton("Right");
             {
                 connect(buttonRight, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->setViewRight(); });
                 toolBar.addWidget(buttonRight);

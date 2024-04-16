@@ -107,17 +107,21 @@ if(FgLib5_FOUND)
 endif(FgLib5_FOUND)
 
 # OPENCV Loading
+find_path(OpenCV_DIR OpenCVConfig.cmake
+    HINTS "C:/opencv/build"
+)
 find_package(OpenCV QUIET)
 if(OpenCV_FOUND)
     message(STATUS "OpenCV ${OpenCV_VERSION} found")
     target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenCV_LIBS})
     target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
     target_compile_definitions(${PROJECT_NAME} PUBLIC OPENCV_ENABLED)
-    target_include_directories(${PROJECT_NAME} PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-    )
+    # target_include_directories(${PROJECT_NAME} PUBLIC
+    #     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    #     $<INSTALL_INTERFACE:include>
+    # )
 endif()
+
 
 # PCL Loading
 find_package(PCL 1.13 QUIET COMPONENTS common io filters visualization)
