@@ -26,10 +26,13 @@ Qylon
 │   ├── Frame Grabber (Working, Waiting for enough resources)
 │   └── From Image
 │
-└── Processing modules
-    ├── vTools
-    └── QDC (OpenCV, AVL, etc)
-
+├── Processing modules
+│   ├── vTools (Almost Implemented)
+│   └── QDC (OpenCV, AVL, etc)
+│
+└── Modules
+    ├── GraphicsWidget including VTK
+    └── TIFFReader
 ``` 
 
 ### Environment
