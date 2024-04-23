@@ -24,7 +24,7 @@ public:
 
         toolBar.setWindowTitle("Image Tools");
         toolBar.layout()->setSpacing(1);
-        toolBar.setIconSize(QSize(20,20));
+        toolBar.setIconSize(QSize(18,18));
 
         statusBar.setSizeGripEnabled(false);
 
