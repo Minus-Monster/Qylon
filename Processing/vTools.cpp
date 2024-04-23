@@ -8,7 +8,7 @@ Qylon::vTools::vTools(Qylon *parentQylon) : parent(parentQylon), _waitObject(Pyl
 {
 }
 
-void Qylon::vTools::loadRecipe(QString path)
+bool Qylon::vTools::loadRecipe(QString path)
 {
     try{
         currentRecipe.DeallocateResources();
@@ -17,10 +17,11 @@ void Qylon::vTools::loadRecipe(QString path)
         currentRecipe.Load(path.toStdString().c_str());
         currentRecipe.PreAllocateResources();
         currentRecipe.RegisterAllOutputsObserver(this, Pylon::RegistrationMode_ReplaceAll);
-
     }catch (const GenICam_3_1_Basler_pylon::GenericException &e){
         this->parent->log("vTools faced an error " + QString(e.GetDescription()));
+        return false;
     }
+    return true;
 }
 
 void Qylon::vTools::startRecipe()
@@ -66,23 +67,56 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
         for(const auto value : valueContainer){
             qDebug() << "VALUE NAME : " << value.first;
             switch(value.second.GetDataType()){
-            case Pylon::DataProcessing::EVariantDataType::VariantDataType_Boolean:{ qDebug() << "Boolean";} break;
-            case Pylon::DataProcessing::VariantDataType_Int64:{ qDebug() << "Int";} break;
-            case Pylon::DataProcessing::VariantDataType_UInt64:{ qDebug() << "UInt";} break;
+            case Pylon::DataProcessing::EVariantDataType::VariantDataType_Boolean:{
+                qDebug() << "Boolean";
+                if(value.second.IsArray()){
+                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
+                        outputText += QString(value.first.c_str()) + ":" + QString::number(value.second.GetArrayValue(i).ToBool()) + "&";
+                    }
+                }else{
+                    outputText = QString(value.first.c_str()) + ":" + QString::number(value.second.ToBool()) + "&";
+                }
+            } break;
+            case Pylon::DataProcessing::VariantDataType_Int64:{
+                qDebug() << "Int";
+                if(value.second.IsArray()){
+                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
+                        outputText += QString(value.first.c_str()) + ":" + QString::number(value.second.GetArrayValue(i).ToInt64()) + "&";
+                    }
+                }else{
+                    outputText = QString(value.first.c_str()) + ":" + QString::number(value.second.ToInt64()) + "&";
+                }
+            } break;
+            case Pylon::DataProcessing::VariantDataType_UInt64:{
+                qDebug() << "UInt";
+                if(value.second.IsArray()){
+                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
+                        outputText += QString(value.first.c_str()) + ":" + QString::number(value.second.GetArrayValue(i).ToUInt64()) + "&";
+                    }
+                }else{
+                    outputText = QString(value.first.c_str()) + ":" + QString::number(value.second.ToUInt64()) + "&";
+                }
+            } break;
             case Pylon::DataProcessing::VariantDataType_String:{
                 qDebug() << "String";
                 if(value.second.IsArray()){
                     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        outputText += value.second.GetArrayValue(i).ToString();
-                        if(i!= value.second.GetNumArrayValues()-1){
-                            outputText += "==";
-                        }
+                        outputText += QString(value.first.c_str()) + ":" + value.second.GetArrayValue(i).ToString() + "&";
                     }
                 }else{
-                    outputText = value.second.ToString();
+                    outputText = QString(value.first.c_str()) + ":" + value.second.ToString() + "&";
                 }
             } break;
-            case Pylon::DataProcessing::VariantDataType_Float:{ qDebug() << "Float";} break;
+            case Pylon::DataProcessing::VariantDataType_Float:{
+                qDebug() << "Float";
+                if(value.second.IsArray()){
+                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
+                        outputText += QString(value.first.c_str()) + ":" + QString::number(value.second.GetArrayValue(i).ToDouble()) + "&";
+                    }
+                }else{
+                    outputText = QString(value.first.c_str()) + ":" + QString::number(value.second.ToDouble()) + "&";
+                }
+            } break;
             case Pylon::DataProcessing::VariantDataType_PylonImage:{
                 qDebug() << "Image";
                 pImage = value.second.ToImage();
@@ -181,11 +215,14 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                 }
             }
             if(!points.empty()){
-                int cntPoints = 0;
-                for(auto current : points){
+                QPen p(QColor(0,255,0));
+                p.setWidth(3);
+                painter.setPen(p);
 
-                    painter.setPen(QColor(0,255,0));
+                int cntPoint =0;
+                for(auto current : points){
                     painter.drawPoint(current);
+                    painter.drawText(current, "Point " + QString::number(++cntPoint));
                 }
             }
             painter.end();

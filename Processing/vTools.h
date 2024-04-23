@@ -13,8 +13,8 @@ class vTools : public QThread, public Pylon::DataProcessing::IOutputObserver
 {
     Q_OBJECT
 public:
-    vTools(Qylon *parentQylon=nullptr);
-    void loadRecipe(QString path);
+    vTools(Qylon *parentQylron=nullptr);
+    bool loadRecipe(QString path);
     void startRecipe();
     void stopRecipe();
     void run() override;
