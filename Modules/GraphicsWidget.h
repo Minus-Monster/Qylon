@@ -43,6 +43,9 @@ public:
         lineEditPixelColor.setFixedWidth(24);
         lineEditPixelColor.setReadOnly(true);
     }
+    ~GraphicsWidget(){
+        delete this;
+    }
     void initialize(bool isVTK=false){
         scene = new GraphicsScene(isVTK);
         view->setScene(scene);

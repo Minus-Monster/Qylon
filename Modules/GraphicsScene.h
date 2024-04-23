@@ -28,6 +28,9 @@ public:
 #endif
         }else addItem(&Pixmap);
     }
+    ~GraphicsScene(){
+        deleteLater();
+    }
 
 signals:
     void currentPos(QPointF point);

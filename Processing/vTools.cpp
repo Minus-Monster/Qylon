@@ -188,8 +188,10 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
 
             if(!boundaries.empty()){
                 int cntRegion = 0;
+                QPen p(QColor(249,157,51,255));
+                p.setWidth(5);
                 for(auto current : boundaries){
-                    painter.setPen(QColor(249,157,51,255));
+                    painter.setPen(p);
                     painter.setBrush(Qt::NoBrush);
 
                     painter.drawText(current.topLeft(), "Region " + QString::number(++cntRegion));

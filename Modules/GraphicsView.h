@@ -20,6 +20,9 @@ public:
         setMouseTracking(true);
         setFrameShape(Shape::StyledPanel);
     }
+    ~GraphicsView(){
+        deleteLater();
+    }
     void setRatio(float ratio){
         QTransform matrix = QTransform(ratio, 0, 0, ratio, 0, 0);
         setTransform(matrix);
