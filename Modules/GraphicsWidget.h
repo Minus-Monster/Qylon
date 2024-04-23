@@ -14,6 +14,7 @@
 #endif
 #include "GraphicsView.h"
 #include "GraphicsScene.h"
+
 namespace Qylon{
 class GraphicsWidget : public QWidget{
     Q_OBJECT
