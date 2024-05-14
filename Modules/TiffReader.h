@@ -47,14 +47,14 @@ inline const QImage openTiff(QString filePath){
     }
 
     QImage image(width, height, imageFormat);
-    for(int y=0; y < height; ++y){
+    for(unsigned int y=0; y < height; ++y){
         if(bitsPerSample == 16){
             quint16* scanline = reinterpret_cast<quint16*>(image.scanLine(y));
             TIFFReadScanline(tiff, scanline, y, 0);
 
             // if only the image is littleEndian;
             if(order == FILLORDER_MSB2LSB){
-                for(int x=0; x < width; ++x){
+                for(uint32_t x=0; x < width; ++x){
                     quint16 pixel = scanline[x];
                     QByteArray data(reinterpret_cast<const char*>(&pixel), sizeof(pixel));
                     QDataStream stream(&data, QIODevice::ReadWrite);
