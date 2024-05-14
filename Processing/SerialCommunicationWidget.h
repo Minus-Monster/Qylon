@@ -36,6 +36,7 @@ private:
 
     QPushButton *buttonConnect;
     QPushButton *buttonDisconnect;
+    QPushButton *buttonRefresh;
 
     QComboBox *comboBoxBaudRate;
     QComboBox *comboBoxDataBits;
@@ -46,6 +47,9 @@ private:
     QPushButton *buttonSendTestMessage;
 
     SerialCommunication *serial;
+
+
+protected:
 };
 }
 #endif // SERIALCOMMUNICATIONWIDGET_H

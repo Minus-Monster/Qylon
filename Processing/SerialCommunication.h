@@ -20,6 +20,7 @@ public:
         return reinterpret_cast<QWidget*>(widget);
     }
 
+
 signals:
     void receivedData(QString data);
 

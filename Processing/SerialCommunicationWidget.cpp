@@ -1,11 +1,23 @@
 #include "SerialCommunicationWidget.h"
 #include "SerialCommunication.h"
+#include <QResizeEvent>
 
 Qylon::SerialCommunicationWidget::SerialCommunicationWidget(SerialCommunication *parent) : serial(parent){
-    setWindowTitle("Serial Communication Configuration");
+    setWindowTitle(" ");
     QVBoxLayout *layout = new QVBoxLayout;
     setLayout(layout);
+    this->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     comboBoxSerialList = new QComboBox;
+    buttonRefresh = new QPushButton("Refresh");
+    connect(buttonRefresh, &QPushButton::clicked, this, [&](){
+        this->initialize();
+    });
+    QHBoxLayout *listLayout = new QHBoxLayout;
+    layout->addLayout(listLayout);
+
+    listLayout->addWidget(comboBoxSerialList, 8);
+    listLayout->addWidget(buttonRefresh, 2);
+
     labelDescription = new QLabel("Description : ");
     labelManufacturer = new QLabel("Manufacturer : ");
     labelSerialNumber = new QLabel("Serial Number : ");
@@ -77,11 +89,11 @@ Qylon::SerialCommunicationWidget::SerialCommunicationWidget(SerialCommunication 
         if(val){
             buttonDisconnect->setEnabled(true);
             buttonConnect->setEnabled(false);
+            buttonRefresh->setEnabled(false);
             comboBoxSerialList->setEnabled(false);
             lineEditReceivedMessage->setVisible(true);
             buttonSendTestMessage->setVisible(true);
             updateStatus();
-
         }
     });
     buttonDisconnect = new QPushButton("Disconnect");
@@ -90,10 +102,10 @@ Qylon::SerialCommunicationWidget::SerialCommunicationWidget(SerialCommunication 
         this->serial->disconnect();
         buttonDisconnect->setEnabled(false);
         buttonConnect->setEnabled(true);
+        buttonRefresh->setEnabled(true);
         comboBoxSerialList->setEnabled(true);
         lineEditReceivedMessage->setVisible(false);
         buttonSendTestMessage->setVisible(false);
-
         updateStatus();
     });
     QHBoxLayout *hLayout = new QHBoxLayout;
@@ -120,7 +132,6 @@ Qylon::SerialCommunicationWidget::SerialCommunicationWidget(SerialCommunication 
         this->serial->sendData("Hello World!");
     });
 
-    layout->addWidget(comboBoxSerialList);
     layout->addWidget(labelDescription);
     layout->addWidget(labelManufacturer);
     layout->addWidget(labelSerialNumber);
@@ -129,6 +140,7 @@ Qylon::SerialCommunicationWidget::SerialCommunicationWidget(SerialCommunication 
     layout->addWidget(labelSystemLocation);
     layout->addWidget(labelConnectionStatus);
     layout->addWidget(groupBoxConnection);
+    layout->addStretch();
 
     connect(comboBoxSerialList, &QComboBox::currentTextChanged, this, &SerialCommunicationWidget::updateStatus);
     initialize();
