@@ -28,6 +28,7 @@ public:
         toolBar.setIconSize(QSize(18,18));
 
         statusBar.setSizeGripEnabled(false);
+        statusBar.setStyleSheet("QStatusBar::item { border: none; }");
 
         setLayout(&layout);
         layout.setSpacing(0);
@@ -43,6 +44,7 @@ public:
         labelPixelColor.setFixedWidth(98);
         lineEditPixelColor.setFixedWidth(24);
         lineEditPixelColor.setReadOnly(true);
+        lineEditPixelColor.setFrame(false);
     }
     ~GraphicsWidget(){
         delete this;
@@ -103,7 +105,7 @@ public:
         doubleSpinBoxRatio->setSingleStep(10);
         doubleSpinBoxRatio->setAlignment(Qt::AlignRight);
         doubleSpinBoxRatio->setToolTip("Scale");
-        connect(doubleSpinBoxRatio, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](){
+            connect(doubleSpinBoxRatio, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](){
             this->view->setRatio(doubleSpinBoxRatio->value()/100);
         });
         connect(view, &GraphicsView::currentRatio, this, [=](float ratio) {
