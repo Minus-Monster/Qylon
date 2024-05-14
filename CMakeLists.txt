@@ -54,11 +54,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-
 # TIFF Loading
 find_package(TIFF QUIET)
 if(TIFF_FOUND)
-    message(STATUS "LibTIFF found")
+    message(STATUS "libTIFF found")
     target_link_libraries(${PROJECT_NAME} PUBLIC TIFF::TIFF)
     target_compile_definitions(${PROJECT_NAME} PUBLIC TIFF_ENABLED)
 endif()
@@ -103,8 +102,39 @@ if(FgLib5_FOUND)
     message(STATUS "Frame grabber SDK ${FgLib5_VERSION_STRING} found")
     target_include_directories(${PROJECT_NAME} PUBLIC ${FgLib5_INCLUDE_DIR})
     target_link_libraries(${PROJECT_NAME} PUBLIC ${FgLib5_LIBRARY})
+
+    find_package(ClSerSis REQUIRED)
+    if(ClSerSis_FOUND)
+        message(STATUS "Frame grabber SDK ClSerSis found")
+        target_include_directories(${PROJECT_NAME} PUBLIC ${ClSerSis_INCLUDE_DIR})
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${ClSerSis_LIBRARY})
+    endif(ClSerSis_Found)
+
+    find_package(SisoIoLib REQUIRED)
+    if(SisoIoLib_FOUND)
+        message(STATUS "Frame grabber SDK SisoIoLib found")
+        target_include_directories(${PROJECT_NAME} PUBLIC ${SisoIoLib_INCLUDE_DIR})
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoIoLib_LIBRARY})
+    endif(SisoIoLib_FOUND)
+
+    find_package(SisoPlatform REQUIRED)
+    if(SisoPlatform_FOUND)
+        message(STATUS "Frame grabber SDK SisoPlatform found")
+        target_include_directories(${PROJECT_NAME} PUBLIC ${SisoPlatform_INCLUDE_DIR})
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoPlatform_LIBRARY})
+    endif(SisoPlatform_FOUND)
+
+    find_package(SisoGenicamLib REQUIRED)
+    if(SisoGenicamLib_FOUND)
+        message(STATUS "Frame grabber SDK SisoGenicamLib found")
+        target_include_directories(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_INCLUDE_DIR})
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_LIBRARY})
+    endif(SisoGenicamLib_FOUND)
+
     target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
 endif(FgLib5_FOUND)
+
+
 
 # OPENCV Loading
 find_path(OpenCV_DIR OpenCVConfig.cmake

@@ -12,10 +12,10 @@
 
 namespace Qylon{
 class Grabber;
-struct fg_apc_data {
-    Grabber* address; // to find the address of a callback function
-    FgApcControl ctrl;
+struct APC {
+    Grabber *address;
     unsigned int dmaIndex;
+    unsigned short* imageBuffer;
     dma_mem *memBuf;
     int width;
     int height;
@@ -32,18 +32,25 @@ public:
     bool loadConfiguration(QString file);
     int getWidth(int dmaIndex);
     int getHeight(int dmaIndex);
+    int getPixelDepth(int dmaIndex);
     void setParameterValue(QString typeName, int value, int dmaIndex=0);
     int getParameterValue(QString typeName, int dmaIndex=0);
     void initialize(int dmaCount=1);
     void reitialize(int dmaCount=1);
+    int getBytesPerPixel(int dmaIndex=0);
+
+    static int CallbackFromGrabber(frameindex_t picNr, void *ctx);
     Fg_Struct* getFg();
-    fg_apc_data *getAPC(int dmaIndex);
+    APC *getAPC(int dmaIndex);
     QWidget *getWidget();
+    int getCurrentDMACount(){
+        return currentDmaCount;
+    }
 
     void release();
 
 signals:
-    void sendImage(const QImage &image);
+    void sendImage(const QImage &image, unsigned int dmaIdx=0);
 
 public slots:
     void singleGrab(int dmaIndex=0);
@@ -54,7 +61,7 @@ public slots:
 private:
     Qylon *parent = nullptr;
     Fg_Struct *currentFg = nullptr;
-    QList<fg_apc_data*> apcDataList;
+    QList<APC*> apcDataList;
     int currentDmaCount=1;
     int boardNumIndex =0;
 
