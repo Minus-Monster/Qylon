@@ -7,6 +7,47 @@
 
 
 namespace Qylon{
+inline bool saveQImageToTiff16(const QImage &image, const QString &fileName) {
+    if (image.format() != QImage::Format_Grayscale16) {
+        qWarning() << "Image format must be QImage::Format_Grayscale16";
+        return false;
+    }
+
+    TIFF *out = TIFFOpen(fileName.toStdString().c_str(), "w");
+    if (!out) {
+        qWarning() << "Could not open" << fileName << "for writing";
+        return false;
+    }
+
+    int width = image.width();
+    int height = image.height();
+
+    TIFFSetField(out, TIFFTAG_IMAGEWIDTH, width);
+    TIFFSetField(out, TIFFTAG_IMAGELENGTH, height);
+    TIFFSetField(out, TIFFTAG_SAMPLESPERPIXEL, 1);
+    TIFFSetField(out, TIFFTAG_BITSPERSAMPLE, 16);
+    TIFFSetField(out, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+    TIFFSetField(out, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+    TIFFSetField(out, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+
+    // Row buffer
+    uint16_t *buf = new uint16_t[width];
+
+    for (int y = 0; y < height; y++) {
+        const uint16_t *scanline = reinterpret_cast<const uint16_t *>(image.scanLine(y));
+        memcpy(buf, scanline, width * sizeof(uint16_t));
+        if (TIFFWriteScanline(out, buf, y, 0) < 0) {
+            delete[] buf;
+            TIFFClose(out);
+            qWarning() << "Failed to write scanline" << y;
+            return false;
+        }
+    }
+
+    delete[] buf;
+    TIFFClose(out);
+    return true;
+}
 inline const QImage openTiff(QString filePath){
     qDebug() << filePath;
 

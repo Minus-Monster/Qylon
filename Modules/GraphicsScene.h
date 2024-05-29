@@ -16,21 +16,9 @@ public:
 #ifdef PCL_ENABLED
     GraphicsVTKWidget *VTKWidget;
 #endif
-    GraphicsScene(bool onVTK=false){
-        isVTK = onVTK;
-        if(onVTK){
-#ifdef PCL_ENABLED
-            VTKWidget = new GraphicsVTKWidget;
-            addWidget(VTKWidget);
-            VTKWidget->installEventFilter(this);
-#else
-            qDebug() << "VTK is not installed on your system";
-#endif
-        }else addItem(&Pixmap);
-    }
-    ~GraphicsScene(){
-        deleteLater();
-    }
+    GraphicsScene(bool onVTK=false);
+    ~GraphicsScene();
+    QPointF getCurrentMousePoint(){ return movePoint; }
 
 signals:
     void currentPos(QPointF point);
@@ -43,65 +31,10 @@ private:
     QPointF releasePoint;
 
 protected:
-    bool eventFilter(QObject* obj, QEvent* event) override{
-#ifdef PCL_ENABLED
-        if(obj == VTKWidget) return VTKWidget->eventFilter(obj, event);
-#else
-        qDebug() << "VTK is not installed on your system";
-#endif
-        return this->eventFilter(obj, event);
-    }
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override{
-        if(isVTK){
-#ifdef PCL_ENABLED
-            VTKWidget->eventFilter(VTKWidget, event);
-#else
-            qDebug() << "VTK is not installed on your system";
-#endif
-            return;
-        }
-        if(event->scenePos().toPoint().x() < 0) return;
-        if(event->scenePos().toPoint().y() < 0 ) return;
-        if(event->scenePos().toPoint().x() >= sceneRect().width()) return;
-        if(event->scenePos().toPoint().y() >= sceneRect().height()) return;
-
-        emit currentPos(event->scenePos());
-        movePoint = event->scenePos();
-    }
-    void mousePressEvent(QGraphicsSceneMouseEvent *event) override{
-        if(isVTK){
-#ifdef PCL_ENABLED
-            VTKWidget->eventFilter(VTKWidget, event);
-#else
-            qDebug() << "VTK is not installed on your system";
-#endif
-            return;
-        }
-        if(event->scenePos().toPoint().x() < 0) return;
-        if(event->scenePos().toPoint().y() < 0 ) return;
-        if(event->scenePos().toPoint().x() >= sceneRect().width()) return;
-        if(event->scenePos().toPoint().y() >= sceneRect().height()) return;
-
-
-        pressPoint = event->scenePos();
-        pressed = true;
-    }
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override{
-        if(isVTK){
-#ifdef PCL_ENABLED
-            VTKWidget->eventFilter(VTKWidget, event);
-#else
-            qDebug() << "VTK is not installed on your system";
-#endif
-            return;
-        }
-        if(event->scenePos().toPoint().x() < 0) return;
-        if(event->scenePos().toPoint().y() < 0 ) return;
-        if(event->scenePos().toPoint().x() >= sceneRect().width()) return;
-        if(event->scenePos().toPoint().y() >= sceneRect().height()) return;
-
-        pressed = false;
-    }
+    bool eventFilter(QObject* obj, QEvent* event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 };
 }
 #endif // GRAPHICSSCENE_H

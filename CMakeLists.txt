@@ -26,6 +26,10 @@ set(QYLON_SOURCES
     Acquisition/CameraWidget.cpp
     Acquisition/Grabber.cpp
     Acquisition/GrabberWidget.cpp
+    Modules/GraphicsWidget.cpp
+    Modules/GraphicsView.cpp
+    Modules/GraphicsScene.cpp
+    Modules/GraphicsVTKWidget.cpp
     Processing/vTools.cpp
     Processing/OutputCommunication.cpp
     Processing/SerialCommunication.cpp
