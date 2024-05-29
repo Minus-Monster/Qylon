@@ -30,23 +30,22 @@ public:
     Grabber(Qylon *parentQylon = nullptr, unsigned int boardIndex=0);
     bool loadApplet(QString file);
     bool loadConfiguration(QString file);
+    int getDMACount();
     int getWidth(int dmaIndex);
     int getHeight(int dmaIndex);
     int getPixelDepth(int dmaIndex);
     void setParameterValue(QString typeName, int value, int dmaIndex=0);
     int getParameterValue(QString typeName, int dmaIndex=0);
-    void initialize(int dmaCount=1);
-    void reitialize(int dmaCount=1);
+    void initialize();
+    void reitialize();
     int getBytesPerPixel(int dmaIndex=0);
+    void setImage(const QImage image);
+    void setBuffer(unsigned short* buf, int width, int height, int depth=8);
 
     static int CallbackFromGrabber(frameindex_t picNr, void *ctx);
     Fg_Struct* getFg();
     APC *getAPC(int dmaIndex);
     QWidget *getWidget();
-    int getCurrentDMACount(){
-        return currentDmaCount;
-    }
-
     void release();
 
 signals:

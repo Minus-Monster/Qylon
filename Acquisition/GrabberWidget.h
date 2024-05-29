@@ -26,7 +26,10 @@ public:
     GrabberWidget(Grabber *obj);
     void setDefaultAppletPath(QString path);
     void setDefaultConfigPath(QString path);
+    void setDMACount(int val);
 
+signals:
+    void changedDMACount(int val);
 
 private:
     Grabber *parent;

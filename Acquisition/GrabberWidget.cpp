@@ -9,7 +9,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 
     layout = new QVBoxLayout(this);
     setLayout(layout);
-    setMinimumWidth(400);
+    setMinimumWidth(200);
 
 
 
@@ -17,7 +17,8 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     {
         QVBoxLayout *layoutLine1 = new QVBoxLayout;
         QHBoxLayout *layoutApplet = new QHBoxLayout;
-        QPushButton *buttonApplet = new QPushButton("Load");
+        QPushButton *buttonApplet = new QPushButton;
+        buttonApplet->setIcon(QIcon(":/Resources/Icon/icons8-document-48.png"));
         connect(buttonApplet, &QPushButton::clicked, this, [=](){
             auto get = QFileDialog::getOpenFileName(this, "Load an applet", QDir::homePath(), "*.hap *.dll");
             if(get.isEmpty()) return;
@@ -31,7 +32,9 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         layoutApplet->addWidget(lineApplet);
 
         QHBoxLayout *layoutConfig = new QHBoxLayout;
-        QPushButton *buttonConfig = new QPushButton("Load");
+        QPushButton *buttonConfig = new QPushButton;
+        buttonConfig->setIcon(QIcon(":/Resources/Icon/icons8-document-48.png"));
+
         connect(buttonConfig, &QPushButton::clicked, this, [=](){
             auto get = QFileDialog::getOpenFileName(this, "Load a configuration file", QDir::homePath(), "*.mcf");
             if(get.isEmpty()) return;
@@ -47,30 +50,17 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         layoutLine1->addLayout(layoutApplet);
         layoutLine1->addLayout(layoutConfig);
 
-
-
-        QVBoxLayout *layoutLine2 = new QVBoxLayout;
-        QLabel *labelInit = new QLabel("DMA");
-        QSpinBox *spinBoxInitCount = new QSpinBox;
-        spinBoxInitCount->setRange(1, 4);
-        QHBoxLayout *layoutDMA = new QHBoxLayout;
-        layoutDMA->addWidget(labelInit);
-        layoutDMA->addWidget(spinBoxInitCount);
-
-
         QPushButton *buttonInit = new QPushButton("Initialize");
         connect(buttonInit, &QPushButton::clicked, this, [=](){
-            this->parent->initialize(spinBoxInitCount->value());
+            this->parent->initialize();
         });
+        layoutLine1->addWidget(buttonInit);
 
-        layoutLine2->addLayout(layoutDMA);
-        layoutLine2->addWidget(buttonInit);
         QGroupBox *boxInit = new QGroupBox("Initialization");
         QHBoxLayout *layoutBoxInit = new QHBoxLayout;
         layout->addWidget(boxInit);
         boxInit->setLayout(layoutBoxInit);
         layoutBoxInit->addLayout(layoutLine1);
-        layoutBoxInit->addLayout(layoutLine2);
     }
 
     // GroupBox 'Configuration'
@@ -83,8 +73,12 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         // ROI GroupBox
         {
             QGroupBox *boxRoi = new QGroupBox("ROI");
-            QHBoxLayout *layoutBoxRoi = new QHBoxLayout;
-            boxRoi->setLayout(layoutBoxRoi);
+            QVBoxLayout *layoutBoxROI = new QVBoxLayout;
+            QHBoxLayout *layoutBoxCoor = new QHBoxLayout;
+            QHBoxLayout *layoutBoxSize = new QHBoxLayout;
+            layoutBoxROI->addLayout(layoutBoxCoor);
+            layoutBoxROI->addLayout(layoutBoxSize);
+            boxRoi->setLayout(layoutBoxROI);
             layoutBoxConfig->addWidget(boxRoi);
 
             QHBoxLayout *layoutRoiX = new QHBoxLayout;
@@ -101,8 +95,25 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
             layoutRoiY->addWidget(labelRoiY);
             layoutRoiY->addWidget(spinBoxRoiY);
 
-            layoutBoxRoi->addLayout(layoutRoiX);
-            layoutBoxRoi->addLayout(layoutRoiY);
+            QHBoxLayout *layoutWidth = new QHBoxLayout;
+            QLabel *labelWidth = new QLabel("Width");
+            QSpinBox *spinBoxWidth = new QSpinBox;
+            spinBoxWidth->setRange(1, 999999);
+            layoutWidth->addWidget(labelWidth);
+            layoutWidth->addWidget(spinBoxWidth);
+
+            QHBoxLayout *layoutHeight = new QHBoxLayout;
+            QLabel *labelHeight = new QLabel("Height");
+            QSpinBox *spinBoxHeight = new QSpinBox;
+            spinBoxHeight->setRange(1, 999999);
+            layoutHeight->addWidget(labelHeight);
+            layoutHeight->addWidget(spinBoxHeight);
+
+
+            layoutBoxSize->addLayout(layoutWidth);
+            layoutBoxSize->addLayout(layoutHeight);
+            layoutBoxCoor->addLayout(layoutRoiX);
+            layoutBoxCoor->addLayout(layoutRoiY);
         }
 
         // MCF Save
@@ -128,3 +139,8 @@ void Qylon::GrabberWidget::setDefaultConfigPath(QString path)
     this->parent->loadConfiguration(path);
 }
 #endif
+
+void Qylon::GrabberWidget::setDMACount(int val)
+{
+    emit changedDMACount(val);
+}
