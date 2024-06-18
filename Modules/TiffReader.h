@@ -49,8 +49,6 @@ inline bool saveQImageToTiff16(const QImage &image, const QString &fileName) {
     return true;
 }
 inline const QImage openTiff(QString filePath){
-    qDebug() << filePath;
-
     TIFF *tiff = TIFFOpen(filePath.toUtf8(), "r");
     if(!tiff){
         qDebug() << "Failed to open TIFF";

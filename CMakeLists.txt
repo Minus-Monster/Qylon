@@ -19,6 +19,7 @@ set(QYLON_HEADERS
     Processing/OutputCommunication.h
     Processing/SerialCommunication.h
     Processing/SerialCommunicationWidget.h
+    Processing/ImageTools.h
 )
 set(QYLON_SOURCES
     Qylon.cpp
@@ -34,6 +35,7 @@ set(QYLON_SOURCES
     Processing/OutputCommunication.cpp
     Processing/SerialCommunication.cpp
     Processing/SerialCommunicationWidget.cpp
+    Processing/ImageTools.cpp
 )
 set(QYLON_RESOURCES
     Resources.qrc

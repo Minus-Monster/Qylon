@@ -2,14 +2,21 @@
 #ifdef TIFF_ENABLED
 #include "TiffReader.h"
 #endif
+#include "Processing/ImageTools.h"
 
-Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent){
+Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
+    : view(new GraphicsView)
+    , labelCoordinate(new QLabel)
+    , labelPixelColor(new QLabel)
+    , labelImageInformation(new QLabel)
+    , lineEditPixelColor(new QLineEdit)
+{
     setParent(parent);
     setWindowIcon(QIcon(":/Resources/Icon.png"));
 
     toolBar.setWindowTitle("Image Tools");
     toolBar.layout()->setSpacing(1);
-    toolBar.setIconSize(QSize(18,18));
+    toolBar.setIconSize(QSize(24,24));
 
     statusBar.setSizeGripEnabled(false);
     statusBar.setStyleSheet("QStatusBar::item { border: none; }");
@@ -17,18 +24,27 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent){
     setLayout(&layout);
     layout.setSpacing(0);
     layout.setMargin(0);
+    layout.setContentsMargins(0,0,0,0);
 
-    view = new GraphicsView;
-    view->setDragMode(QGraphicsView::ScrollHandDrag);
-    labelCoordinate.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    labelCoordinate.setText(" X 0\n Y 0");
-    labelCoordinate.setFixedWidth(60);
-    labelPixelColor.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    labelPixelColor.setText(" RGB\n [0,0,0]");
-    labelPixelColor.setFixedWidth(98);
-    lineEditPixelColor.setFixedWidth(24);
-    lineEditPixelColor.setReadOnly(true);
-    lineEditPixelColor.setFrame(false);
+    labelCoordinate->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    labelCoordinate->setText(" X 0\n Y 0");
+    labelCoordinate->setFixedWidth(90);
+    labelCoordinate->setStyleSheet("color:#15487f;");
+
+    labelPixelColor->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    labelPixelColor->setText(" RGB\n [0,0,0]");
+    labelPixelColor->setFixedWidth(90);
+    labelPixelColor->setStyleSheet("color:#15487f;");
+
+    labelImageInformation->setFixedWidth(170);
+    labelFPS.setStyleSheet("color:#15487f;");
+
+    lineEditPixelColor->setFixedWidth(24);
+    lineEditPixelColor->setReadOnly(true);
+    lineEditPixelColor->setFrame(false);
+
+
+    settings = new GraphicsWidgetSettings(this);
 
     connect(&fpsTimer, &QTimer::timeout, this, [&](){
         labelFPS.setText("FPS:" + QString::number(timerCnt));
@@ -37,7 +53,6 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent){
 }
 
 Qylon::GraphicsWidget::~GraphicsWidget(){
-    deleteLater();
 }
 
 void Qylon::GraphicsWidget::initialize(bool isVTK){
@@ -56,7 +71,6 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
         if(fileName.isEmpty()) return;
 
         if(fileName.contains(".tiff") || fileName.contains(".tif")){
-            qDebug() << "This image is needed tiff converting";
 #ifdef TIFF_ENABLED
             this->setImage(openTiff(fileName));
 #endif
@@ -71,7 +85,6 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
         if(filePath.isEmpty()) return;
 
         if(this->currentImage.format() == QImage::Format_Grayscale16 && (filePath.contains("*.tif") || filePath.contains("*.tiff"))){
-            qDebug() << "16 bit image." << saveQImageToTiff16(this->currentImage, filePath);
             return;
         }
         if(this->currentImage.save(filePath)){
@@ -90,18 +103,20 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
         this->view->setCrossHair(on);
     });
 
-    QAction *actionSettings = new QAction(QIcon(":/Resources/Icon/icons8-file-settings-48.png"), "");
-    actionSettings->setCheckable(false);
+    QAction *actionSettings = new QAction(QIcon(":/Resources/Icon/icons8-setting-48.png"), "");
     actionSettings->setToolTip("Settings");
     toolBar.addAction(actionSettings);
-    connect(actionSettings, &QAction::toggled, this, [=](){
-
+    connect(actionSettings, &QAction::triggered, this, [=](){
+        settings->exec();
     });
+    connect(settings, &GraphicsWidgetSettings::setBitShift, this, &GraphicsWidget::setBitShift);
 
 
     toolBar.addSeparator();
 
     QDoubleSpinBox *doubleSpinBoxRatio = new QDoubleSpinBox;
+    doubleSpinBoxRatio->setStyleSheet("QDoubleSpinBox{color:white;background-color:#15487f;height:20px;}QDoubleSpinBox::up-button{}QDoubleSpinBox::down-button{}");
+    doubleSpinBoxRatio->setFrame(false);
     doubleSpinBoxRatio->setRange(0, 9999.9);
     doubleSpinBoxRatio->setValue(100);
     doubleSpinBoxRatio->setSuffix(" %");
@@ -116,7 +131,7 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
         doubleSpinBoxRatio->setValue(ratio * 100);
     });
 
-    QAction *actionZoomIn = new QAction(QIcon(":/Resources/Icon/zoom-in.png"), "");
+    QAction *actionZoomIn = new QAction(QIcon(":/Resources/Icon/icons8-zoom-in-48.png"), "");
     actionZoomIn->setToolTip("Zoom In");
     connect(actionZoomIn, &QAction::triggered, this, [=](){
         if(isVTK){
@@ -127,7 +142,7 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
     });
     toolBar.addAction(actionZoomIn);
 
-    QAction *actionZoomOut = new QAction(QIcon(":/Resources/Icon/zoom-out.png"), "");
+    QAction *actionZoomOut = new QAction(QIcon(":/Resources/Icon/icons8-zoom-out-48.png"), "");
     actionZoomOut->setToolTip("Zoom Out");
     connect(actionZoomOut, &QAction::triggered, this, [=](){
         if(isVTK){
@@ -138,7 +153,7 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
     });
     toolBar.addAction(actionZoomOut);
 
-    QAction *actionOriginal = new QAction(QIcon(":/Resources/Icon/original.png"), "");
+    QAction *actionOriginal = new QAction(QIcon(":/Resources/Icon/icons8-one-to-one-48.png"), "");
     actionOriginal->setToolTip("100%");
     connect(actionOriginal, &QAction::triggered, this, [=](){
         if(isVTK){
@@ -149,7 +164,7 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
     });
     toolBar.addAction(actionOriginal);
 
-    QAction *actionFit = new QAction(QIcon(":/Resources/Icon/fit.png"), "");
+    QAction *actionFit = new QAction(QIcon(":/Resources/Icon/icons8-separating-48.png"), "");
     actionFit->setCheckable(true);
     actionFit->setChecked(false);
     actionFit->setToolTip("Fit");
@@ -202,11 +217,11 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
             int r, g, b = 0;
             this->scene->Pixmap.pixmap().toImage().pixelColor(rPos.x(), rPos.y()).getRgb(&r, &g, &b);
             QString coord = " X " + QString::number(rPos.x()) +"\n Y " + QString::number(rPos.y());
-            this->labelCoordinate.setText(coord);
+            this->labelCoordinate->setText(coord);
 
             // auto corr = (int)((r + g + b) / 3) > 150 ? 0 : 255;
             QString style =  QString("QLineEdit { background-color : rgb(") + QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + QString("); }");
-            this->lineEditPixelColor.setStyleSheet(style);
+            this->lineEditPixelColor->setStyleSheet(style);
 
             QString color;
             if(currentImage.depth() == 16){
@@ -221,15 +236,26 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
                 if(currentImage.allGray()){
                     color = QString::number(currentImage.pixelColor(rPos.x(), rPos.y()).value());
                 }else{
-                    color = " RGB\n [" + QString::number(r) +"," + QString::number(g) + "," + QString::number(b) + "]";
+                    color = " RGB\n [" + QString::number(r) + "," + QString::number(g) + "," + QString::number(b) + "]";
                 }
             }
-            this->labelPixelColor.setText(color);
+            this->labelPixelColor->setText(color);
         });
-        statusBar.addWidget(&labelCoordinate);
-        statusBar.addWidget(&lineEditPixelColor);
-        statusBar.addWidget(&labelPixelColor);
-        statusBar.addWidget(&labelImageInformation);
+        QLabel *lbl1 = new QLabel("|");
+        lbl1->setStyleSheet("color:lightgray;");
+        QLabel *lbl2 = new QLabel("|");
+        lbl2->setStyleSheet("color:lightgray;");
+        QLabel *lbl3 = new QLabel("|");
+        lbl3->setStyleSheet("color:lightgray;");
+
+        statusBar.addWidget(labelCoordinate);
+        statusBar.addWidget(lbl1);
+        statusBar.addWidget(lineEditPixelColor);
+        statusBar.addWidget(labelPixelColor);
+        statusBar.addWidget(lbl2);
+        statusBar.addWidget(labelImageInformation);
+        statusBar.addWidget(lbl3);
+
         statusBar.addWidget(&labelFPS);
     }
 
@@ -243,19 +269,61 @@ void Qylon::GraphicsWidget::setToolBarEnable(bool on){
     toolBar.setHidden(!on);
 }
 
+void Qylon::GraphicsWidget::setGraphicsItemsVisible(bool on)
+{
+    for(auto item : scene->items()){
+        if(&scene->Pixmap != item) item->setVisible(on);
+    }
+    graphicsItemVisible = on;
+}
+
+void Qylon::GraphicsWidget::clear()
+{
+    scene->removeAllItems();
+}
+
+void Qylon::GraphicsWidget::setLogo(bool on){
+    view->setLogo(on);
+}
+
 void Qylon::GraphicsWidget::setImage(const QImage image){
     ++timerCnt;
     currentImage = image;
-    labelImageInformation.setText(QString::number(image.depth()) + "-bit, " +
+    if(bitShift !=0 && image.format() == QImage::Format_Grayscale16){
+        scene->Pixmap.setPixmap(QPixmap::fromImage(shiftImage(image, bitShift)));
+    }else{
+        scene->Pixmap.setPixmap(QPixmap::fromImage(image));
+    }
+    labelImageInformation->setText(QString::number(image.depth()) + "-bit, " +
                                   QString((image.isGrayscale()) ? "Mono" : "Color") +
                                   ", " +
                                   QString::number(image.width()) + "x" +
                                   QString::number(image.height()));
-    scene->Pixmap.setPixmap(QPixmap::fromImage(image));
+    labelImageInformation->setStyleSheet("color:#15487f;");
     scene->setSceneRect(0, 0, image.width(), image.height());
 
-    emit scene->currentPos(scene->getCurrentMousePoint());
+    // emit scene->currentPos(scene->getCurrentMousePoint());
     view->setLogo(false);
+}
+
+void Qylon::GraphicsWidget::updateImage()
+{
+    setImage(currentImage);
+}
+
+void Qylon::GraphicsWidget::drawGraphicsItem(QGraphicsItem *item)
+{
+    QPen pen(QColor(249,157,51));
+    pen.setWidth(2);
+    QBrush brush(QColor(20,72,126, 100));
+    if(QGraphicsRectItem* rect = dynamic_cast<QGraphicsRectItem*>(item)){
+        rect->setBrush(brush);
+        rect->setPen(pen);
+    }else if(QGraphicsEllipseItem *ellipse = dynamic_cast<QGraphicsEllipseItem*>(item)){
+
+    }
+    item->setVisible(graphicsItemVisible);
+    scene->addItem(item);
 }
 
 void Qylon::GraphicsWidget::setFit(bool on){
@@ -263,12 +331,16 @@ void Qylon::GraphicsWidget::setFit(bool on){
     emit updateWidget();
 }
 
-void Qylon::GraphicsWidget::setTimerEnable(bool on){
+void Qylon::GraphicsWidget::setFPSEnable(bool on){
     if(on){
         fpsTimer.start(1000);
     }else{
         fpsTimer.stop();
     }
+}
+
+void Qylon::GraphicsWidget::removeAllGraphicsItem(){
+    scene->removeAllItems();
 }
 #ifdef PCL_ENABLED
 void Qylon::GraphicsWidget::setPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudData, QString pointCloudName){

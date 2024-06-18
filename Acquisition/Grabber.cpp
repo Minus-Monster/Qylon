@@ -58,9 +58,28 @@ int Qylon::Grabber::getHeight(int dmaIndex){
     return value;
 }
 
+int Qylon::Grabber::getX(int dmaIndex)
+{
+    int value;
+    Fg_getParameter(currentFg, FG_XOFFSET, (void*)&value, dmaIndex);
+    return value;
+}
+
+int Qylon::Grabber::getY(int dmaIndex)
+{
+    int value;
+    Fg_getParameter(currentFg, FG_YOFFSET, (void*)&value, dmaIndex);
+    return value;
+}
+
 
 void Qylon::Grabber::setParameterValue(QString typeName, int value, int dmaIndex){
     Fg_setParameterWithType(currentFg, Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str()), value, dmaIndex);
+}
+
+void Qylon::Grabber::setParameterValue(int typeNum, int value, int dmaIndex)
+{
+    Fg_setParameter(currentFg, typeNum, &value, dmaIndex);
 }
 
 int Qylon::Grabber::getParameterValue(QString typeName, int dmaIndex){
@@ -68,9 +87,10 @@ int Qylon::Grabber::getParameterValue(QString typeName, int dmaIndex){
     return Fg_getParameterWithType(currentFg, Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str()), &value, dmaIndex);
 }
 
-void Qylon::Grabber::initialize(){
-    for (int i=0; i< getDMACount(); i++){
-        Qylon::log("Try to initialize grabber(" + QString::number(boardNumIndex) + ") with DMA " +  QString::number(i) );
+bool Qylon::Grabber::initialize(int imgBufCnt){
+    imageBufferSize = imgBufCnt;
+    for (int i=0; i< getDMACount(); ++i){
+        Qylon::log("Try to initialize grabber(" + QString::number(boardNumIndex) + ") with DMA " +  QString::number(i) + ". It includes " + QString::number(imgBufCnt) + " image buffer(s)."  );
 
         auto apcData = new APC;
         apcData->dmaIndex = i;
@@ -79,12 +99,14 @@ void Qylon::Grabber::initialize(){
         apcData->height = getHeight(i);
         int DMALength = getWidth(i)*getHeight(i) * getBytesPerPixel(i);
 
-        apcData->memBuf = Fg_AllocMemHead(currentFg, DMALength, 1);
-        apcData->imageBuffer = (unsigned short*)malloc((size_t)DMALength);
-        Fg_AddMem(currentFg, apcData->imageBuffer, (size_t)DMALength, 0, apcData->memBuf);
+        apcData->memBuf = Fg_AllocMemHead(currentFg, DMALength * imgBufCnt, imgBufCnt);
+        for(int bufNum=0; bufNum < imgBufCnt; ++bufNum){
+            apcData->imageBuffer.append((unsigned short*)malloc((size_t)DMALength));
+            Fg_AddMem(currentFg, apcData->imageBuffer[bufNum], (size_t)DMALength, bufNum, apcData->memBuf);
+        }
         if(apcData->memBuf == NULL){
             Qylon::log("Failed initializing grabber(" + QString::number(boardNumIndex) + ") DMA : " + QString::number(i) + "(" + QString::number(i+1) +")");
-            return;
+            return false;
         }
 
         struct FgApcControl ctrl;
@@ -98,12 +120,13 @@ void Qylon::Grabber::initialize(){
         apcDataList.push_back(apcData);
     }
     Qylon::log("Finished to initialize grabber(" + QString::number(boardNumIndex) + ")");
+    return true;
 }
 
-void Qylon::Grabber::reitialize()
+void Qylon::Grabber::reitialize(int imgBufCnt)
 {
     release();
-    initialize();
+    initialize(imgBufCnt);
 }
 
 int Qylon::Grabber::getBytesPerPixel(int dmaIndex)
@@ -136,18 +159,16 @@ int Qylon::Grabber::getBytesPerPixel(int dmaIndex)
 
 void Qylon::Grabber::setImage(const QImage image)
 {
-    memcpy(apcDataList.at(1)->imageBuffer, image.bits(), image.sizeInBytes());
-    int r = Fg_queueBuffer(currentFg, 0, image.sizeInBytes(), 0, apcDataList.at(1)->memBuf);
+    if(getDMACount() < 2) return;
+    APC *currentAPC = getAPC(1); // DMA 1 is for the output
+    int cnt = imagePushCnt++%imageBufferSize;
+    memcpy(currentAPC->imageBuffer.at(cnt), image.bits(), image.sizeInBytes());
+    int r = Fg_queueBuffer(currentFg, cnt, image.sizeInBytes(), 1, currentAPC->memBuf);
+
     auto error = Fg_getErrorDescription(currentFg, r);
     if(QString(error) != QString("No error")){
         Qylon::log(error);
     }
-}
-
-void Qylon::Grabber::setBuffer(unsigned short *buf, int width, int height, int depth)
-{
-    memcpy(apcDataList.at(1)->imageBuffer, buf, width*height*(depth/8));
-    int r = Fg_queueBuffer(currentFg, 0, width*height*(depth/8), 0, apcDataList.at(1)->memBuf);
 }
 
 int Qylon::Grabber::CallbackFromGrabber(frameindex_t picNr, void *ctx)
@@ -181,6 +202,7 @@ Fg_Struct *Qylon::Grabber::getFg()
 
 Qylon::APC *Qylon::Grabber::getAPC(int dmaIndex)
 {
+    if(apcDataList.isEmpty()) return nullptr;
     return apcDataList.at(dmaIndex);
 }
 
@@ -192,6 +214,7 @@ QWidget *Qylon::Grabber::getWidget()
 void Qylon::Grabber::release(){
     Qylon::log("Release all grabber memory.");
     if(currentFg == nullptr) return;
+    if(apcDataList.size() == 0) return;
 
     for(int i=0; i<getDMACount(); i++){
         Fg_FreeMemEx(currentFg, apcDataList.at(i)->memBuf);
@@ -237,5 +260,13 @@ void Qylon::Grabber::sequentialGrab(int numFrame, int dmaIndex)
 void Qylon::Grabber::stopGrab(int dmaIndex){
     Qylon::log("Stop grabbing Grabber(" + QString::number(boardNumIndex) + ") DMA : " + QString::number(dmaIndex));
     Fg_stopAcquireEx(currentFg, dmaIndex, apcDataList.at(dmaIndex)->memBuf, 0);
+}
+
+void Qylon::Grabber::stopGrabAll()
+{
+    for(int i=0; i<getDMACount(); ++i){
+        Qylon::log("Stop grabbing Grabber(" + QString::number(boardNumIndex) + ") DMA : " + QString::number(i));
+        Fg_stopAcquireEx(currentFg, i, apcDataList.at(i)->memBuf, 0);
+    }
 }
 #endif

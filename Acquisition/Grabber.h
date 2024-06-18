@@ -7,15 +7,14 @@
 #include <QObject>
 #include <QImage>
 #include <QDebug>
-
-#define BUF_NUM 4
+#include <vector>
 
 namespace Qylon{
 class Grabber;
 struct APC {
     Grabber *address;
     unsigned int dmaIndex;
-    unsigned short* imageBuffer;
+    QList<unsigned short*> imageBuffer;
     dma_mem *memBuf;
     int width;
     int height;
@@ -33,14 +32,16 @@ public:
     int getDMACount();
     int getWidth(int dmaIndex);
     int getHeight(int dmaIndex);
+    int getX(int dmaIndex);
+    int getY(int dmaIndex);
     int getPixelDepth(int dmaIndex);
     void setParameterValue(QString typeName, int value, int dmaIndex=0);
+    void setParameterValue(int typeNum, int value, int dmaIndex=0);
     int getParameterValue(QString typeName, int dmaIndex=0);
-    void initialize();
-    void reitialize();
+    bool initialize(int imgBufCnt=1);
+    void reitialize(int imgBufCnt=1);
     int getBytesPerPixel(int dmaIndex=0);
     void setImage(const QImage image);
-    void setBuffer(unsigned short* buf, int width, int height, int depth=8);
 
     static int CallbackFromGrabber(frameindex_t picNr, void *ctx);
     Fg_Struct* getFg();
@@ -56,13 +57,15 @@ public slots:
     void continuousGrab(int dmaIndex=0);
     void sequentialGrab(int numFrame, int dmaIndex=0);
     void stopGrab(int dmaIndex=0);
+    void stopGrabAll();
 
 private:
     Qylon *parent = nullptr;
     Fg_Struct *currentFg = nullptr;
     QList<APC*> apcDataList;
-    int currentDmaCount=1;
-    int boardNumIndex =0;
+    int boardNumIndex =0;           // physical number of grabber in PC.
+    int imagePushCnt=0;             // When if use two or more image buffers to put images into grabber, it would be the counter.
+    int imageBufferSize=1;          // the buffer size putting images into grabber.
 
     GrabberWidget *widget;
 };}

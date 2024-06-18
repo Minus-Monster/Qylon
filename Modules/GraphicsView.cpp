@@ -2,7 +2,9 @@
 
 Qylon::GraphicsView::GraphicsView(){
     setMouseTracking(true);
-    setFrameShape(Shape::StyledPanel);
+    setCursor(Qt::CrossCursor);
+    setFrameShape(Shape::Box);
+    setDragMode(DragMode::NoDrag);
 }
 
 Qylon::GraphicsView::~GraphicsView(){
@@ -16,15 +18,15 @@ void Qylon::GraphicsView::setRatio(float ratio){
     emit currentRatio(this->transform().m11());
 }
 
-void Qylon::GraphicsView::setCrossHair(bool on){
+void Qylon::GraphicsView::setCrossHair(bool on, int width, QColor color){
     crossHair = on;
     if(on){
         if(lineH == nullptr) lineH = new QGraphicsLineItem;
         if(lineV == nullptr) lineV = new QGraphicsLineItem;
 
         QPen pen;
-        pen.setColor(QColor(0,255,0));
-        pen.setWidth(3);
+        pen.setColor(color);
+        pen.setWidth(width);
         lineH->setPen(pen);
         lineV->setPen(pen);
 
@@ -50,6 +52,11 @@ void Qylon::GraphicsView::resetScale(){
     resetTransform();
     currentScale = this->transform();
     emit currentRatio(this->transform().m11());
+}
+
+void Qylon::GraphicsView::clear()
+{
+
 }
 
 void Qylon::GraphicsView::setFit(bool on){

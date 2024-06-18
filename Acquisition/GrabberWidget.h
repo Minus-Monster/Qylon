@@ -14,7 +14,6 @@
 #include <QLabel>
 #include <QSpacerItem>
 #include <QGroupBox>
-
 #include "Grabber.h"
 
 
@@ -27,6 +26,7 @@ public:
     void setDefaultAppletPath(QString path);
     void setDefaultConfigPath(QString path);
     void setDMACount(int val);
+    void getMCFStructure(QString mcfPath);
 
 signals:
     void changedDMACount(int val);
@@ -35,11 +35,12 @@ private:
     Grabber *parent;
     QVBoxLayout *layout;
 
-    QLineEdit *lineApplet;
-    QLineEdit *lineConfig;
+    QLineEdit *lineLoadApplet;
+    QLineEdit *lineLoadConfig;
 
     QString defaultAppletPath = "";
     QString defaultConfigPath = "";
+    QDialog *mcfDialog = nullptr;
 };
 }
 #endif

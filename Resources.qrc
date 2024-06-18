@@ -1,28 +1,22 @@
 <RCC>
     <qresource prefix="/">
-        <file>Resources/Icon/fit.png</file>
-        <file>Resources/Icon/original.png</file>
-        <file>Resources/Icon/zoom-in.png</file>
-        <file>Resources/Icon/zoom-out.png</file>
         <file>Resources/Icon.png</file>
         <file>Resources/Logo.png</file>
         <file>Resources/Icon/icons8-connect-48.png</file>
         <file>Resources/Icon/icons8-disconnected-48.png</file>
-        <file>Resources/Icon/icons8-export-48.png</file>
-        <file>Resources/Icon/icons8-file-48.png</file>
-        <file>Resources/Icon/icons8-file-settings-48.png</file>
-        <file>Resources/Icon/icons8-play-48-2.png</file>
         <file>Resources/Icon/icons8-play-48.png</file>
-        <file>Resources/Icon/icons8-repeat-48.png</file>
-        <file>Resources/Icon/icons8-rj45-48.png</file>
         <file>Resources/Icon/icons8-rs-232-male-48.png</file>
         <file>Resources/Icon/icons8-stop-48.png</file>
-        <file>Resources/Icon/icons8-stop-circled-48.png</file>
         <file>Resources/Icon/icons8-crosshair-48.png</file>
         <file>Resources/Icon/icons8-refresh-48.png</file>
-        <file>Resources/Icon/icons8-save-48.png</file>
-        <file>Resources/Icon/icons8-document-48.png</file>
         <file>Resources/Icon/icons8-image-file-add-48.png</file>
         <file>Resources/Icon/icons8-save-as-48.png</file>
+        <file>Resources/Icon/icons8-ethernet-48.png</file>
+        <file>Resources/Icon/icons8-one-to-one-48.png</file>
+        <file>Resources/Icon/icons8-opened-folder-48.png</file>
+        <file>Resources/Icon/icons8-separating-48.png</file>
+        <file>Resources/Icon/icons8-setting-48.png</file>
+        <file>Resources/Icon/icons8-zoom-in-48.png</file>
+        <file>Resources/Icon/icons8-zoom-out-48.png</file>
     </qresource>
 </RCC>

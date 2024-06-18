@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QImage>
 #include <Qylon.h>
+#include <QGraphicsItem>
 
 Qylon::vTools::vTools(Qylon *parentQylon) : parent(parentQylon), _waitObject(Pylon::WaitObjectEx::Create())
 {
@@ -27,7 +28,7 @@ bool Qylon::vTools::loadRecipe(QString path)
 void Qylon::vTools::startRecipe()
 {
     start();
-    qDebug() << "Recipe started";
+    Qylon::log("Starting recipe");
 }
 
 void Qylon::vTools::stopRecipe()
@@ -36,7 +37,7 @@ void Qylon::vTools::stopRecipe()
     requestInterruption();
     this->terminate();
 
-    qDebug() << "Recipe stopped";
+    Qylon::log("Recipe stopped");
 }
 
 void Qylon::vTools::run()
@@ -57,14 +58,15 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
     PYLON_UNUSED(recipe);
     PYLON_UNUSED(update);
     PYLON_UNUSED(userProvidedId);
-
     outputText.clear();
-    Pylon::CPylonImage pImage;
-    QList<QRect> boundaries;
-    QList<QPair<QRectF, double>> rectangles;
-    QList<QPointF> points;
+
+    // QPair<Object Name, Object context>
+    images.clear();
+    items.clear();
+    strings.clear();
+
     try{
-        for(const auto value : valueContainer){
+        for(const auto &value : valueContainer){
             qDebug() << "VALUE NAME : " << value.first;
             switch(value.second.GetDataType()){
             case Pylon::DataProcessing::EVariantDataType::VariantDataType_Boolean:{
@@ -101,10 +103,16 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                 qDebug() << "String";
                 if(value.second.IsArray()){
                     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        outputText += QString(value.first.c_str()) + ":" + value.second.GetArrayValue(i).ToString() + "&";
+                        QPair<QString, QString> string;
+                        string.first = QString(value.first.c_str());
+                        string.second = QString(value.second.GetArrayValue(i).ToString());
+                        strings.push_back(string);
                     }
                 }else{
-                    outputText = QString(value.first.c_str()) + ":" + value.second.ToString() + "&";
+                    QPair<QString, QString> string;
+                    string.first = QString(value.first.c_str());
+                    string.second = QString(value.second.ToString());
+                    strings.push_back(string);
                 }
             } break;
             case Pylon::DataProcessing::VariantDataType_Float:{
@@ -119,7 +127,19 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
             } break;
             case Pylon::DataProcessing::VariantDataType_PylonImage:{
                 qDebug() << "Image";
-                pImage = value.second.ToImage();
+                if(value.second.IsArray()){
+                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
+                        QPair<QString, Pylon::CPylonImage> image;
+                        image.first = QString(value.first.c_str());
+                        image.second = value.second.GetArrayValue(i).ToImage();
+                        images.push_back(image);
+                    }
+                }else{
+                    QPair<QString, Pylon::CPylonImage> image;
+                    image.first = QString(value.first.c_str());
+                    image.second = value.second.ToImage();
+                    images.push_back(image);
+                }
             } break;
             case Pylon::DataProcessing::VariantDataType_Region:{
                 qDebug() << "Region";
@@ -128,30 +148,38 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                         auto region = value.second.GetArrayValue(i).ToRegion();
                         QRect currentRegion(QPoint(region.GetBoundingBoxTopLeftX(), region.GetBoundingBoxTopLeftY()),
                                             QSize(region.GetBoundingBoxWidth(), region.GetBoundingBoxHeight()));
-                        boundaries.push_back(currentRegion);
+                        QGraphicsRectItem *rectItem = new QGraphicsRectItem(currentRegion);
+                        QPair<QString, QGraphicsItem*> item;
+                        item.first = QString(value.first.c_str());
+                        item.second = rectItem;
+                        items.push_back(item);
                     }
                 }else{
                     auto region = value.second.ToRegion();
                     QRect currentRegion(QPoint(region.GetBoundingBoxTopLeftX(), region.GetBoundingBoxTopLeftY()),
                                         QSize(region.GetBoundingBoxWidth(), region.GetBoundingBoxHeight()));
-                    boundaries.push_back(currentRegion);
+                    QGraphicsRectItem *rectItem = new QGraphicsRectItem(currentRegion);
+                    QPair<QString, QGraphicsItem*> item;
+                    item.first = QString(value.first.c_str());
+                    item.second = rectItem;
+                    items.push_back(item);
                 }
             } break;
             case Pylon::DataProcessing::VariantDataType_TransformationData:{qDebug() << "Transformation";} break;
             case Pylon::DataProcessing::VariantDataType_Composite:{ qDebug() << "Composite";} break;
             case Pylon::DataProcessing::VariantDataType_PointF2D:{
                 qDebug() << "PointF2D";
-                if(value.second.IsArray()){
-                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        auto point = value.second.GetArrayValue(i).ToPointF2D();
-                        QPointF currentPoint(point.X, point.Y);
-                        points.push_back(currentPoint);
-                    }
-                }else{
-                    auto point = value.second.ToPointF2D();
-                    QPointF currentPoint(point.X, point.Y);
-                    points.push_back(currentPoint);
-                }
+                // if(value.second.IsArray()){
+                //     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
+                //         auto point = value.second.GetArrayValue(i).ToPointF2D();
+                //         QPointF currentPoint(point.X, point.Y);
+                //         points.push_back(currentPoint);
+                //     }
+                // }else{
+                //     auto point = value.second.ToPointF2D();
+                //     QPointF currentPoint(point.X, point.Y);
+                //     points.push_back(currentPoint);
+                // }
             } break;
             case Pylon::DataProcessing::VariantDataType_LineF2D:{qDebug() << "LineF2D";} break;
             case Pylon::DataProcessing::VariantDataType_RectangleF:{
@@ -159,24 +187,39 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                 if(value.second.IsArray()){
                     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
                         auto rect = value.second.GetArrayValue(i).ToRectangleF();
-                        QPair<QRectF, double> currentRect;
-                        currentRect.first.setRect(rect.Center.X - (rect.Width/2),rect.Center.Y - (rect.Height/2),rect.Width,rect.Height);
-                        currentRect.second = -((rect.Rotation*180)/3.141592);
-                        rectangles.push_back(currentRect);
+                        QRectF currentRect(rect.Center.X - (rect.Width/2),rect.Center.Y - (rect.Height/2),rect.Width,rect.Height);
+                        QGraphicsRectItem *rectItem = new QGraphicsRectItem(currentRect);
+                        rectItem->setTransformOriginPoint(currentRect.center());
+                        rectItem->setRotation(-((rect.Rotation*180)/3.141592));
+
+                        QPair<QString, QGraphicsItem*> item;
+                        item.first = QString(value.first.c_str());
+                        item.second = rectItem;
+                        items.push_back(item);
                     }
                 }else{
                     auto rect = value.second.ToRectangleF();
-                    QPair<QRectF, double> currentRect;
-                    currentRect.first.setRect(rect.Center.X - (rect.Width/2),rect.Center.Y - (rect.Height/2),rect.Width,rect.Height);
-                    currentRect.second = -((rect.Rotation*180)/3.141592);
-                    rectangles.push_back(currentRect);
+                    QRectF currentRect(rect.Center.X - (rect.Width/2),rect.Center.Y - (rect.Height/2),rect.Width,rect.Height);
+
+                    QGraphicsRectItem *rectItem = new QGraphicsRectItem(currentRect);
+                    rectItem->setTransformOriginPoint(currentRect.center());
+                    rectItem->setRotation(-((rect.Rotation*180)/3.141592));
+
+                    QPair<QString, QGraphicsItem*> item;
+                    item.first = QString(value.first.c_str());
+                    item.second = rectItem;
+                    items.push_back(item);
                 }
             } break;
             case Pylon::DataProcessing::VariantDataType_CircleF:{qDebug() << "CircleF";} break;
             case Pylon::DataProcessing::VariantDataType_EllipseF:{qDebug() << "EllipseF";} break;
             case Pylon::DataProcessing::VariantDataType_None:{ qDebug() << "None";} break;
+            case Pylon::DataProcessing::VariantDataType_Generic:
+            case Pylon::DataProcessing::VariantDataType_Unsupported:
+                break;
             }
         }
+        /*
         if(pImage.IsValid()){
             outputImage = QImage(pImage.GetWidth(), pImage.GetHeight(), QImage::Format_RGB32);
             Pylon::CImageFormatConverter converter;
@@ -231,7 +274,7 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
         }else{
             qDebug() << "Image is not valid";
         }
-
+        */
         GenApi_3_1_Basler_pylon::AutoLock scopedLock(_memberLock);
         _waitObject.Signal();
     }catch(const GenICam_3_1_Basler_pylon::GenericException &e){

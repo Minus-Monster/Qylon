@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QThread>
 #include <QMutexLocker>
+#include <QGraphicsItem>
 #include <pylondataprocessing/PylonDataProcessingIncludes.h>
 
 namespace Qylon{
@@ -35,6 +36,15 @@ public:
     const Pylon::WaitObject& getWaitObject(){
         return _waitObject;
     }
+    const QList<QPair<QString, Pylon::CPylonImage>> getImages(){
+        return images;
+    }
+    const QList<QPair<QString, QGraphicsItem*>> getItems(){
+        return items;
+    }
+    const QList<QPair<QString, QString>> getStrings(){
+        return strings;
+    }
 
 signals:
     void finished();
@@ -47,6 +57,10 @@ private:
 
     QImage outputImage;
     QString outputText;
+
+    QList<QPair<QString, Pylon::CPylonImage>> images;
+    QList<QPair<QString, QGraphicsItem*>> items;
+    QList<QPair<QString, QString>> strings;
 };
 }
 

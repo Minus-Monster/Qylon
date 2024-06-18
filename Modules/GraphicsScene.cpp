@@ -17,6 +17,17 @@ Qylon::GraphicsScene::~GraphicsScene(){
     deleteLater();
 }
 
+void Qylon::GraphicsScene::removeAllItems()
+{
+    for(auto item : items()){
+        if(item == &Pixmap){
+
+        }else{
+            removeItem(item);
+        }
+    }
+}
+
 bool Qylon::GraphicsScene::eventFilter(QObject *obj, QEvent *event){
 #ifdef PCL_ENABLED
     if(obj == VTKWidget) return VTKWidget->eventFilter(obj, event);
@@ -42,6 +53,7 @@ void Qylon::GraphicsScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event){
 
     emit currentPos(event->scenePos());
     movePoint = event->scenePos();
+    QGraphicsScene::mouseMoveEvent(event);
 }
 
 void Qylon::GraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *event){
@@ -61,6 +73,7 @@ void Qylon::GraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *event){
 
     pressPoint = event->scenePos();
     pressed = true;
+    QGraphicsScene::mousePressEvent(event);
 }
 
 void Qylon::GraphicsScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event){
@@ -78,4 +91,5 @@ void Qylon::GraphicsScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event){
     if(event->scenePos().toPoint().y() >= sceneRect().height()) return;
 
     pressed = false;
+    QGraphicsScene::mouseReleaseEvent(event);
 }
