@@ -5,7 +5,8 @@
 #include "Processing/ImageTools.h"
 
 Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
-    : view(new GraphicsView)
+    : settings(new GraphicsWidgetSettings(this))
+    , view(new GraphicsView)
     , labelCoordinate(new QLabel)
     , labelPixelColor(new QLabel)
     , labelImageInformation(new QLabel)
@@ -43,8 +44,7 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
     lineEditPixelColor->setReadOnly(true);
     lineEditPixelColor->setFrame(false);
 
-
-    settings = new GraphicsWidgetSettings(this);
+    settings->setBaseSize(500,500);
 
     connect(&fpsTimer, &QTimer::timeout, this, [&](){
         labelFPS.setText("FPS:" + QString::number(timerCnt));
@@ -53,6 +53,7 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
 }
 
 Qylon::GraphicsWidget::~GraphicsWidget(){
+    delete scene;
 }
 
 void Qylon::GraphicsWidget::initialize(bool isVTK){
@@ -63,7 +64,7 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     toolBar.addWidget(spacer);
 
-    QAction *actionLoad = new QAction(QIcon(":/Resources/Icon/icons8-image-file-add-48.png"),"");
+    QAction *actionLoad = new QAction(QIcon(":/Resources/Icon/icons8-image-file-add-48.png"),"", this);
     actionLoad->setToolTip("Load an image");
     toolBar.addAction(actionLoad);
     connect(actionLoad, &QAction::triggered, this, [=](){
@@ -77,7 +78,7 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
         }else this->setImage(QImage(fileName));
     });
 
-    QAction *actionSave = new QAction(QIcon(":/Resources/Icon/icons8-save-as-48.png"), "");
+    QAction *actionSave = new QAction(QIcon(":/Resources/Icon/icons8-save-as-48.png"), "", this);
     actionSave->setToolTip("Save the current image");
     toolBar.addAction(actionSave);
     connect(actionSave, &QAction::triggered, this, [=](){
@@ -95,15 +96,19 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
     });
 
 
-    QAction *actionGridLine = new QAction(QIcon(":/Resources/Icon/icons8-crosshair-48.png"), "");
+    QAction *actionGridLine = new QAction(QIcon(":/Resources/Icon/icons8-crosshair-48.png"), "", this);
     actionGridLine->setCheckable(true);
     actionGridLine->setToolTip("Crosshair");
     toolBar.addAction(actionGridLine);
     connect(actionGridLine, &QAction::toggled, this, [=](bool on){
-        this->view->setCrossHair(on);
+        if(scene->Pixmap.pixmap().isNull()){
+            actionGridLine->setChecked(false);
+            return;
+        }
+        setCrossHair(on, settings->getCrosshairColor(), settings->getCrosshairWidth());
     });
 
-    QAction *actionSettings = new QAction(QIcon(":/Resources/Icon/icons8-setting-48.png"), "");
+    QAction *actionSettings = new QAction(QIcon(":/Resources/Icon/icons8-setting-48.png"), "", this);
     actionSettings->setToolTip("Settings");
     toolBar.addAction(actionSettings);
     connect(actionSettings, &QAction::triggered, this, [=](){
@@ -271,38 +276,104 @@ void Qylon::GraphicsWidget::setToolBarEnable(bool on){
 
 void Qylon::GraphicsWidget::setGraphicsItemsVisible(bool on)
 {
-    for(auto item : scene->items()){
-        if(&scene->Pixmap != item) item->setVisible(on);
+    for(int i=0; i<scene->items().size(); ++i){
+        if(scene->items().at(i) == lineH || scene->items().at(i) == lineV) continue;
+        if(&scene->Pixmap != scene->items().at(i)) scene->items().at(i)->setVisible(on);
     }
     graphicsItemVisible = on;
 }
 
 void Qylon::GraphicsWidget::clear()
 {
-    scene->removeAllItems();
+    QMutexLocker locker(&mutex);
+    QList<QGraphicsItem*> queue;
+    try{
+        for(auto &item : scene->items()){
+            if(item != &scene->Pixmap){
+                if(item == lineV || item == lineH) continue;
+                scene->removeItem(item);
+                delete item;
+            }else{
+                scene->Pixmap.setPixmap(QPixmap());
+            }
+        }
+    }catch(std::exception &e){
+        qDebug() << "clear function :" << e.what();
+    }catch(...){
+        qDebug() << "clear function :" << "Unknowned error occurred.";
+    }
+}
+
+void Qylon::GraphicsWidget::reset()
+{
+    clear();
+    scene->setSceneRect(0,0,0,0);
+    setLogo(true);
 }
 
 void Qylon::GraphicsWidget::setLogo(bool on){
     view->setLogo(on);
 }
 
+void Qylon::GraphicsWidget::setCrossHair(bool on, QColor color, int width)
+{
+    crosshair = on;
+    color = settings->getCrosshairColor();
+    width = settings->getCrosshairWidth();
+
+    if(on){
+        if(!lineH){
+            lineH = new QGraphicsLineItem;
+        }
+        if(!lineV){
+            lineV = new QGraphicsLineItem;
+        }
+        QPen pen(color);
+        pen.setWidth(width);
+        lineH->setPen(pen);
+        lineH->setLine(0, scene->sceneRect().height()/2, scene->sceneRect().width(), scene->sceneRect().height()/2);
+        lineH->setZValue(10);
+        lineV->setPen(pen);
+        lineV->setLine(scene->sceneRect().width()/2,0,scene->sceneRect().width()/2, scene->sceneRect().height());
+        lineV->setZValue(10);
+        if(!scene->items().contains(lineH)) scene->addItem(lineH);
+        if(!scene->items().contains(lineV)) scene->addItem(lineV);
+    }else{
+        for(int i=0; i< toolBar.actions().size(); ++i){
+            if(toolBar.actions().at(i)->toolTip() == "Crosshair"){
+                toolBar.actions().at(i)->setChecked(false);
+            }
+        }
+        delete lineH;
+        delete lineV;
+        lineH = nullptr;
+        lineV = nullptr;
+
+    }
+}
+
 void Qylon::GraphicsWidget::setImage(const QImage image){
+    QMutexLocker locker(&mutex);
+
     ++timerCnt;
     currentImage = image;
+
     if(bitShift !=0 && image.format() == QImage::Format_Grayscale16){
         scene->Pixmap.setPixmap(QPixmap::fromImage(shiftImage(image, bitShift)));
     }else{
         scene->Pixmap.setPixmap(QPixmap::fromImage(image));
     }
     labelImageInformation->setText(QString::number(image.depth()) + "-bit, " +
-                                  QString((image.isGrayscale()) ? "Mono" : "Color") +
-                                  ", " +
-                                  QString::number(image.width()) + "x" +
-                                  QString::number(image.height()));
+                                   QString((image.isGrayscale()) ? "Mono" : "Color") +
+                                   ", " +
+                                   QString::number(image.width()) + "x" +
+                                   QString::number(image.height()));
     labelImageInformation->setStyleSheet("color:#15487f;");
     scene->setSceneRect(0, 0, image.width(), image.height());
+    if(lineH) lineH->setLine(0, scene->sceneRect().height()/2, scene->sceneRect().width(), scene->sceneRect().height()/2);
+    if(lineV) lineV->setLine(scene->sceneRect().width()/2,0,scene->sceneRect().width()/2, scene->sceneRect().height());
 
-    // emit scene->currentPos(scene->getCurrentMousePoint());
+    view->setFit(view->isFit());
     view->setLogo(false);
 }
 
@@ -311,19 +382,37 @@ void Qylon::GraphicsWidget::updateImage()
     setImage(currentImage);
 }
 
-void Qylon::GraphicsWidget::drawGraphicsItem(QGraphicsItem *item)
+bool Qylon::GraphicsWidget::drawGraphicsItem(QGraphicsItem *item)
 {
-    QPen pen(QColor(249,157,51));
-    pen.setWidth(2);
-    QBrush brush(QColor(20,72,126, 100));
-    if(QGraphicsRectItem* rect = dynamic_cast<QGraphicsRectItem*>(item)){
-        rect->setBrush(brush);
-        rect->setPen(pen);
-    }else if(QGraphicsEllipseItem *ellipse = dynamic_cast<QGraphicsEllipseItem*>(item)){
-
+    QMutexLocker locker(&mutex);
+    try{
+        if(!item) return false;
+        if(QGraphicsRectItem* rect = dynamic_cast<QGraphicsRectItem*>(item)){
+            QBrush brush(rectangleColor);
+            rect->setBrush(brush);
+            rect->setPen(Qt::NoPen);
+        }else if(QGraphicsEllipseItem *ellipse = dynamic_cast<QGraphicsEllipseItem*>(item)){
+            QBrush brush(ellipseColor);
+            ellipse->setBrush(brush);
+            ellipse->setPen(Qt::NoPen);
+        }else if(QGraphicsLineItem *line = dynamic_cast<QGraphicsLineItem*>(item)){
+            QPen pen(outlineColor);
+            pen.setWidth(2);
+            line->setPen(pen);
+        }else{
+            qDebug() <<"Else case occurred";
+            return false;
+        }
+        item->setVisible(graphicsItemVisible);
+        scene->addItem(item);
+    }catch(std::exception &e){
+        qDebug() << "DrawGraphicsItem function :" << e.what();
+        return false;
+    }catch(...){
+        qDebug() << "DrawGraphicsItem function :" << "Unknowned error occurred.";
+        return false;
     }
-    item->setVisible(graphicsItemVisible);
-    scene->addItem(item);
+    return true;
 }
 
 void Qylon::GraphicsWidget::setFit(bool on){
@@ -340,7 +429,7 @@ void Qylon::GraphicsWidget::setFPSEnable(bool on){
 }
 
 void Qylon::GraphicsWidget::removeAllGraphicsItem(){
-    scene->removeAllItems();
+    clear();
 }
 #ifdef PCL_ENABLED
 void Qylon::GraphicsWidget::setPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudData, QString pointCloudName){

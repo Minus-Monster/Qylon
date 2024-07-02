@@ -8,7 +8,6 @@ Qylon::GraphicsView::GraphicsView(){
 }
 
 Qylon::GraphicsView::~GraphicsView(){
-    deleteLater();
 }
 
 void Qylon::GraphicsView::setRatio(float ratio){
@@ -16,28 +15,6 @@ void Qylon::GraphicsView::setRatio(float ratio){
     setTransform(matrix);
     currentScale = matrix;
     emit currentRatio(this->transform().m11());
-}
-
-void Qylon::GraphicsView::setCrossHair(bool on, int width, QColor color){
-    crossHair = on;
-    if(on){
-        if(lineH == nullptr) lineH = new QGraphicsLineItem;
-        if(lineV == nullptr) lineV = new QGraphicsLineItem;
-
-        QPen pen;
-        pen.setColor(color);
-        pen.setWidth(width);
-        lineH->setPen(pen);
-        lineV->setPen(pen);
-
-        lineH->setLine(0,this->scene()->sceneRect().height()/2, this->scene()->sceneRect().width() ,this->scene()->sceneRect().height()/2);
-        lineV->setLine(this->scene()->sceneRect().width()/2,0,this->scene()->sceneRect().width()/2, this->scene()->sceneRect().height());
-        this->scene()->addItem(lineH);
-        this->scene()->addItem(lineV);
-    }else{
-        this->scene()->removeItem(lineH);
-        this->scene()->removeItem(lineV);
-    }
 }
 
 void Qylon::GraphicsView::setScale(float zoomPercent){ // 1 = 100%, 1.5 = 150%, 0.5 = 50%
@@ -54,11 +31,6 @@ void Qylon::GraphicsView::resetScale(){
     emit currentRatio(this->transform().m11());
 }
 
-void Qylon::GraphicsView::clear()
-{
-
-}
-
 void Qylon::GraphicsView::setFit(bool on){
     fitMode = on;
     if(on)
@@ -71,10 +43,6 @@ void Qylon::GraphicsView::setFit(bool on){
 
 void Qylon::GraphicsView::resizeEvent(QResizeEvent *){
     if(fitMode) fitInView(this->scene()->sceneRect(), Qt::KeepAspectRatio);
-    if(crossHair){
-        lineH->setLine(0,this->scene()->sceneRect().height()/2, this->scene()->sceneRect().width() ,this->scene()->sceneRect().height()/2);
-        lineV->setLine(this->scene()->sceneRect().width()/2,0,this->scene()->sceneRect().width()/2, this->scene()->sceneRect().height());
-    }
     updateSceneRect(this->viewport()->rect());
 }
 

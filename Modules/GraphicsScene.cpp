@@ -1,7 +1,6 @@
 #include "GraphicsScene.h"
 
-Qylon::GraphicsScene::GraphicsScene(bool onVTK){
-    isVTK = onVTK;
+Qylon::GraphicsScene::GraphicsScene(bool onVTK) : isVTK(onVTK){
     if(onVTK){
 #ifdef PCL_ENABLED
         VTKWidget = new GraphicsVTKWidget;
@@ -10,22 +9,16 @@ Qylon::GraphicsScene::GraphicsScene(bool onVTK){
 #else
         qDebug() << "VTK is not installed on your system";
 #endif
-    }else addItem(&Pixmap);
+    }else{
+        Pixmap.setZValue(-1);
+        addItem(&Pixmap);
+    }
 }
 
 Qylon::GraphicsScene::~GraphicsScene(){
-    deleteLater();
-}
-
-void Qylon::GraphicsScene::removeAllItems()
-{
-    for(auto item : items()){
-        if(item == &Pixmap){
-
-        }else{
-            removeItem(item);
-        }
-    }
+#ifdef PCL_ENABLED
+    delete VTKWidget;
+#endif
 }
 
 bool Qylon::GraphicsScene::eventFilter(QObject *obj, QEvent *event){
@@ -34,7 +27,7 @@ bool Qylon::GraphicsScene::eventFilter(QObject *obj, QEvent *event){
 #else
     qDebug() << "VTK is not installed on your system";
 #endif
-    return eventFilter(obj, event);
+    return QGraphicsScene::eventFilter(obj, event);
 }
 
 void Qylon::GraphicsScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event){

@@ -12,6 +12,7 @@ class SerialCommunication : public QSerialPort{
     Q_OBJECT
 public:
     SerialCommunication();
+    ~SerialCommunication(){}
     bool connect(QString portName, QSerialPort::BaudRate baudRate=QSerialPort::BaudRate::Baud9600, QSerialPort::DataBits dataBits=QSerialPort::DataBits::Data8,
                  QSerialPort::Parity parity=QSerialPort::Parity::NoParity, QSerialPort::StopBits stopBits =QSerialPort::StopBits::OneStop);
     void disconnect();

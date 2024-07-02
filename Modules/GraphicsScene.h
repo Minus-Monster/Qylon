@@ -19,7 +19,6 @@ public:
     GraphicsScene(bool onVTK=false);
     ~GraphicsScene();
     QPointF getCurrentMousePoint(){ return movePoint; }
-    void removeAllItems();
 
 signals:
     void currentPos(QPointF point);

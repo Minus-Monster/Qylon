@@ -131,6 +131,8 @@ inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){
     return outImage;
 }
 
+
+
 #endif
 }
 #endif // IMAGETOOLS_H
