@@ -15,7 +15,9 @@ set(QYLON_HEADERS
     Modules/GraphicsVTKWidget.h
     Modules/GraphicsWidget.h
     Modules/TiffReader.h
+    Modules/Console.h
     Processing/vTools.h
+    Processing/vToolsWidget.h
     Processing/OutputCommunication.h
     Processing/SerialCommunication.h
     Processing/SerialCommunicationWidget.h
@@ -31,7 +33,9 @@ set(QYLON_SOURCES
     Modules/GraphicsView.cpp
     Modules/GraphicsScene.cpp
     Modules/GraphicsVTKWidget.cpp
+    Modules/Console.cpp
     Processing/vTools.cpp
+    Processing/vToolsWidget.cpp
     Processing/OutputCommunication.cpp
     Processing/SerialCommunication.cpp
     Processing/SerialCommunicationWidget.cpp
@@ -43,7 +47,8 @@ set(QYLON_RESOURCES
 # Qt Loading
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
 qt5_add_resources(QYLON_RESOURCES_RCC ${QYLON_RESOURCES})
-add_library(${PROJECT_NAME} STATIC ${QYLON_HEADERS} ${QYLON_SOURCES} ${QYLON_RESOURCES_RCC})
+add_library(${PROJECT_NAME} STATIC ${QYLON_HEADERS} ${QYLON_SOURCES} ${QYLON_RESOURCES_RCC}
+)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
 
 set(INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
