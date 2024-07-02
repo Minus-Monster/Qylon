@@ -18,5 +18,8 @@
         <file>Resources/Icon/icons8-setting-48.png</file>
         <file>Resources/Icon/icons8-zoom-in-48.png</file>
         <file>Resources/Icon/icons8-zoom-out-48.png</file>
+        <file>Resources/Icon/icons8-recipe-48.png</file>
+        <file>Resources/Icon/icons8-decrease-font-48.png</file>
+        <file>Resources/Icon/icons8-increase-font-48.png</file>
     </qresource>
 </RCC>

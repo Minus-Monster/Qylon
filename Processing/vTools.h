@@ -1,20 +1,35 @@
 #ifndef VTOOLS_H
 #define VTOOLS_H
-
 #include <QImage>
 #include <QObject>
 #include <QThread>
 #include <QMutexLocker>
 #include <QGraphicsItem>
+#include <QComboBox>
+#include <QCheckBox>
+#include <QWaitCondition>
 #include <pylondataprocessing/PylonDataProcessingIncludes.h>
 
 namespace Qylon{
 class Qylon;
+class vToolsWidget;
 class vTools : public QThread, public Pylon::DataProcessing::IOutputObserver
 {
     Q_OBJECT
 public:
-    vTools(Qylon *parentQylron=nullptr);
+    struct ResultFilter{
+        QString currentImage;
+        QList<QPair<QString, bool>> items;
+        QString itemDelimiter =";";
+        QString keyValueDelimiter = "=";
+    };
+    struct Result{
+        QList<QPair<QString, Pylon::CPylonImage>> images;
+        QList<QPair<QString, QGraphicsItem*>> items;
+        QStringList strings;
+    };
+    vTools(Qylon *parentQylon=nullptr);
+    ~vTools();
     bool loadRecipe(QString path);
     void startRecipe();
     void stopRecipe();
@@ -24,43 +39,36 @@ public:
                         Pylon::DataProcessing::CVariantContainer valueContainer,
                         const Pylon::DataProcessing::CUpdate &update,
                         intptr_t userProvidedId) override;
-    Qylon *getQylon(){
-        return parent;
-    }
-    const QImage &getImage(){
-        return outputImage;
-    }
-    const QString &getOutputText(){
-        return outputText;
-    }
-    const Pylon::WaitObject& getWaitObject(){
-        return _waitObject;
-    }
-    const QList<QPair<QString, Pylon::CPylonImage>> getImages(){
-        return images;
-    }
-    const QList<QPair<QString, QGraphicsItem*>> getItems(){
-        return items;
-    }
-    const QList<QPair<QString, QString>> getStrings(){
-        return strings;
-    }
+    Qylon *getQylon(){ return parent; }
+    QImage getSelectedImage(QList<QPair<QString, Pylon::CPylonImage>> images);
+    QString getParseredString(QStringList strings);
+    const Pylon::WaitObject& getWaitObject(){ return _waitObject; }
+    void setResultFilter(ResultFilter *resultFilter){ filter = resultFilter;}
+    QWidget *getWidget();
+    QString valueCombinationToString(QString object, QString value);
+    QString toString(QLineF line);
+    QString toString(QRectF rect);
+    QString toString(QPointF point);
+    QString toString(Pylon::DataProcessing::SEllipseF ellipse);
+    QString toString(Pylon::DataProcessing::SCircleF circle);
+    QString getLastError(){ return lastError; }
+    Result getResult(){ return resultsQueue.takeFirst(); }
 
 signals:
-    void finished();
+    void finishedProcessing();
 
 private:
     Qylon *parent = nullptr;
+    QMutex mutex;
+    QString lastError = "";
+
     Pylon::DataProcessing::CRecipe currentRecipe;
-    GenApi_3_1_Basler_pylon::CLock _memberLock;
+    Pylon::CLock _memberLock;
     Pylon::WaitObjectEx _waitObject;
 
-    QImage outputImage;
-    QString outputText;
-
-    QList<QPair<QString, Pylon::CPylonImage>> images;
-    QList<QPair<QString, QGraphicsItem*>> items;
-    QList<QPair<QString, QString>> strings;
+    QList<Result> resultsQueue;
+    ResultFilter *filter;
+    vToolsWidget *widget=nullptr;
 };
 }
 

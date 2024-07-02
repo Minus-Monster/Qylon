@@ -8,12 +8,6 @@ void Qylon::Qylon::log(QString strings){
 }
 
 Qylon::Qylon::Qylon(){
-    qWarning() << "[NOTICE] "
-                "Current bug lists : "
-                "1. Why does a trigger mode switch to 'Off'?"
-                "2. generateChildrenWidgetItem is called twice."
-                "";
-
     initialize();
 }
 
