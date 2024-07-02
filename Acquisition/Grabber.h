@@ -7,7 +7,6 @@
 #include <QObject>
 #include <QImage>
 #include <QDebug>
-#include <vector>
 
 namespace Qylon{
 class Grabber;

@@ -2,6 +2,7 @@
 #include "Qylon.h"
 #include "Camera.h"
 #include "CameraWidget.h"
+#include "Processing/ImageTools.h"
 
 #ifdef PCL_ENABLED
 #include <pcl/point_cloud.h>
@@ -359,29 +360,9 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
 #endif
     }else{
         try{
-            // Initializing QImage type
-            QString currentPixelFormat = static_cast<GenApi_3_1_Basler_pylon::CEnumerationPtr>(camera.GetNodeMap().GetNode("PixelFormat"))->ToString().c_str();
-
-            if(currentPixelFormat == "Mono8"){
-                currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_Grayscale8);
-                currentBuffer = grabResult->GetBuffer();
-
-                formatConverter.OutputPixelFormat = Pylon::PixelType_Mono8;
-            }else if(currentPixelFormat == "Mono12" || currentPixelFormat == "Mono16" ){
-                currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_Grayscale16);
-                currentBuffer = grabResult->GetBuffer();
-
-                formatConverter.OutputPixelFormat = Pylon::PixelType_Mono16;
-            }
-            else{
-                currentImage = QImage( grabResult->GetWidth(), grabResult->GetHeight(), QImage::Format_RGB32 );
-                currentBuffer = grabResult->GetBuffer();
-
-                formatConverter.OutputPixelFormat = Pylon::PixelType_BGRA8packed;
-            }
-            formatConverter.Convert(currentImage.bits(), currentImage.sizeInBytes(), grabResult);
-
-
+            Pylon::CPylonImage image;
+            image.AttachGrabResultBuffer(grabResult);
+            currentImage = convertPylonImageToQImage(image);
         }catch(const GenICam_3_1_Basler_pylon::GenericException &){
             //        qDebug() << "hEre fuck " << e.what();
         }
