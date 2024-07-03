@@ -151,7 +151,10 @@ After installing OpenMP Library, you should build PCL from scratch again by revi
 // you should put this code under line number 308
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 ```
-
+In case of using vcpkg, you need to install as below the line.
+```
+vcpkg install pcl[qt,visualization]
+```
 
 If you have trouble while you're installing PCL, this page(https://pcl.readthedocs.io/projects/tutorials/en/latest/compiling_pcl_posix.html#id2) might help you.
 
