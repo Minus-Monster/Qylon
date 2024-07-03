@@ -9,22 +9,20 @@
 #include <QDebug>
 
 namespace Qylon{
-class Grabber;
-struct APC {
-    Grabber *address;
-    unsigned int dmaIndex;
-    QList<unsigned short*> imageBuffer;
-    dma_mem *memBuf;
-    int width;
-    int height;
-};
-
 class GrabberWidget;
 class Qylon;
 class Grabber : public QObject
 {
     Q_OBJECT
 public:
+    struct APC {
+        Grabber *address;
+        unsigned int dmaIndex;
+        QList<unsigned short*> imageBuffer;
+        dma_mem *memBuf;
+        int width;
+        int height;
+    };
     Grabber(Qylon *parentQylon = nullptr, unsigned int boardIndex=0);
     bool loadApplet(QString file);
     bool loadConfiguration(QString file);

@@ -1,8 +1,7 @@
 #ifndef GRAPHICSVIEW_H
 #define GRAPHICSVIEW_H
 
-#include "qcoreapplication.h"
-#include "qgraphicssceneevent.h"
+#include <QGraphicsSceneEvent>
 #include <QGraphicsRectItem>
 #include <QDoubleSpinBox>
 #include <QDebug>

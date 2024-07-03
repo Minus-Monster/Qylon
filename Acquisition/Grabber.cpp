@@ -200,7 +200,7 @@ Fg_Struct *Qylon::Grabber::getFg()
     return currentFg;
 }
 
-Qylon::APC *Qylon::Grabber::getAPC(int dmaIndex)
+Qylon::Grabber::APC *Qylon::Grabber::getAPC(int dmaIndex)
 {
     if(apcDataList.isEmpty()) return nullptr;
     return apcDataList.at(dmaIndex);

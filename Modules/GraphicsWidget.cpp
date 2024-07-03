@@ -30,15 +30,12 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
     labelCoordinate->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     labelCoordinate->setText(" X 0\n Y 0");
     labelCoordinate->setFixedWidth(90);
-    labelCoordinate->setStyleSheet("color:#15487f;");
 
     labelPixelColor->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     labelPixelColor->setText(" RGB\n [0,0,0]");
     labelPixelColor->setFixedWidth(90);
-    labelPixelColor->setStyleSheet("color:#15487f;");
 
     labelImageInformation->setFixedWidth(170);
-    labelFPS.setStyleSheet("color:#15487f;");
 
     lineEditPixelColor->setFixedWidth(24);
     lineEditPixelColor->setReadOnly(true);

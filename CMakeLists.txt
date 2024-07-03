@@ -164,14 +164,14 @@ if(OpenCV_FOUND)
 endif()
 
 # PCL Loading
-find_package(PCL 1.13 QUIET COMPONENTS common io filters visualization)
+find_package(PCL QUIET COMPONENTS common io filters visualization)
 if(PCL_FOUND)
     message(STATUS "PCL ${PCL_VERSION} found")
     target_link_libraries(${PROJECT_NAME} PUBLIC ${PCL_LIBRARIES})
     target_include_directories(${PROJECT_NAME} PUBLIC ${PCL_INCLUDE_DIRS})
     target_compile_definitions(${PROJECT_NAME} PUBLIC PCL_ENABLED)
     #VTK
-    find_package(VTK 9.2 REQUIRED)
+    find_package(VTK REQUIRED)
     if(VTK_FOUND)
         message(STATUS "VTK ${VTK_VERSION} found")
         target_link_libraries(${PROJECT_NAME} PUBLIC ${VTK_LIBRARIES})
