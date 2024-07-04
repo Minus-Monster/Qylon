@@ -13,7 +13,7 @@ Qylon::Qylon::Qylon(){
 
 Qylon::Qylon::~Qylon(){
 #ifdef PYLON_ENABLED
-    for(Camera *obj : qAsConst(cameraList)){
+    for(Camera *obj : std::as_const(cameraList)){
         delete obj;
     }
     Pylon::PylonTerminate();

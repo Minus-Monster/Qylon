@@ -162,7 +162,7 @@ void Qylon::SerialCommunicationWidget::updateStatus(){
             labelVendorIdentifier->setText("Vendor Identifier : " + QString::number(port.vendorIdentifier()));
             labelProductIdentifier->setText("Product Identifier : " + QString::number(port.productIdentifier()));
             labelSystemLocation->setText("System Location : " + port.systemLocation());
-            labelConnectionStatus->setText("Connection : " + QString(port.isBusy() ? "Busy" : "Free"));
+            labelConnectionStatus->setText("Connection : " + QString(port.isNull() ? "Busy" : "Free"));
         }
     }
 }

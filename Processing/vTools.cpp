@@ -96,7 +96,7 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                         outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.GetArrayValue(i).ToBool())));
                     }
                 }else{
-                    outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString(value.second.ToBool())));
+                    outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.ToBool())));
                 }
             } break;
             case Pylon::DataProcessing::VariantDataType_Int64:{

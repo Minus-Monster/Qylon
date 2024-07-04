@@ -24,7 +24,6 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
 
     setLayout(&layout);
     layout.setSpacing(0);
-    layout.setMargin(0);
     layout.setContentsMargins(0,0,0,0);
 
     labelCoordinate->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
