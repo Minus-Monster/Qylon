@@ -1,7 +1,7 @@
 #include "vToolsWidget.h"
 
-Qylon::vToolsWidget::vToolsWidget(class vTools *vTools, QWidget *parent) : QWidget(parent), vTools(vTools), layout(new QVBoxLayout(this)){
-    vTools->setResultFilter(&outputList);
+Qylon::vToolsWidget::vToolsWidget(vTools *parentVTools, QWidget *parent) : QWidget(parent), layout(new QVBoxLayout(this)){
+    parentVTools->setResultFilter(&outputList);
     setWindowTitle("Basler vLauncher");
     setWindowIcon(QIcon(":/Resources/Icon.png"));
     Qt::WindowFlags flags = windowFlags();

@@ -26,7 +26,7 @@ bool Qylon::vTools::loadRecipe(QString path)
         currentRecipe.RegisterAllOutputsObserver(this, Pylon::RegistrationMode_ReplaceAll);
 
         if(widget !=nullptr) delete widget;
-        widget = new vToolsWidget(this);
+        widget = new vToolsWidget;
         widget->loadRecipeConfiguration(&currentRecipe);
     }catch (const Pylon::GenericException &e){
         lastError = e.GetDescription();

@@ -16,7 +16,7 @@ class vToolsWidget : public QWidget
 {
     Q_OBJECT
 public:
-    vToolsWidget(vTools *vTools=nullptr, QWidget *parent=nullptr);
+    vToolsWidget(vTools *parentVTools=nullptr, QWidget *parent=nullptr);
     void loadRecipeConfiguration(Pylon::DataProcessing::CRecipe *recipe);
 
 signals:
@@ -26,7 +26,6 @@ public slots:
     void updateOutputControl();
 
 private:
-    vTools *vTools;
     vTools::ResultFilter outputList;
     QVBoxLayout *layout;
     QVBoxLayout *layoutOutputControl;
