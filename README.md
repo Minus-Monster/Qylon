@@ -101,7 +101,7 @@ You can add these lines to add Qylon module.
 
 ```
 // Go to your project directory via Terminal.
-git submoudle add git@github.com:MinuParkBasler/Qylon.git
+git submoudle add git@github.com:minus-monster/Qylon.git
 git submodule init
 git submodule update
 ```
