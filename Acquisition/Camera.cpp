@@ -9,6 +9,9 @@
 #include <pcl/point_types.h>
 #endif
 
+#ifdef OPENCV_ENABLED
+#include <opencv2/core/mat.hpp>
+#endif
 
 Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
     widget = new CameraWidget(this);
