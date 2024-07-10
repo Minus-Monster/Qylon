@@ -21,5 +21,7 @@
         <file>Resources/Icon/icons8-recipe-48.png</file>
         <file>Resources/Icon/icons8-decrease-font-48.png</file>
         <file>Resources/Icon/icons8-increase-font-48.png</file>
+        <file>Resources/Icon/icons8-chevron-down-48.png</file>
+        <file>Resources/Icon/icons8-chevron-up-48.png</file>
     </qresource>
 </RCC>

@@ -116,7 +116,15 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
     toolBar.addSeparator();
 
     QDoubleSpinBox *doubleSpinBoxRatio = new QDoubleSpinBox;
-    doubleSpinBoxRatio->setStyleSheet("QDoubleSpinBox{color:white;background-color:#15487f;height:20px;}QDoubleSpinBox::up-button{}QDoubleSpinBox::down-button{}");
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+    doubleSpinBoxRatio->setFixedWidth(70);
+#else
+    doubleSpinBoxRatio->setFixedWidth(60);
+#endif
+    doubleSpinBoxRatio->setStyleSheet("QDoubleSpinBox{border-radius:5px;color:white;background-color:#15487f;height:24px;}"
+                                      "QDoubleSpinBox::up-button{width:0px; }"
+                                      "QDoubleSpinBox::down-button{width:0px; }");
+    doubleSpinBoxRatio->setReadOnly(true);
     doubleSpinBoxRatio->setFrame(false);
     doubleSpinBoxRatio->setRange(0, 9999.9);
     doubleSpinBoxRatio->setValue(100);
@@ -197,7 +205,7 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
         }
         QPushButton *buttonDown = new QPushButton("Down");
         {
-            connect(buttonDown, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->seViewDown(); });
+            // connect(buttonDown, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->seViewDown(); });
             toolBar.addWidget(buttonDown);
         }
         QPushButton *buttonLeft = new QPushButton("Left");
@@ -364,7 +372,6 @@ void Qylon::GraphicsWidget::setImage(const QImage image){
                                    ", " +
                                    QString::number(image.width()) + "x" +
                                    QString::number(image.height()));
-    labelImageInformation->setStyleSheet("color:#15487f;");
     scene->setSceneRect(0, 0, image.width(), image.height());
     if(lineH) lineH->setLine(0, scene->sceneRect().height()/2, scene->sceneRect().width(), scene->sceneRect().height()/2);
     if(lineV) lineV->setLine(scene->sceneRect().width()/2,0,scene->sceneRect().width()/2, scene->sceneRect().height());
