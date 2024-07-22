@@ -138,9 +138,9 @@ bool Qylon::Camera::openCamera(QString cameraName){
             auto pixelFormat = Pylon::CEnumParameter(nodemap, "PixelFormat");
             if (componentSelector.IsWritable()){
                 std::pair<Pylon::String_t, Pylon::String_t> formats[]{
-                    {"Range", "Coord3D_ABC32f"},
-                    {"Intensity", "Mono16"},
-                    {"Confidence", "Confidence16"} };
+                                                                      {"Range", "Coord3D_ABC32f"},
+                                                                      {"Intensity", "Mono16"},
+                                                                      {"Confidence", "Confidence16"} };
                 for (const auto& format : formats){
                     componentSelector.SetValue(format.first);
                     if (componentEnable.IsWritable()){
@@ -295,7 +295,9 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
                     switch (component.GetComponentType()){
                     case Pylon::ComponentType_Intensity:{
                         try{
-                            currentIntensity = QImage((const uchar *)component.GetData(), component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
+                            currentIntensity = QImage(component.GetWidth(), component.GetHeight(),QImage::Format_Grayscale16);
+                            memcpy(currentIntensity.bits(), component.GetData(), component.GetDataSize());
+
                             //Point Cloud
                             srcIntensity = (uint16_t*)component.GetData();
                             emit grabbedIntensity();
@@ -333,13 +335,15 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
                         //                        cv::imshow("Range", range);
 
                         emit grabbedPointCloud();
-                        break;
-                    }
-                    case Pylon::ComponentType_Confidence:
-                        currentConfidence = QImage((const uchar *)component.GetData(), component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
+                    }break;
+                    case Pylon::ComponentType_Confidence:{
+                        currentConfidence = QImage(component.GetWidth(), component.GetHeight(),QImage::Format_Grayscale16);
+                        memcpy(currentConfidence.bits(), component.GetData(), component.GetDataSize());
+
                         emit grabbedConfidence();
 
-                        break;
+                    }break;
+
                     case Pylon::ComponentType_Undefined:
                         break;
                     }}
@@ -356,8 +360,8 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
 
             //            pcPtr = convertGrabResultToPointCloud(grabResult);
             emit grabbedPointCloud();
-
-        }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+            emit grabbed();
+        }catch(const Pylon::GenericException &e){
             qDebug() << "[ERROR WHILE MAKING GRABBED IMAGE]" << e.what();
         }
 #endif
@@ -366,10 +370,10 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
             Pylon::CPylonImage image;
             image.AttachGrabResultBuffer(grabResult);
             currentImage = convertPylonImageToQImage(image);
+            emit grabbed();
         }catch(const GenICam_3_1_Basler_pylon::GenericException &){
             //        qDebug() << "hEre fuck " << e.what();
         }
-        emit grabbed();
     }
     lockImage.unlock();
 
