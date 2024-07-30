@@ -24,7 +24,7 @@ class GraphicsWidget : public QWidget{
 public:
     GraphicsWidget(QWidget *parent = nullptr);
     ~GraphicsWidget();
-    void initialize(bool isVTK=false);
+    void initialize();
     void setToolBarEnable(bool on);
     void setGraphicsItemsVisible(bool on);
     void clear();   // Remove all items from scene
@@ -47,10 +47,6 @@ public slots:
     void setFPSEnable(bool on);
     void setBitShift(int val){ bitShift = val; }
     void removeAllGraphicsItem();
-
-#ifdef PCL_ENABLED
-    void setPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudData, QString pointCloudName);
-#endif
 
 private:
     GraphicsWidgetSettings *settings;

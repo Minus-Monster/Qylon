@@ -4,19 +4,14 @@
 #include <QGraphicsPixmapItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QDebug>
-#ifdef PCL_ENABLED
-#include "GraphicsVTKWidget.h"
-#endif
+
 
 namespace Qylon{
 class GraphicsScene : public QGraphicsScene{
     Q_OBJECT
 public:
     QGraphicsPixmapItem Pixmap;
-#ifdef PCL_ENABLED
-    GraphicsVTKWidget *VTKWidget;
-#endif
-    GraphicsScene(bool onVTK=false);
+    GraphicsScene();
     ~GraphicsScene();
     QPointF getCurrentMousePoint(){ return movePoint; }
 
@@ -25,7 +20,6 @@ signals:
 
 private:
     bool pressed = false;
-    bool isVTK = false;
     QPointF pressPoint;
     QPointF movePoint;
     QPointF releasePoint;

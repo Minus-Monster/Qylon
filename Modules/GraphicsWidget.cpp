@@ -46,14 +46,15 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
         labelFPS.setText("FPS:" + QString::number(timerCnt));
         timerCnt=0;
     });
+    initialize();
 }
 
 Qylon::GraphicsWidget::~GraphicsWidget(){
     delete scene;
 }
 
-void Qylon::GraphicsWidget::initialize(bool isVTK){
-    scene = new GraphicsScene(isVTK);
+void Qylon::GraphicsWidget::initialize(){
+    scene = new GraphicsScene;
     view->setScene(scene);
 
     QWidget *spacer = new QWidget;
@@ -143,33 +144,21 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
     QAction *actionZoomIn = new QAction(QIcon(":/Resources/Icon/icons8-zoom-in-48.png"), "");
     actionZoomIn->setToolTip("Zoom In");
     connect(actionZoomIn, &QAction::triggered, this, [=](){
-        if(isVTK){
-#ifdef PCL_ENABLED
-            this->scene->VTKWidget->setScale(1.2);
-#endif
-        }else this->view->setScale((float)1.2);
+        this->view->setScale((float)1.2);
     });
     toolBar.addAction(actionZoomIn);
 
     QAction *actionZoomOut = new QAction(QIcon(":/Resources/Icon/icons8-zoom-out-48.png"), "");
     actionZoomOut->setToolTip("Zoom Out");
     connect(actionZoomOut, &QAction::triggered, this, [=](){
-        if(isVTK){
-#ifdef PCL_ENABLED
-            this->scene->VTKWidget->setScale(0.8);
-#endif
-        }else this->view->setScale((float)0.8);
+        this->view->setScale((float)0.8);
     });
     toolBar.addAction(actionZoomOut);
 
     QAction *actionOriginal = new QAction(QIcon(":/Resources/Icon/icons8-one-to-one-48.png"), "");
     actionOriginal->setToolTip("100%");
     connect(actionOriginal, &QAction::triggered, this, [=](){
-        if(isVTK){
-#ifdef PCL_ENABLED
-            this->scene->VTKWidget->resetScale();
-#endif
-        }else this->view->resetScale();
+        this->view->resetScale();
     });
     toolBar.addAction(actionOriginal);
 
@@ -194,79 +183,52 @@ void Qylon::GraphicsWidget::initialize(bool isVTK){
     });
     toolBar.addWidget(doubleSpinBoxRatio);
 
-#ifdef PCL_ENABLED
-    if(isVTK){
-        QPushButton *buttonUp = new QPushButton("Up");
-        {
-            connect(buttonUp, &QPushButton::clicked, this, [=](){
-                this->scene->VTKWidget->setViewUp();
-            });
-            toolBar.addWidget(buttonUp);
-        }
-        QPushButton *buttonDown = new QPushButton("Down");
-        {
-            // connect(buttonDown, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->seViewDown(); });
-            toolBar.addWidget(buttonDown);
-        }
-        QPushButton *buttonLeft = new QPushButton("Left");
-        {
-            connect(buttonLeft, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->setViewLeft(); });
-            toolBar.addWidget(buttonLeft);
-        }
-        QPushButton *buttonRight = new QPushButton("Right");
-        {
-            connect(buttonRight, &QPushButton::clicked, this, [=]() { this->scene->VTKWidget->setViewRight(); });
-            toolBar.addWidget(buttonRight);
-        }
-    }
-#endif
-    if (!isVTK) {
-        connect(scene, &GraphicsScene::currentPos, this, [=](QPointF point) {
-            auto rPos = point.toPoint();
-            int r, g, b = 0;
-            this->scene->Pixmap.pixmap().toImage().pixelColor(rPos.x(), rPos.y()).getRgb(&r, &g, &b);
-            QString coord = " X " + QString::number(rPos.x()) +"\n Y " + QString::number(rPos.y());
-            this->labelCoordinate->setText(coord);
+    connect(scene, &GraphicsScene::currentPos, this, [=](QPointF point) {
+        auto rPos = point.toPoint();
+        int r, g, b = 0;
+        this->scene->Pixmap.pixmap().toImage().pixelColor(rPos.x(), rPos.y()).getRgb(&r, &g, &b);
+        QString coord = " X " + QString::number(rPos.x()) +"\n Y " + QString::number(rPos.y());
+        this->labelCoordinate->setText(coord);
 
-            // auto corr = (int)((r + g + b) / 3) > 150 ? 0 : 255;
-            QString style =  QString("QLineEdit { background-color : rgb(") + QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + QString("); }");
-            this->lineEditPixelColor->setStyleSheet(style);
+        // auto corr = (int)((r + g + b) / 3) > 150 ? 0 : 255;
+        QString style =  QString("QLineEdit { background-color : rgb(") + QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + QString("); }");
+        this->lineEditPixelColor->setStyleSheet(style);
 
-            QString color;
-            if(currentImage.depth() == 16){
-                if(currentImage.allGray()){
-                    const uint16_t *line = reinterpret_cast<const uint16_t *>(currentImage.scanLine(rPos.y()));
-                    uint16_t pixelValue = line[rPos.x()];
-                    color = QString::number(pixelValue) +" (" + QString("0x%1").arg(pixelValue, 4, 16, QLatin1Char('0')).toUpper() + ")";
-                }else{
-                    qDebug() << "16bit color image setting is not set yet";
-                }
+        QString color;
+        if(currentImage.depth() == 16){
+            if(currentImage.allGray()){
+                const uint16_t *line = reinterpret_cast<const uint16_t *>(currentImage.scanLine(rPos.y()));
+                uint16_t pixelValue = line[rPos.x()];
+                color = QString::number(pixelValue) +" (" + QString("0x%1").arg(pixelValue, 4, 16, QLatin1Char('0')).toUpper() + ")";
             }else{
-                if(currentImage.allGray()){
-                    color = QString::number(currentImage.pixelColor(rPos.x(), rPos.y()).value());
-                }else{
-                    color = " RGB\n [" + QString::number(r) + "," + QString::number(g) + "," + QString::number(b) + "]";
-                }
+                qDebug() << "16bit color image setting is not set yet";
             }
-            this->labelPixelColor->setText(color);
-        });
-        QLabel *lbl1 = new QLabel("|");
-        lbl1->setStyleSheet("color:lightgray;");
-        QLabel *lbl2 = new QLabel("|");
-        lbl2->setStyleSheet("color:lightgray;");
-        QLabel *lbl3 = new QLabel("|");
-        lbl3->setStyleSheet("color:lightgray;");
+        }else{
+            if(currentImage.allGray()){
+                color = QString::number(currentImage.pixelColor(rPos.x(), rPos.y()).value());
+            }else{
+                color = " RGB\n [" + QString::number(r) + "," + QString::number(g) + "," + QString::number(b) + "]";
+            }
+        }
+        this->labelPixelColor->setText(color);
+    });
+    QLabel *lbl1 = new QLabel("|");
+    lbl1->setStyleSheet("color:lightgray;");
+    QLabel *lbl2 = new QLabel("|");
+    lbl2->setStyleSheet("color:lightgray;");
+    QLabel *lbl3 = new QLabel("|");
+    lbl3->setStyleSheet("color:lightgray;");
 
-        statusBar.addWidget(labelCoordinate);
-        statusBar.addWidget(lbl1);
-        statusBar.addWidget(lineEditPixelColor);
-        statusBar.addWidget(labelPixelColor);
-        statusBar.addWidget(lbl2);
-        statusBar.addWidget(labelImageInformation);
-        statusBar.addWidget(lbl3);
+    statusBar.addWidget(labelCoordinate);
+    statusBar.addWidget(lbl1);
+    statusBar.addWidget(lineEditPixelColor);
+    statusBar.addWidget(labelPixelColor);
+    statusBar.addWidget(lbl2);
+    statusBar.addWidget(labelImageInformation);
+    statusBar.addWidget(lbl3);
 
-        statusBar.addWidget(&labelFPS);
-    }
+    statusBar.addWidget(&labelFPS);
+
 
     // Putting Graphics View
     layout.addWidget(&toolBar);
@@ -434,9 +396,3 @@ void Qylon::GraphicsWidget::setFPSEnable(bool on){
 void Qylon::GraphicsWidget::removeAllGraphicsItem(){
     clear();
 }
-#ifdef PCL_ENABLED
-void Qylon::GraphicsWidget::setPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudData, QString pointCloudName){
-    scene->VTKWidget->setPointCloud(cloudData, pointCloudName);
-    view->viewport()->update();
-}
-#endif
