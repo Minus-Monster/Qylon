@@ -7,6 +7,7 @@
 #ifdef PCL_ENABLED
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <omp.h>
 #endif
 
 #ifdef OPENCV_ENABLED
@@ -28,74 +29,6 @@ Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
     currentInstantCamera.RegisterConfiguration(new Pylon::CAcquireContinuousConfiguration(), Pylon::RegistrationMode_ReplaceAll, Pylon::Cleanup_Delete );
     currentInstantCamera.RegisterConfiguration(this, Pylon::RegistrationMode_Append, Pylon::Cleanup_None );
 }
-#ifdef PCL_ENABLED
-struct Point{
-    float x;
-    float y;
-    float z;
-};
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::convertGrabResultToPointCloud(const Pylon::CGrabResultPtr &grabResult)
-{
-    // An organized point cloud is used, i.e., for each camera pixel there is an entry
-    // in the data structure indicating the 3D coordinates calculated from that pixel.
-    // If the camera wasn't able to create depth information for a pixel, the x, y, and z coordinates
-    // are set to NaN. These NaNs will be retained in the PCL point cloud.
-
-    // Allocate PCL point cloud.
-    const auto container = grabResult->GetDataContainer();
-    const auto rangeComponent = container.GetDataComponent(0);
-    const auto intensityComponent = container.GetDataComponent(1);
-
-    const size_t width = rangeComponent.GetWidth();
-    const size_t height = rangeComponent.GetHeight();
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr ptrPointCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    ptrPointCloud->width = (uint32_t)width;
-    ptrPointCloud->height = (uint32_t)height;
-    ptrPointCloud->points.resize(width * height);
-    ptrPointCloud->is_dense = false; // Organized point cloud
-
-    // Create a pointer to the 3D coordinates of the first point.
-    // grabResult[0] always refers to the point cloud data.
-    const auto* pSrcPoint = (const Point*)rangeComponent.GetData();
-
-    // Create a pointer to the intensity information, stored in the second buffer part.
-    const auto* pIntensity = (const uint16_t*)intensityComponent.GetData();
-
-
-    //    cv::Mat range = cv::Mat(rangeComponent.GetHeight(), rangeComponent.GetWidth(), CV_32FC3, (void*)rangeComponent.GetData());
-
-    // Set the points.
-    for (size_t i = 0; i < height * width; ++i, ++pSrcPoint, ++pIntensity)
-    {
-        // Set the x/y/z coordinates.
-        pcl::PointXYZRGB& dstPoint = ptrPointCloud->points[i];
-
-        dstPoint.x = pSrcPoint->x;
-        dstPoint.y = pSrcPoint->y;
-        dstPoint.z = pSrcPoint->z;
-
-        // Use the intensity value of the pixel for coloring the point.
-        dstPoint.r = dstPoint.g = dstPoint.b = (uint8_t)(*pIntensity >> 8);
-
-    }
-    return ptrPointCloud;
-}
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::getPointCloudData()
-{
-    return pcPtr;
-}
-
-const QImage &Qylon::Camera::getConfidence() const
-{
-    return currentConfidence;
-}
-
-const QImage &Qylon::Camera::getIntensity() const
-{
-    return currentIntensity;
-}
-
-#endif
 
 Qylon::Camera::~Camera(){
     deleteLater();
@@ -159,9 +92,9 @@ bool Qylon::Camera::openCamera(QString cameraName){
         return true;
     }catch (const Pylon::GenericException &e){
         qDebug() << "Open Setup error" << e.what();
-        parent->log(e.GetDescription());
+        Qylon::log(e.GetDescription());
     }catch (QString error){
-        parent->log(error);
+        Qylon::log(error);
     }
     lock.unlock();
     closeCamera();
@@ -180,8 +113,8 @@ void Qylon::Camera::closeCamera(){
         currentImage.swap(dummy);
         currentInstantCamera.DestroyDevice();
     }
-    catch(const Pylon::GenericException &e){ parent->log(QString::fromStdString(e.GetDescription()));}
-    catch(QString e){ parent->log(e);}
+    catch(const Pylon::GenericException &e){ Qylon::log(QString::fromStdString(e.GetDescription()));}
+    catch(QString e){ Qylon::log(e);}
 
 }
 
@@ -201,8 +134,8 @@ void Qylon::Camera::sequentialGrab(int numFrame)
         if(!this->isOpened()) throw QString("Camera is not opened.");
         currentInstantCamera.AcquisitionMode.TrySetValue(Basler_UniversalCameraParams::AcquisitionMode_MultiFrame);
         currentInstantCamera.StartGrabbing(numFrame, Pylon::GrabStrategy_OneByOne, Pylon::GrabLoop_ProvidedByInstantCamera);
-    }catch(const QString error){ parent->log("Sequential Grabbing Failed. " + error);}
-    catch(const Pylon::GenericException &e){ parent->log(("Sequential Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
+    }catch(const QString error){ Qylon::log("Sequential Grabbing Failed. " + error);}
+    catch(const Pylon::GenericException &e){ Qylon::log(("Sequential Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
 }
 
 void Qylon::Camera::continuousGrab()
@@ -211,8 +144,8 @@ void Qylon::Camera::continuousGrab()
         if(!this->isOpened()) throw QString("Camera is not opened.");
         currentInstantCamera.AcquisitionMode.TrySetValue(Basler_UniversalCameraParams::AcquisitionMode_Continuous);
         currentInstantCamera.StartGrabbing(Pylon::GrabStrategy_OneByOne, Pylon::GrabLoop_ProvidedByInstantCamera);
-    }catch(const QString error){ parent->log("Continuous Grabbing Failed. " + error);}
-    catch(const Pylon::GenericException &e){ parent->log(("Continuous Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
+    }catch(const QString error){ Qylon::log("Continuous Grabbing Failed. " + error);}
+    catch(const Pylon::GenericException &e){ Qylon::log(("Continuous Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
 }
 
 void Qylon::Camera::stopGrab()
@@ -220,7 +153,7 @@ void Qylon::Camera::stopGrab()
     try{
         if(!this->isOpened()) throw QString("Camera is not opened.");
         currentInstantCamera.StopGrabbing();
-    }catch(const Pylon::GenericException &e){ parent->log(QString::fromStdString(e.GetDescription()));}
+    }catch(const Pylon::GenericException &e){ Qylon::log(QString::fromStdString(e.GetDescription()));}
 }
 
 bool Qylon::Camera::isOpened(){
@@ -280,14 +213,6 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
         // If this buffer is of blaze camera, The buffer image above code lines is a depth image.
 #ifdef PCL_ENABLED
         try{
-            // PCL Code
-
-            pcPtr.reset(new pcl::PointCloud<pcl::PointXYZRGB>);
-            Point* srcPoint;
-            uint16_t* srcIntensity;
-            size_t width;
-            size_t height;
-            cv::Mat range;
             auto container = grabResult->GetDataContainer();
             for(size_t i = 0; i < container.GetDataComponentCount(); ++i){
                 auto component = container.GetDataComponent(i);
@@ -298,42 +223,14 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
                             currentIntensity = QImage(component.GetWidth(), component.GetHeight(),QImage::Format_Grayscale16);
                             memcpy(currentIntensity.bits(), component.GetData(), component.GetDataSize());
 
-                            //Point Cloud
-                            srcIntensity = (uint16_t*)component.GetData();
                             emit grabbedIntensity();
-
                         }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
                             qDebug()<< e.what();
                         }
                         break;
                     }
                     case Pylon::ComponentType_Range:{
-                        // Qt doesn't have any format to describe for 3 channel float type
-                        range = cv::Mat(component.GetHeight(), component.GetWidth(), CV_32FC3, (void*)component.GetData());
-                        // Point Cloud
-                        srcPoint = (Point*)component.GetData();
-                        width = component.GetWidth();
-                        height = component.GetHeight();
-                        pcPtr->width = (uint32_t)width;
-                        pcPtr->height = (uint32_t)height;
-                        pcPtr->points.resize(width*height);
-                        pcPtr->is_dense = false;
-
-                        //                        currentImage = QImage(range.cols, range.rows, QImage::Format_RGB888);
-                        //                        for (int i=0; i< range.rows; ++i){
-                        //                            uchar *p = currentImage.scanLine(i);
-                        //                            const float *in = range.ptr<float>(i);
-                        //                            for(int j=0; j < range.cols; ++j){
-                        //                                float b = std::max(0.0f, std::min(in[j*3]*255.f, 255.f));
-                        //                                float g = std::max(0.0f, std::min(in[j*3+1]*255.f, 255.f));
-                        //                                float r = std::max(0.0f, std::min(in[j*3+2]*255.f, 255.f));
-                        //                                p[j*3] = static_cast<uchar>(b);
-                        //                                p[j*3+1] = static_cast<uchar>(g);
-                        //                                p[j*3+2] = static_cast<uchar>(r);
-                        //                            }
-                        //                        }
-                        //                        cv::imshow("Range", range);
-
+                        pcPtr = convertGrabResultToPointCloud(grabResult);
                         emit grabbedPointCloud();
                     }break;
                     case Pylon::ComponentType_Confidence:{
@@ -341,25 +238,11 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
                         memcpy(currentConfidence.bits(), component.GetData(), component.GetDataSize());
 
                         emit grabbedConfidence();
-
                     }break;
-
                     case Pylon::ComponentType_Undefined:
                         break;
                     }}
             }
-            //PointCloud
-            for(size_t i=0; i< height*width; ++i, ++srcPoint, ++srcIntensity){
-                pcl::PointXYZRGB& dstPoint = pcPtr->points[i];
-                dstPoint.x = srcPoint->x;
-                dstPoint.y = srcPoint->y;
-                dstPoint.z = srcPoint->z;
-
-                dstPoint.r = dstPoint.g = dstPoint.b = (uint8_t)(*srcIntensity >> 8);
-            }
-
-            //            pcPtr = convertGrabResultToPointCloud(grabResult);
-            emit grabbedPointCloud();
             emit grabbed();
         }catch(const Pylon::GenericException &e){
             qDebug() << "[ERROR WHILE MAKING GRABBED IMAGE]" << e.what();
@@ -371,8 +254,8 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
             image.AttachGrabResultBuffer(grabResult);
             currentImage = convertPylonImageToQImage(image);
             emit grabbed();
-        }catch(const GenICam_3_1_Basler_pylon::GenericException &){
-            //        qDebug() << "hEre fuck " << e.what();
+        }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+            Qylon::log(QString("Image conversion error occurred.") + e.what());
         }
     }
     lockImage.unlock();
@@ -442,4 +325,70 @@ QMutex *Qylon::Camera::drawLock() const
 Qylon::Qylon *Qylon::Camera::getQylon(){
     return parent;
 }
+
+#ifdef PCL_ENABLED
+struct Point{
+    float x;
+    float y;
+    float z;
+};
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::convertGrabResultToPointCloud(const Pylon::CGrabResultPtr &grabResult)
+{
+    const auto container = grabResult->GetDataContainer();
+    const auto rangeComponent = container.GetDataComponent(0);
+    const auto intensityComponent = container.GetDataComponent(1);
+
+    const size_t width = rangeComponent.GetWidth();
+    const size_t height = rangeComponent.GetHeight();
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr ptrPointCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    ptrPointCloud->width = (uint32_t)width;
+    ptrPointCloud->height = (uint32_t)height;
+    ptrPointCloud->points.resize(width * height);
+    ptrPointCloud->is_dense = false; // Organized point cloud
+
+    const auto* pSrcPoint = (const Point*)rangeComponent.GetData();
+    // const auto* pIntensity = (const uint16_t*)intensityComponent.GetData();
+
+    // Set the points.
+    float minZ = std::numeric_limits<float>::max();
+    float maxZ = std::numeric_limits<float>::min();
+
+#pragma omp parallel for
+    for (size_t i = 0; i < height * width; ++i) {
+        float z = pSrcPoint[i].z;
+        if (z < minZ) minZ = z;
+        if (z > maxZ) maxZ = z;
+    }
+#pragma omp parallel for
+    for (size_t i = 0; i < height * width; ++i){
+        pcl::PointXYZRGB& dstPoint = ptrPointCloud->points[i];
+
+        dstPoint.x = pSrcPoint[i].x;
+        dstPoint.y = pSrcPoint[i].y;
+        dstPoint.z = pSrcPoint[i].z;
+
+        // dstPoint.r = dstPoint.g = dstPoint.b = (uint8_t)(pIntensity[i] >> 8);
+        float z = dstPoint.z;
+        float ratio = (z-minZ) / (maxZ - minZ);
+        dstPoint.r = (uint8_t)(255 * (1-ratio));
+        dstPoint.g = (uint8_t)(255 * (1 -fabs(2*ratio-1)));
+        dstPoint.b = (uint8_t)(255 * ratio);
+    }
+    return ptrPointCloud;
+}
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::getPointCloudData()
+{
+    return pcPtr;
+}
+
+const QImage &Qylon::Camera::getConfidence() const
+{
+    return currentConfidence;
+}
+
+const QImage &Qylon::Camera::getIntensity() const
+{
+    return currentIntensity;
+}
+#endif
 #endif
