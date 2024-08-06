@@ -45,6 +45,7 @@ set(QYLON_SOURCES
 set(QYLON_RESOURCES
     Resources.qrc
 )
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 if(Qt6_FOUND)
     message(STATUS "Configuring for Qt6")
     find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)

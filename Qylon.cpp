@@ -2,7 +2,7 @@
 #include "Acquisition/Camera.h"
 #endif
 #include <Qylon.h>
-
+namespace Qylon{
 void Qylon::Qylon::log(QString strings){
     qDebug() << "[QYLON]" << QTime::currentTime().toString() << ":" << strings;
 }
@@ -58,7 +58,7 @@ void Qylon::Qylon::updateCameraList(){
 }
 
 
-Qylon::Camera *Qylon::Qylon::addCamera(){
+Camera *Qylon::Qylon::addCamera(){
     Camera *obj = new Camera(this);
     cameraList.push_back(obj);
 
@@ -67,7 +67,7 @@ Qylon::Camera *Qylon::Qylon::addCamera(){
     return obj;
 }
 
-Qylon::vTools *Qylon::Qylon::addVTools()
+vTools *Qylon::Qylon::addVTools()
 {
     vTools *obj = new vTools(this);
     vToolsList.push_back(obj);
@@ -108,12 +108,13 @@ const Pylon::CDeviceInfo Qylon::Qylon::getCameraIndexfromNumber(unsigned int num
 #endif
 
 #ifdef GRABBER_ENABLED
-Qylon::Grabber *Qylon::Qylon::addGrabber(int boardNumIndex)
+Grabber *Qylon::Qylon::addGrabber(int boardNumIndex)
 {
     Grabber *obj = new Grabber(this, boardNumIndex);
     grabberList.push_back(obj);
 
     log("new Qylon Grabber generated");
     return obj;
+}
 }
 #endif
