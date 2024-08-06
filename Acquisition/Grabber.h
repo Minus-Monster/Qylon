@@ -24,30 +24,45 @@ public:
         int height;
     };
     Grabber(Qylon *parentQylon = nullptr, unsigned int boardIndex=0);
+    static int CallbackFromGrabber(frameindex_t picNr, void *ctx);
+
     bool loadApplet(QString file);
     bool loadConfiguration(QString file);
+
     int getDMACount();
     int getWidth(int dmaIndex);
     int getHeight(int dmaIndex);
     int getX(int dmaIndex);
     int getY(int dmaIndex);
-    int getPixelDepth(int dmaIndex);
-    void setParameterValue(QString typeName, int value, int dmaIndex=0);
-    void setParameterValue(int typeNum, int value, int dmaIndex=0);
-    int getParameterValue(QString typeName, int dmaIndex=0);
-    bool initialize(int imgBufCnt=1);
-    void reitialize(int imgBufCnt=1);
     int getBytesPerPixel(int dmaIndex=0);
-    void setImage(const QImage image);
-
-    static int CallbackFromGrabber(frameindex_t picNr, void *ctx);
+    QString getParameterStringValue(QString typeName, int dmaIndex);
+    int getParameterIntValue(QString typeName, int dmaIndex);
     Fg_Struct* getFg();
     APC *getAPC(int dmaIndex);
+
+    void setParameterValue(QString typeName, int value, int dmaIndex=0);
+    void setParameterValue(QString typeName, QString value, int dmaIndex=0);
+    void setParameterValue(int typeNum, int value, int dmaIndex=0);
+    void setImage(const QImage image);
+
+    bool initialize(int imgBufCnt=1);
+    bool isInitialized(){ return initialized;}
+
     QWidget *getWidget();
     void release();
+    void allocateAPCBuffers(APC* apc, int dmaIndex);
+    void reAllocateAPCBuffers(APC* apc, int dmaIndex);
+
+    bool saveCurrentConfig(QString fileName);
+
 
 signals:
     void sendImage(const QImage &image, unsigned int dmaIdx=0);
+    void loadedApplet(QString appletPath);
+    void loadedConfig(QString configPath);
+    void grabbingState(bool isGrabbing);
+    void initializingState(bool isInitialized);
+
 
 public slots:
     void singleGrab(int dmaIndex=0);
@@ -63,6 +78,7 @@ private:
     int boardNumIndex =0;           // physical number of grabber in PC.
     int imagePushCnt=0;             // When if use two or more image buffers to put images into grabber, it would be the counter.
     int imageBufferSize=1;          // the buffer size putting images into grabber.
+    bool initialized = false;
 
     GrabberWidget *widget;
 };}

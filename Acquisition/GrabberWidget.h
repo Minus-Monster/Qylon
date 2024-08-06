@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QSpacerItem>
 #include <QGroupBox>
+#include <QTabWidget>
 #include "Grabber.h"
 
 
@@ -23,24 +24,22 @@ class GrabberWidget : public QWidget
     Q_OBJECT
 public:
     GrabberWidget(Grabber *obj);
-    void setDefaultAppletPath(QString path);
-    void setDefaultConfigPath(QString path);
-    void setDMACount(int val);
     void getMCFStructure(QString mcfPath);
-
-signals:
-    void changedDMACount(int val);
+    void saveMCFStructure(QString savePath); //Legacy
+    void initTabWidget();
+    void refreshMCFValues();
 
 private:
     Grabber *parent;
     QVBoxLayout *layout;
+    QTabWidget *tabWidgetDMA;
 
     QLineEdit *lineLoadApplet;
     QLineEdit *lineLoadConfig;
 
     QString defaultAppletPath = "";
     QString defaultConfigPath = "";
-    QDialog *mcfDialog = nullptr;
+    QDialog *mcfEditor = nullptr;
 };
 }
 #endif

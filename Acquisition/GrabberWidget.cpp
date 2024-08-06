@@ -1,6 +1,7 @@
 #ifdef GRABBER_ENABLED
 #include "GrabberWidget.h"
 #include "Grabber.h"
+#include "Qylon.h"
 #include <QTabWidget>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -18,7 +19,6 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     setMinimumWidth(200);
 
     // GroupBox 'Initialization'
-
     QVBoxLayout *layoutLoadFiles = new QVBoxLayout;
     QHBoxLayout *layoutLoadApplet = new QHBoxLayout;
     QPushButton *buttonLoadApplet = new QPushButton;
@@ -47,7 +47,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 
         this->lineLoadConfig->setText(get);
         this->parent->loadConfiguration(get);
-        this->getMCFStructure(get);
+        // this->getMCFStructure(get);
 
     });
     lineLoadConfig = new QLineEdit;
@@ -59,6 +59,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     layoutLoadFiles->addLayout(layoutLoadConfig);
 
     QPushButton *buttonInit = new QPushButton("Initialize");
+    buttonInit->setCheckable(true);
     layoutLoadFiles->addWidget(buttonInit);
 
     QGroupBox *groupBoxInit = new QGroupBox("Initialization");
@@ -69,149 +70,159 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 
 
     // GroupBox 'Configuration'
-
     QGroupBox *groupBoxConfigurations = new QGroupBox("Configurations");
+    layout->addWidget(groupBoxConfigurations);
     QVBoxLayout *layoutConfigurations = new QVBoxLayout;
     groupBoxConfigurations->setLayout(layoutConfigurations);
-    groupBoxConfigurations->setVisible(false);
-    layout->addWidget(groupBoxConfigurations);
 
-
-    QTabWidget *tabWidget = new QTabWidget;
-    layoutConfigurations->addWidget(tabWidget);
-
+    tabWidgetDMA = new QTabWidget;
+    layoutConfigurations->addWidget(tabWidgetDMA);
     QPushButton *pushButtonEditMCF = new QPushButton("MCF Editor");
+    pushButtonEditMCF->setEnabled(false);
     connect(pushButtonEditMCF, &QPushButton::clicked, this, [&](){
-        mcfDialog->exec();
+        mcfEditor->exec();
     });
-    // connect(mcfWidget, &QTreeWidget::, this, [&](){
-
-    // });
     layoutConfigurations->addWidget(pushButtonEditMCF);
+    connect(buttonInit, &QPushButton::clicked, this, [=](bool checked){
+        if(!checked){
+            parent->release();
+            tabWidgetDMA->clear();
+        }else{
+            if(!parent->isInitialized()){
+                parent->loadApplet(this->lineLoadApplet->text());
+                parent->loadConfiguration(this->lineLoadConfig->text());
+                parent->initialize(parent->getDMACount());
+            }
+            initTabWidget();
+        }
+    });    
+    layout->addSpacerItem(new QSpacerItem(10, 100, QSizePolicy::Minimum, QSizePolicy::Maximum));
 
-    connect(buttonInit, &QPushButton::clicked, this, [=](){
-        tabWidget->clear();
-        if(!this->parent->initialize(2)) return;
-
-        groupBoxConfigurations->setVisible(true);
-
-        int cntDMA =this->parent->getDMACount();
-        for(int i=0; i<cntDMA; ++i){
-            QGroupBox *groupBox = new QGroupBox;
-
-            // ROI
-            QHBoxLayout *layoutWidth = new QHBoxLayout;
-            QLabel *labelWidth = new QLabel("Width:");
-            QSpinBox *spinBoxWidth = new QSpinBox;
-            spinBoxWidth->setRange(0, 99999999);
-            spinBoxWidth->setValue(this->parent->getWidth(i));
-            connect(spinBoxWidth, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int val){
-                spinBoxWidth->blockSignals(true);
-                this->parent->setParameterValue(FG_WIDTH, val, i);
-                spinBoxWidth->setValue(this->parent->getWidth(i));
-                spinBoxWidth->blockSignals(false);
-            });
-            layoutWidth->addWidget(labelWidth);
-            layoutWidth->addWidget(spinBoxWidth);
-
-            QHBoxLayout *layoutHeight = new QHBoxLayout;
-            QLabel *labelHeight = new QLabel("Height");
-            QSpinBox *spinBoxHeight = new QSpinBox;
-            spinBoxHeight->setRange(0, 99999999);
-            spinBoxHeight->setValue(this->parent->getHeight(i));
-            connect(spinBoxHeight, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int val){
-                spinBoxHeight->blockSignals(true);
-                this->parent->setParameterValue(FG_HEIGHT, val, i);
-                spinBoxHeight->setValue(this->parent->getHeight(i));
-                spinBoxHeight->blockSignals(false);
-            });
-            layoutHeight->addWidget(labelHeight);
-            layoutHeight->addWidget(spinBoxHeight);
-
-            QVBoxLayout *layoutSize = new QVBoxLayout;
-            layoutSize->addLayout(layoutWidth);
-            layoutSize->addLayout(layoutHeight);
-
-            QHBoxLayout *layoutX = new QHBoxLayout;
-            QLabel *labelX= new QLabel("X:");
-            QSpinBox *spinBoxX = new QSpinBox;
-            spinBoxX->setRange(0, 99999999);
-            spinBoxX->setValue(this->parent->getX(i));
-            connect(spinBoxX, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int val){
-                spinBoxX->blockSignals(true);
-                this->parent->setParameterValue(FG_XOFFSET, val, i);
-                spinBoxX->setValue(this->parent->getX(i));
-                spinBoxX->blockSignals(false);
-            });
-            layoutX->addWidget(labelX);
-            layoutX->addWidget(spinBoxX);
-
-            QHBoxLayout *layoutY = new QHBoxLayout;
-            QLabel *labelY= new QLabel("Y:");
-            QSpinBox *spinBoxY = new QSpinBox;
-            spinBoxY->setRange(0, 99999999);
-            spinBoxY->setValue(this->parent->getY(i));
-            connect(spinBoxY, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int val){
-                spinBoxY->blockSignals(true);
-                this->parent->setParameterValue(FG_YOFFSET, val, i);
-                spinBoxY->setValue(this->parent->getY(i));
-                spinBoxY->blockSignals(false);
-            });
-            layoutY->addWidget(labelY);
-            layoutY->addWidget(spinBoxY);
-
-            QVBoxLayout *layoutOffset = new QVBoxLayout;
-            layoutOffset->addLayout(layoutX);
-            layoutOffset->addLayout(layoutY);
-
-            QHBoxLayout *layoutROI = new QHBoxLayout;
-            layoutROI->addLayout(layoutSize);
-            layoutROI->addLayout(layoutOffset);
-
-
-            QVBoxLayout *layoutGroupBox = new QVBoxLayout;
-            layoutGroupBox->addLayout(layoutROI);
-
-            groupBox->setLayout(layoutGroupBox);
-            groupBox->setFlat(true);
-            tabWidget->addTab(groupBox, "DMA:" + QString::number(i));
+    connect(obj, &Grabber::loadedApplet, lineLoadApplet, &QLineEdit::setText);
+    connect(obj, &Grabber::loadedConfig, lineLoadConfig, &QLineEdit::setText);
+    connect(obj, &Grabber::initializingState, this, [=](bool on){
+        buttonInit->setChecked(on);
+        lineLoadApplet->setEnabled(!on);
+        lineLoadConfig->setEnabled(!on);
+        buttonLoadApplet->setEnabled(!on);
+        buttonLoadConfig->setEnabled(!on);
+        pushButtonEditMCF->setEnabled(on);
+        if(on){
+            initTabWidget();
+            getMCFStructure(lineLoadConfig->text());
+        }else{
+            tabWidgetDMA->clear();
         }
     });
-
-
+    connect(obj, &Grabber::grabbingState, this, [=](bool on){
+        pushButtonEditMCF->setEnabled(!on);
+        tabWidgetDMA->setEnabled(!on);
+    });
 }
 
-void Qylon::GrabberWidget::setDefaultAppletPath(QString path)
+void Qylon::GrabberWidget::initTabWidget()
 {
-    defaultAppletPath = path;
-    this->lineLoadApplet->setText(path);
-    this->parent->loadApplet(path);
-}
+    tabWidgetDMA->clear();
+    if(!parent->isInitialized()) return;
 
-void Qylon::GrabberWidget::setDefaultConfigPath(QString path)
-{
-    defaultConfigPath = path;
-    this->lineLoadConfig->setText(path);
-    this->parent->loadConfiguration(path);
-}
+    int cntDMA =this->parent->getDMACount();
+    for(int i=0; i<cntDMA; ++i){
+        QGroupBox *groupBox = new QGroupBox;
 
-void Qylon::GrabberWidget::setDMACount(int val)
-{
-    emit changedDMACount(val);
+        // ROI
+        QHBoxLayout *layoutWidth = new QHBoxLayout;
+        QLabel *labelWidth = new QLabel("Width:");
+        QSpinBox *spinBoxWidth = new QSpinBox;
+        spinBoxWidth->setRange(0, 99999999);
+        spinBoxWidth->setValue(this->parent->getWidth(i));
+        connect(spinBoxWidth, &QSpinBox::editingFinished, this, [=]{
+            spinBoxWidth->blockSignals(true);
+            this->parent->setParameterValue(FG_WIDTH, spinBoxWidth->value(), i);
+            spinBoxWidth->setValue(this->parent->getWidth(i));
+            this->refreshMCFValues();
+            spinBoxWidth->blockSignals(false);
+        });
+        layoutWidth->addWidget(labelWidth);
+        layoutWidth->addWidget(spinBoxWidth);
+
+        QHBoxLayout *layoutHeight = new QHBoxLayout;
+        QLabel *labelHeight = new QLabel("Height");
+        QSpinBox *spinBoxHeight = new QSpinBox;
+        spinBoxHeight->setRange(0, 99999999);
+        spinBoxHeight->setValue(this->parent->getHeight(i));
+        connect(spinBoxHeight, &QSpinBox::editingFinished, this, [=]{
+            spinBoxHeight->blockSignals(true);
+            this->parent->setParameterValue(FG_HEIGHT, spinBoxHeight->value(), i);
+            spinBoxHeight->setValue(this->parent->getHeight(i));
+            this->refreshMCFValues();
+            spinBoxHeight->blockSignals(false);
+        });
+        layoutHeight->addWidget(labelHeight);
+        layoutHeight->addWidget(spinBoxHeight);
+
+        QVBoxLayout *layoutSize = new QVBoxLayout;
+        layoutSize->addLayout(layoutWidth);
+        layoutSize->addLayout(layoutHeight);
+
+        QHBoxLayout *layoutX = new QHBoxLayout;
+        QLabel *labelX= new QLabel("X:");
+        QSpinBox *spinBoxX = new QSpinBox;
+        spinBoxX->setRange(0, 99999999);
+        spinBoxX->setValue(this->parent->getX(i));
+        connect(spinBoxX, &QSpinBox::editingFinished, this, [=]{
+            spinBoxX->blockSignals(true);
+            this->parent->setParameterValue(FG_XOFFSET, spinBoxX->value(), i);
+            spinBoxX->setValue(this->parent->getX(i));
+            this->refreshMCFValues();
+            spinBoxX->blockSignals(false);
+        });
+        layoutX->addWidget(labelX);
+        layoutX->addWidget(spinBoxX);
+
+        QHBoxLayout *layoutY = new QHBoxLayout;
+        QLabel *labelY= new QLabel("Y:");
+        QSpinBox *spinBoxY = new QSpinBox;
+        spinBoxY->setRange(0, 99999999);
+        spinBoxY->setValue(this->parent->getY(i));
+        connect(spinBoxY, &QSpinBox::editingFinished, this, [=]{
+            spinBoxY->blockSignals(true);
+            this->parent->setParameterValue(FG_YOFFSET, spinBoxY->value(), i);
+            spinBoxY->setValue(this->parent->getY(i));
+            this->refreshMCFValues();
+            spinBoxY->blockSignals(false);
+        });
+        layoutY->addWidget(labelY);
+        layoutY->addWidget(spinBoxY);
+
+        QVBoxLayout *layoutOffset = new QVBoxLayout;
+        layoutOffset->addLayout(layoutX);
+        layoutOffset->addLayout(layoutY);
+
+        QHBoxLayout *layoutROI = new QHBoxLayout;
+        layoutROI->addLayout(layoutSize);
+        layoutROI->addLayout(layoutOffset);
+
+
+        QVBoxLayout *layoutGroupBox = new QVBoxLayout;
+        layoutGroupBox->addLayout(layoutROI);
+
+        groupBox->setLayout(layoutGroupBox);
+        groupBox->setFlat(true);
+        tabWidgetDMA->addTab(groupBox, "DMA:" + QString::number(i));
+    }
 }
 
 void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
 {
+    Qylon::log("Generating MCF Editor");
     QFile file(mcfPath);
-    qDebug() << "Start analyzing " << mcfPath;
-
     QString sectionParser = "[";
     QString valueParser = "=";
 
-    if(mcfDialog != nullptr) mcfDialog->deleteLater();
-    mcfDialog = new QDialog(this);
+    if(mcfEditor != nullptr) mcfEditor->deleteLater();
+    mcfEditor = new QDialog(this);
     QVBoxLayout *mcfLayout = new QVBoxLayout;
-    mcfDialog->setLayout(mcfLayout);
+    mcfEditor->setLayout(mcfLayout);
 
     QLineEdit *lineEditSearch = new QLineEdit;
     lineEditSearch->setFrame(true);
@@ -221,12 +232,25 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
     mcfLayout->addWidget(lineEditSearch);
 
 
-    QTreeWidget *widget = new QTreeWidget(mcfDialog);
+    QTreeWidget *widget = new QTreeWidget(mcfEditor);
     widget->setHeaderLabels(QStringList() << "Parameter" << "Value");
     widget->header()->resizeSection(0, 200);
     mcfLayout->addWidget(widget);
+    QPushButton *saveButton = new QPushButton("Save MCF");
+    mcfLayout->addWidget(saveButton);
+    saveButton->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+    connect(saveButton, &QPushButton::clicked, this, [this]() {
+        QString savePath = QFileDialog::getSaveFileName(this, "Save MCF", QDir::currentPath(), "MCF Files (*.mcf);;All Files (*)");
+        if (!savePath.isEmpty()) {
+            if(parent->saveCurrentConfig(savePath)){
+                QMessageBox::information(this, "MCF Editor", "File saved successfully.");
+            }else{
+                QMessageBox::warning(this, "MCF Editor", "Failed to save the mcf file.");
+            }
+        }
+    });
 
-    mcfDialog->setMinimumSize(400,300);
+    mcfEditor->setMinimumSize(400,300);
     widget->setMinimumSize(400,300);
 
     if(file.open(QIODevice::ReadOnly | QIODevice::Text)){
@@ -250,11 +274,10 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
             QLineEdit *lineEditParameterValue = new QLineEdit(values.last().remove(";"));
             lineEditParameterValue->setFrame(false);
             lineEditParameterValue->setObjectName(values.first());
-            connect(lineEditParameterValue, &QLineEdit::returnPressed, [lineEditParameterValue, currentParent, this](){
+            connect(lineEditParameterValue, &QLineEdit::returnPressed, this, [lineEditParameterValue, currentParent, this](){
                 int r = QMessageBox::question(nullptr, "MCF Editor", "Are you sure to change this value?", QMessageBox::Cancel | QMessageBox::Ok, QMessageBox::Cancel);
                 if(r == QMessageBox::Cancel){
                     lineEditParameterValue->undo();
-                    return;
                 }
                 QString parent = currentParent->text(0);
                 QString obj = lineEditParameterValue->objectName();
@@ -265,9 +288,13 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
                     lineEditParameterValue->text().toInt(&isNumeric);
                     if(isNumeric){
                         this->parent->setParameterValue(obj, lineEditParameterValue->text().toInt(), parent.toInt());
+                        Qylon::log(obj + QString(" is changed to " + QString::number(this->parent->getParameterIntValue(obj, parent.toInt()))));
+                    }else{
+                        this->parent->setParameterValue(obj, lineEditParameterValue->text(), parent.toInt());
+                        Qylon::log(obj + QString(" is changed to " + this->parent->getParameterStringValue(obj, parent.toInt())));
                     }
-
-                    qDebug() << "Name" << obj << "DMA" << parent.toInt() << "value" << lineEditParameterValue->text().toInt();
+                    this->refreshMCFValues();
+                    if(obj.contains("FG_")) initTabWidget();
                 }
             });
 
@@ -294,7 +321,71 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
         }
     };
     connect(lineEditSearch, &QLineEdit::textChanged, filterItems);
-
-
 }
+
+void Qylon::GrabberWidget::saveMCFStructure(QString savePath)
+{
+    if (!mcfEditor) return;
+
+    QFile file(savePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "MCF Editor", "Failed to save the file.");
+        return;
+    }
+
+    QTextStream out(&file);
+
+    QTreeWidget *widget = mcfEditor->findChild<QTreeWidget*>();
+    if (!widget) return;
+
+    for (int i = 0; i < widget->topLevelItemCount(); ++i) {
+        QTreeWidgetItem *section = widget->topLevelItem(i);
+        out << "[" << section->text(0) << "]\n";
+
+        for (int j = 0; j < section->childCount(); ++j) {
+            QTreeWidgetItem *child = section->child(j);
+            QLineEdit *lineEditParameterValue = qobject_cast<QLineEdit*>(widget->itemWidget(child, 1));
+            if (lineEditParameterValue) {
+                out << child->text(0) << "=" << lineEditParameterValue->text() << ";\n";
+            }
+        }
+        if(i != widget->topLevelItemCount()-1) out << "\n";
+    }
+
+    file.close();
+    QMessageBox::information(this, "MCF Editor", "File saved successfully.");
+}
+
+void Qylon::GrabberWidget::refreshMCFValues()
+{
+    if (!mcfEditor) return;
+
+    QTreeWidget *widget = mcfEditor->findChild<QTreeWidget*>();
+    if (!widget) return;
+
+    for (int i = 0; i < widget->topLevelItemCount(); ++i) {
+        QTreeWidgetItem *topItem = widget->topLevelItem(i);
+        for (int j = 0; j < topItem->childCount(); ++j) {
+            QTreeWidgetItem *childItem = topItem->child(j);
+            QLineEdit *lineEdit = qobject_cast<QLineEdit*>(widget->itemWidget(childItem, 1));
+            if (lineEdit) {
+                QString parameter = childItem->text(0);
+                QString section = topItem->text(0);
+                QString filterString = "ID";
+                if (section.startsWith(filterString)) {
+                    section = section.remove(filterString);
+                    bool isNumeric = false;
+                    lineEdit->text().toInt(&isNumeric);
+                    if (isNumeric) {
+                        lineEdit->setText(QString::number(this->parent->getParameterIntValue(parameter, section.toInt())));
+                    } else {
+                        lineEdit->setText(this->parent->getParameterStringValue(parameter, section.toInt()));
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 #endif
