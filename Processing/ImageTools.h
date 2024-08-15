@@ -1,6 +1,7 @@
 #ifndef IMAGETOOLS_H
 #define IMAGETOOLS_H
 #include <QImage>
+#include <QDebug>
 #ifdef PYLON_ENABLED
 #include <pylon/ImageFormatConverter.h>
 #include <pylon/PylonImage.h>
@@ -121,9 +122,15 @@ inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){
     case Pylon::PixelType_Data64f:
         break;
     }
-    QImage outImage(pylonImg.GetWidth(), pylonImg.GetHeight(),format);
+    QImage outImage(pylonImg.GetWidth(), pylonImg.GetHeight(), format);
     if(format != QImage::Format_RGB32){
-        memcpy(outImage.bits(), pylonImg.GetBuffer(), pylonImg.GetImageSize());
+        // converter.OutputPixelFormat = pylonImg.GetPixelType();
+        // converter.Convert(outImage.bits(), (size_t)pylonImg.GetImageSize(), pylonImg);
+        // memcpy(outImage.bits(), pylonImg.GetBuffer(), pylonImg.GetImageSize());
+        int width = pylonImg.GetWidth();
+        int height = pylonImg.GetHeight();
+        const uchar* buffer = static_cast<const uchar*>(pylonImg.GetBuffer());
+        outImage = QImage(buffer, width, height, width, format).copy();
     }else{
         converter.OutputPixelFormat = Pylon::PixelType_BGRA8packed;
         converter.Convert(outImage.bits(), outImage.sizeInBytes(), pylonImg);
