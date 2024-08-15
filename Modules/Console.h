@@ -44,7 +44,14 @@ public:
     }
     void append(QString string){
         QMutexLocker locker(&mutex);
-        if(textEdit->document()->blockCount() > 300){
+        QString keyword = "Warning";
+        if (string.contains(keyword)) {
+            string = "<b><span style=\"color:red;\">" + string + "</span></b>";
+        }else {
+            string = "<span>" + string + "</span>";
+        }
+
+        if(textEdit->document()->blockCount() > 1000){
             QTextCursor cursor(textEdit->document());
             cursor.movePosition(QTextCursor::Start);
             cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, 0);
