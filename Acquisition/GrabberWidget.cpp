@@ -16,7 +16,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 
     layout = new QVBoxLayout(this);
     setLayout(layout);
-    setMinimumWidth(200);
+    setMinimumWidth(250);
 
     // GroupBox 'Initialization'
     QVBoxLayout *layoutLoadFiles = new QVBoxLayout;
@@ -47,8 +47,6 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 
         this->lineLoadConfig->setText(get);
         this->parent->loadConfiguration(get);
-        // this->getMCFStructure(get);
-
     });
     lineLoadConfig = new QLineEdit;
     lineLoadConfig->setPlaceholderText("Load a configuration file");
@@ -58,7 +56,16 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     layoutLoadFiles->addLayout(layoutLoadApplet);
     layoutLoadFiles->addLayout(layoutLoadConfig);
 
-    QPushButton *buttonInit = new QPushButton("Initialize");
+    QSpinBox *spinBoxImageBuffer = new QSpinBox;
+    spinBoxImageBuffer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    spinBoxImageBuffer->setRange(1,10);
+    spinBoxImageBuffer->setValue(3);
+    QHBoxLayout *layoutImageBuffer = new QHBoxLayout;
+    layoutImageBuffer->addWidget(new QLabel("Image Buffer"));
+    layoutImageBuffer->addWidget(spinBoxImageBuffer);
+    layoutLoadFiles->addLayout(layoutImageBuffer);
+
+    QPushButton *buttonInit = new QPushButton("Initialization");
     buttonInit->setCheckable(true);
     layoutLoadFiles->addWidget(buttonInit);
 
@@ -67,14 +74,14 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     layout->addWidget(groupBoxInit);
     groupBoxInit->setLayout(layoutInit);
     layoutInit->addLayout(layoutLoadFiles);
-
+    groupBoxInit->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     // GroupBox 'Configuration'
     QGroupBox *groupBoxConfigurations = new QGroupBox("Configurations");
     layout->addWidget(groupBoxConfigurations);
     QVBoxLayout *layoutConfigurations = new QVBoxLayout;
     groupBoxConfigurations->setLayout(layoutConfigurations);
-
+    groupBoxConfigurations->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     tabWidgetDMA = new QTabWidget;
     layoutConfigurations->addWidget(tabWidgetDMA);
     QPushButton *pushButtonEditMCF = new QPushButton("MCF Editor");
@@ -91,17 +98,18 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
             if(!parent->isInitialized()){
                 parent->loadApplet(this->lineLoadApplet->text());
                 parent->loadConfiguration(this->lineLoadConfig->text());
-                parent->initialize(parent->getDMACount());
+                parent->initialize(spinBoxImageBuffer->value());
             }
             initTabWidget();
         }
     });    
-    layout->addSpacerItem(new QSpacerItem(10, 100, QSizePolicy::Minimum, QSizePolicy::Maximum));
+    layout->addSpacerItem(new QSpacerItem(0, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
     connect(obj, &Grabber::loadedApplet, lineLoadApplet, &QLineEdit::setText);
     connect(obj, &Grabber::loadedConfig, lineLoadConfig, &QLineEdit::setText);
     connect(obj, &Grabber::initializingState, this, [=](bool on){
         buttonInit->setChecked(on);
+        spinBoxImageBuffer->setEnabled(!on);
         lineLoadApplet->setEnabled(!on);
         lineLoadConfig->setEnabled(!on);
         buttonLoadApplet->setEnabled(!on);
@@ -128,6 +136,7 @@ void Qylon::GrabberWidget::initTabWidget()
     int cntDMA =this->parent->getDMACount();
     for(int i=0; i<cntDMA; ++i){
         QGroupBox *groupBox = new QGroupBox;
+        groupBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
         // ROI
         QHBoxLayout *layoutWidth = new QHBoxLayout;
@@ -135,6 +144,7 @@ void Qylon::GrabberWidget::initTabWidget()
         QSpinBox *spinBoxWidth = new QSpinBox;
         spinBoxWidth->setRange(0, 99999999);
         spinBoxWidth->setValue(this->parent->getWidth(i));
+        spinBoxWidth->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(spinBoxWidth, &QSpinBox::editingFinished, this, [=]{
             spinBoxWidth->blockSignals(true);
             this->parent->setParameterValue(FG_WIDTH, spinBoxWidth->value(), i);
@@ -150,6 +160,7 @@ void Qylon::GrabberWidget::initTabWidget()
         QSpinBox *spinBoxHeight = new QSpinBox;
         spinBoxHeight->setRange(0, 99999999);
         spinBoxHeight->setValue(this->parent->getHeight(i));
+        spinBoxHeight->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(spinBoxHeight, &QSpinBox::editingFinished, this, [=]{
             spinBoxHeight->blockSignals(true);
             this->parent->setParameterValue(FG_HEIGHT, spinBoxHeight->value(), i);
@@ -169,6 +180,7 @@ void Qylon::GrabberWidget::initTabWidget()
         QSpinBox *spinBoxX = new QSpinBox;
         spinBoxX->setRange(0, 99999999);
         spinBoxX->setValue(this->parent->getX(i));
+        spinBoxX->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
         connect(spinBoxX, &QSpinBox::editingFinished, this, [=]{
             spinBoxX->blockSignals(true);
             this->parent->setParameterValue(FG_XOFFSET, spinBoxX->value(), i);
@@ -184,6 +196,7 @@ void Qylon::GrabberWidget::initTabWidget()
         QSpinBox *spinBoxY = new QSpinBox;
         spinBoxY->setRange(0, 99999999);
         spinBoxY->setValue(this->parent->getY(i));
+        spinBoxY->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
         connect(spinBoxY, &QSpinBox::editingFinished, this, [=]{
             spinBoxY->blockSignals(true);
             this->parent->setParameterValue(FG_YOFFSET, spinBoxY->value(), i);
@@ -210,6 +223,7 @@ void Qylon::GrabberWidget::initTabWidget()
         groupBox->setFlat(true);
         tabWidgetDMA->addTab(groupBox, "DMA:" + QString::number(i));
     }
+    tabWidgetDMA->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 
 void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
