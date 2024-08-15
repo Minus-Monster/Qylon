@@ -116,5 +116,5 @@ Grabber *Qylon::Qylon::addGrabber(int boardNumIndex)
     log("new Qylon Grabber generated");
     return obj;
 }
-}
 #endif
+}
