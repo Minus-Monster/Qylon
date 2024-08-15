@@ -109,7 +109,7 @@ void Qylon::GraphicsWidget::initialize(){
     actionSettings->setToolTip("Settings");
     toolBar.addAction(actionSettings);
     connect(actionSettings, &QAction::triggered, this, [=](){
-        settings->exec();
+        settings->show();
     });
     connect(settings, &GraphicsWidgetSettings::setBitShift, this, &GraphicsWidget::setBitShift);
 
