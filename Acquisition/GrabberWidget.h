@@ -25,7 +25,6 @@ class GrabberWidget : public QWidget
 public:
     GrabberWidget(Grabber *obj);
     void getMCFStructure(QString mcfPath);
-    void saveMCFStructure(QString savePath); //Legacy
     void initTabWidget();
     void refreshMCFValues();
 

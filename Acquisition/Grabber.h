@@ -51,7 +51,7 @@ public:
     void setParameterValue(QString typeName, QString value, int dmaIndex=0);
     void setParameterValue(int typeNum, int value, int dmaIndex=0);
 
-    bool initialize(int imgBufCnt=1, bool async =true);
+    bool initialize(int imgBufCnt=1);
     bool isInitialized(){ return initialized;}
 
     QWidget *getWidget();
@@ -68,6 +68,7 @@ signals:
     void loadedConfig(QString configPath);
     void grabbingState(bool isGrabbing);
     void initializingState(bool isInitialized);
+    void updatedParametersValue();
 
 
 public slots:
@@ -87,7 +88,6 @@ private:
     int imagePushCnt=0;             // When if use two or more image buffers to put images into grabber, it would be the counter.
     int imageBufferSize=1;          // the buffer size putting images into grabber.
     bool initialized = false;
-    bool isAsyncMode = true;
 
     QMutex mutex;
 

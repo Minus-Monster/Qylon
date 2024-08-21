@@ -78,6 +78,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 
     // GroupBox 'Configuration'
     QGroupBox *groupBoxConfigurations = new QGroupBox("Configurations");
+    groupBoxConfigurations->setHidden(true);
     layout->addWidget(groupBoxConfigurations);
     QVBoxLayout *layoutConfigurations = new QVBoxLayout;
     groupBoxConfigurations->setLayout(layoutConfigurations);
@@ -94,6 +95,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         if(!checked){
             parent->release();
             tabWidgetDMA->clear();
+            groupBoxConfigurations->setHidden(true);
         }else{
             if(!parent->isInitialized()){
                 parent->loadApplet(this->lineLoadApplet->text());
@@ -101,6 +103,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
                 parent->initialize(spinBoxImageBuffer->value());
             }
             initTabWidget();
+            groupBoxConfigurations->setHidden(false);
         }
     });    
     layout->addSpacerItem(new QSpacerItem(0, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
@@ -118,13 +121,18 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         if(on){
             initTabWidget();
             getMCFStructure(lineLoadConfig->text());
+            groupBoxConfigurations->setHidden(false);
         }else{
             tabWidgetDMA->clear();
+            groupBoxConfigurations->setHidden(true);
         }
     });
     connect(obj, &Grabber::grabbingState, this, [=](bool on){
         pushButtonEditMCF->setEnabled(!on);
         tabWidgetDMA->setEnabled(!on);
+    });
+    connect(obj, &Grabber::updatedParametersValue, this, [=]{
+        refreshMCFValues();
     });
 }
 
@@ -149,7 +157,6 @@ void Qylon::GrabberWidget::initTabWidget()
             spinBoxWidth->blockSignals(true);
             this->parent->setParameterValue(FG_WIDTH, spinBoxWidth->value(), i);
             spinBoxWidth->setValue(this->parent->getWidth(i));
-            this->refreshMCFValues();
             spinBoxWidth->blockSignals(false);
         });
         layoutWidth->addWidget(labelWidth);
@@ -165,7 +172,6 @@ void Qylon::GrabberWidget::initTabWidget()
             spinBoxHeight->blockSignals(true);
             this->parent->setParameterValue(FG_HEIGHT, spinBoxHeight->value(), i);
             spinBoxHeight->setValue(this->parent->getHeight(i));
-            this->refreshMCFValues();
             spinBoxHeight->blockSignals(false);
         });
         layoutHeight->addWidget(labelHeight);
@@ -185,7 +191,6 @@ void Qylon::GrabberWidget::initTabWidget()
             spinBoxX->blockSignals(true);
             this->parent->setParameterValue(FG_XOFFSET, spinBoxX->value(), i);
             spinBoxX->setValue(this->parent->getX(i));
-            this->refreshMCFValues();
             spinBoxX->blockSignals(false);
         });
         layoutX->addWidget(labelX);
@@ -201,7 +206,6 @@ void Qylon::GrabberWidget::initTabWidget()
             spinBoxY->blockSignals(true);
             this->parent->setParameterValue(FG_YOFFSET, spinBoxY->value(), i);
             spinBoxY->setValue(this->parent->getY(i));
-            this->refreshMCFValues();
             spinBoxY->blockSignals(false);
         });
         layoutY->addWidget(labelY);
@@ -222,6 +226,18 @@ void Qylon::GrabberWidget::initTabWidget()
         groupBox->setLayout(layoutGroupBox);
         groupBox->setFlat(true);
         tabWidgetDMA->addTab(groupBox, "DMA:" + QString::number(i));
+
+        connect(parent, &Grabber::updatedParametersValue, this, [=]{
+            int width = parent->getWidth(i);
+            int height = parent->getHeight(i);
+            int x = parent->getX(i);
+            int y = parent->getY(i);
+
+            spinBoxWidth->setValue(width);
+            spinBoxHeight->setValue(height);
+            spinBoxX->setValue(x);
+            spinBoxY->setValue(y);
+        });
     }
     tabWidgetDMA->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
@@ -237,10 +253,12 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
     mcfEditor = new QDialog(this);
     QVBoxLayout *mcfLayout = new QVBoxLayout;
     mcfEditor->setLayout(mcfLayout);
+    mcfEditor->setWindowTitle("MCF Editor");
+    mcfEditor->setWindowIcon(QIcon(":/Resources/Icon.png"));
 
     QLineEdit *lineEditSearch = new QLineEdit;
     lineEditSearch->setFrame(true);
-    lineEditSearch->setPlaceholderText("Search the parameter");
+    lineEditSearch->setPlaceholderText("Search:");
     lineEditSearch->setClearButtonEnabled(true);
     lineEditSearch->setStyleSheet("QLineEdit{ border: 1px solid gray; height: 20px; }");
     mcfLayout->addWidget(lineEditSearch);
@@ -302,10 +320,8 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
                     lineEditParameterValue->text().toInt(&isNumeric);
                     if(isNumeric){
                         this->parent->setParameterValue(obj, lineEditParameterValue->text().toInt(), parent.toInt());
-                        Qylon::log(obj + QString(" is changed to " + QString::number(this->parent->getParameterIntValue(obj, parent.toInt()))));
                     }else{
                         this->parent->setParameterValue(obj, lineEditParameterValue->text(), parent.toInt());
-                        Qylon::log(obj + QString(" is changed to " + this->parent->getParameterStringValue(obj, parent.toInt())));
                     }
                     this->refreshMCFValues();
                     if(obj.contains("FG_")) initTabWidget();
@@ -337,38 +353,6 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
     connect(lineEditSearch, &QLineEdit::textChanged, filterItems);
 }
 
-void Qylon::GrabberWidget::saveMCFStructure(QString savePath)
-{
-    if (!mcfEditor) return;
-
-    QFile file(savePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "MCF Editor", "Failed to save the file.");
-        return;
-    }
-
-    QTextStream out(&file);
-
-    QTreeWidget *widget = mcfEditor->findChild<QTreeWidget*>();
-    if (!widget) return;
-
-    for (int i = 0; i < widget->topLevelItemCount(); ++i) {
-        QTreeWidgetItem *section = widget->topLevelItem(i);
-        out << "[" << section->text(0) << "]\n";
-
-        for (int j = 0; j < section->childCount(); ++j) {
-            QTreeWidgetItem *child = section->child(j);
-            QLineEdit *lineEditParameterValue = qobject_cast<QLineEdit*>(widget->itemWidget(child, 1));
-            if (lineEditParameterValue) {
-                out << child->text(0) << "=" << lineEditParameterValue->text() << ";\n";
-            }
-        }
-        if(i != widget->topLevelItemCount()-1) out << "\n";
-    }
-
-    file.close();
-    QMessageBox::information(this, "MCF Editor", "File saved successfully.");
-}
 
 void Qylon::GrabberWidget::refreshMCFValues()
 {
