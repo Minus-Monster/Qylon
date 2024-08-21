@@ -18,9 +18,11 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
     toolBar.setWindowTitle("Image Tools");
     toolBar.layout()->setSpacing(1);
     toolBar.setIconSize(QSize(24,24));
-
+    toolBar.setStyleSheet("QToolBar{border: 1px solid lightgray; border-bottom: 1px solid lightgray;}");
+    view->setStyleSheet("QGraphicsView{border-style:none; border-top: 1px solid lightgray; border-left:1px solid lightgray; border-right:1px solid lightgray;}");
     statusBar.setSizeGripEnabled(false);
-    statusBar.setStyleSheet("QStatusBar::item { border: none; }");
+    statusBar.setStyleSheet("QStatusBar::item { border: none; } QStatusBar{border:1px solid lightgray;}");
+    statusBar.setFixedHeight(45);
 
     setLayout(&layout);
     layout.setSpacing(0);
@@ -42,6 +44,7 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
 
     settings->setBaseSize(500,500);
 
+    labelFPS.setFixedWidth(80);
     connect(&fpsTimer, &QTimer::timeout, this, [&](){
         labelFPS.setText("FPS:" + QString::number(timerCnt));
         timerCnt=0;
@@ -162,7 +165,10 @@ void Qylon::GraphicsWidget::initialize(){
     });
     toolBar.addAction(actionOriginal);
 
-    QAction *actionFit = new QAction(QIcon(":/Resources/Icon/icons8-separating-48.png"), "");
+    QIcon fitIcon;
+    fitIcon.addPixmap(QPixmap(":/Resources/Icon/icons8-expand-48.png"), QIcon::Normal, QIcon::Off);
+    fitIcon.addPixmap(QPixmap(":/Resources/Icon/icons8-collapse-48.png"), QIcon::Normal, QIcon::On);
+    QAction *actionFit = new QAction(QIcon(fitIcon), "");
     actionFit->setCheckable(true);
     actionFit->setChecked(false);
     actionFit->setToolTip("Fit");

@@ -41,6 +41,7 @@ public:
         layout->setContentsMargins(0,0,0,0);
 
         setLayout(layout);
+        textEdit->setStyleSheet("QTextEdit{border-style:none; border-top: 1px solid lightgray;}");
     }
     void append(QString string){
         QMutexLocker locker(&mutex);
