@@ -14,7 +14,6 @@
         <file>Resources/Icon/icons8-ethernet-48.png</file>
         <file>Resources/Icon/icons8-one-to-one-48.png</file>
         <file>Resources/Icon/icons8-opened-folder-48.png</file>
-        <file>Resources/Icon/icons8-separating-48.png</file>
         <file>Resources/Icon/icons8-setting-48.png</file>
         <file>Resources/Icon/icons8-zoom-in-48.png</file>
         <file>Resources/Icon/icons8-zoom-out-48.png</file>
@@ -23,5 +22,11 @@
         <file>Resources/Icon/icons8-increase-font-48.png</file>
         <file>Resources/Icon/icons8-chevron-down-48.png</file>
         <file>Resources/Icon/icons8-chevron-up-48.png</file>
+        <file>Resources/Icon/icons8-play-continuous-48.png</file>
+        <file>Resources/Icon/icons8-play-sequence-48.png</file>
+        <file>Resources/Icon/icons8-about-48.png</file>
+        <file>Resources/Icon/icons8-collapse-48.png</file>
+        <file>Resources/Icon/icons8-debug-48.png</file>
+        <file>Resources/Icon/icons8-expand-48.png</file>
     </qresource>
 </RCC>
