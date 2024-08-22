@@ -80,7 +80,6 @@ private:
     Pylon::CImageFormatConverter formatConverter;
 
 #ifdef PCL_ENABLED
-    std::shared_ptr<pcl::visualization::CloudViewer> viewer;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcPtr;
 #endif
 

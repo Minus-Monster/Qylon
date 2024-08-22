@@ -10,10 +10,6 @@
 #include <omp.h>
 #endif
 
-#ifdef OPENCV_ENABLED
-#include <opencv2/core/mat.hpp>
-#endif
-
 Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
     widget = new CameraWidget(this);
     connect(this, &Camera::grabbingState, widget, [=](bool grabbing){
@@ -338,41 +334,64 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::convertGrabResultToPointCl
     const auto rangeComponent = container.GetDataComponent(0);
     const auto intensityComponent = container.GetDataComponent(1);
 
-    const size_t width = rangeComponent.GetWidth();
-    const size_t height = rangeComponent.GetHeight();
+    const uint32_t width = rangeComponent.GetWidth();
+    const uint32_t height = rangeComponent.GetHeight();
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr ptrPointCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    ptrPointCloud->width = (uint32_t)width;
-    ptrPointCloud->height = (uint32_t)height;
+    ptrPointCloud->width = width;
+    ptrPointCloud->height = height;
     ptrPointCloud->points.resize(width * height);
     ptrPointCloud->is_dense = false; // Organized point cloud
 
     const auto* pSrcPoint = (const Point*)rangeComponent.GetData();
-    // const auto* pIntensity = (const uint16_t*)intensityComponent.GetData();
+    const auto* pIntensity = (const uint16_t*)intensityComponent.GetData();
 
-    // Set the points.
+    // Find minZ and maxZ
     float minZ = std::numeric_limits<float>::max();
     float maxZ = std::numeric_limits<float>::min();
 
-#pragma omp parallel for
-    for (size_t i = 0; i < height * width; ++i) {
-        float z = pSrcPoint[i].z;
-        if (z < minZ) minZ = z;
-        if (z > maxZ) maxZ = z;
+#pragma omp parallel
+    {
+        float local_minZ = minZ;
+        float local_maxZ = maxZ;
+
+#pragma omp for nowait
+        for (uint32_t i = 0; i < height * width; ++i) {
+            float z = pSrcPoint[i].z;
+            if (z < local_minZ) local_minZ = z;
+            if (z > local_maxZ) local_maxZ = z;
+        }
+
+#pragma omp critical
+        {
+            if (local_minZ < minZ) minZ = local_minZ;
+            if (local_maxZ > maxZ) maxZ = local_maxZ;
+        }
     }
+
+    float rangeZ = maxZ - minZ;
+
 #pragma omp parallel for
-    for (size_t i = 0; i < height * width; ++i){
+    for (uint32_t i = 0; i < height * width; ++i){
         pcl::PointXYZRGB& dstPoint = ptrPointCloud->points[i];
 
         dstPoint.x = pSrcPoint[i].x;
         dstPoint.y = pSrcPoint[i].y;
         dstPoint.z = pSrcPoint[i].z;
 
-        // dstPoint.r = dstPoint.g = dstPoint.b = (uint8_t)(pIntensity[i] >> 8);
+        // Normalize the intensity value (assuming 16-bit intensity)
+        float intensity = pIntensity[i] / 65535.0f;
+
+        // Combine distance and intensity for coloring
         float z = dstPoint.z;
-        float ratio = (z-minZ) / (maxZ - minZ);
-        dstPoint.r = (uint8_t)(255 * (1-ratio));
-        dstPoint.g = (uint8_t)(255 * (1 -fabs(2*ratio-1)));
-        dstPoint.b = (uint8_t)(255 * ratio);
+        float ratio = (z - minZ) / rangeZ;
+
+        // Apply a weight to intensity for more vivid colors
+        float intensityWeight = 0.5f;  // Adjust this weight as needed
+        float combinedIntensity = ratio * (1 - intensityWeight) + intensity * intensityWeight;
+
+        dstPoint.r = static_cast<uint8_t>(255 * (1 - combinedIntensity));
+        dstPoint.g = static_cast<uint8_t>(255 * (1 - fabs(2 * combinedIntensity - 1)));
+        dstPoint.b = static_cast<uint8_t>(255 * combinedIntensity);
     }
     return ptrPointCloud;
 }
