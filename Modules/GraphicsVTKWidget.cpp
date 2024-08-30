@@ -1,18 +1,32 @@
 #ifdef PCL_ENABLED
 #include "GraphicsVTKWidget.h"
+#include <vtkArrowSource.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkActor.h>
+#include <vtkTransform.h>
+#include <vtkSmartPointer.h>
 
-Qylon::GraphicsVTKWidget::GraphicsVTKWidget(QWidget *parent){
+#include <QFileDialog>
+
+Qylon::GraphicsVTKWidget::GraphicsVTKWidget(QWidget *parent) : infoWidget(new WidgetInformation){
     setLayout(&layout);
     layout.addWidget(&toolBar);
     layout.addWidget(&statusBar,0, Qt::AlignBottom);
 
-    currentCameraPosition = new QLabel;
-    statusBar.addWidget(currentCameraPosition);
-
-    currentPickedPoint = new QLabel;
-    statusBar.addWidget(currentPickedPoint);
+    currentMousePoint = new QLabel;
+    statusBar.addWidget(currentMousePoint);
 
     QList<QAction*> actions;
+    QAction *loadImage = new QAction(QIcon(":/Resources/Icon/icons8-opened-folder-48.png"),"");
+    connect(loadImage, &QAction::triggered, this, [=]{
+        auto file = QFileDialog::getOpenFileName(this, "Load a PCL file", QDir::currentPath(), "*.pcd *.ply");
+        auto val = loadPointCloud(file);
+    });
+    QAction *saveImage = new QAction(QIcon(":/Resources/Icon/icons8-save-as-48.png"),"");
+    connect(saveImage, &QAction::triggered, this, [=]{
+        auto file = QFileDialog::getSaveFileName(this, "Save to PCD", QDir::currentPath(), "*.pcd *.ply");
+        auto val = savePointCloud(file);
+    });
     QAction *zoomIn = new QAction(QIcon(":/Resources/Icon/icons8-zoom-in-48.png"), "");
     connect(zoomIn, &QAction::triggered, this, [=]{
         this->setScale(0.2);
@@ -25,7 +39,7 @@ Qylon::GraphicsVTKWidget::GraphicsVTKWidget(QWidget *parent){
     connect(original, &QAction::triggered, this, [=]{
         this->setOriginal();
     });
-    actions << zoomIn << zoomOut << original;
+    actions << loadImage << saveImage << zoomIn << zoomOut << original;
     toolBar.addActions(actions);
 
 
@@ -43,20 +57,29 @@ Qylon::GraphicsVTKWidget::GraphicsVTKWidget(QWidget *parent){
     SetRenderWindow(viewer->getRenderWindow());
     viewer->setupInteractor(this->GetInteractor(), this->GetRenderWindow());
 #endif
-
     viewer->setShowFPS(false);
-    viewer->resetCamera();
-    viewer->setCameraPosition(0, 0, 0, 0, 0, 50, 0, -1, 0);
+
+
     currentCloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>);
-    viewer->addPointCloud(currentCloud, "cloud");
     viewer->registerPointPickingCallback(&Qylon::GraphicsVTKWidget::callbackPicked, static_cast<void*>(this));
-    refreshView();
+    viewer->registerMouseCallback(&Qylon::GraphicsVTKWidget::callbackMouse, static_cast<void*>(this));
+    viewer->registerAreaPickingCallback(&Qylon::GraphicsVTKWidget::callbackAreaPicked, static_cast<void*>(this));
+
+    setOriginal();
+
+    connect(this, &GraphicsVTKWidget::sendCameraPosition, infoWidget, &WidgetInformation::setCameraPosition);
+    connect(this, &GraphicsVTKWidget::sendCurrentPoint, infoWidget, &WidgetInformation::setCurrentPoint);
 }
 
 void Qylon::GraphicsVTKWidget::setPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){
     QMutexLocker locker(&mutex);
     currentCloud = cloud;
-    viewer->updatePointCloud(currentCloud, "cloud");
+
+    if(viewer->addPointCloud(currentCloud, "cloud")){
+        viewer->resetCamera();
+    }else{
+        viewer->updatePointCloud(currentCloud, "cloud");
+    }
     refreshView();
 }
 
@@ -83,7 +106,62 @@ void Qylon::GraphicsVTKWidget::setScale(double factor)
 
 void Qylon::GraphicsVTKWidget::setOriginal()
 {
-    viewer->setCameraPosition(0, 0, 0, 0, 0, 50., 0, -1., 0);
+    viewer->setCameraPosition(0, 0, -6000, 0, 0, 5000, 0, -1, 0);
+    viewer->resetCamera();
+}
+
+void Qylon::GraphicsVTKWidget::setCameraPosition(double p_x, double p_y, double p_z, double f_x, double f_y, double f_z, double v_x, double v_y, double v_z)
+{
+    viewer->setCameraPosition(p_x, p_y, p_z, f_x, f_y, f_z, v_x, v_y, v_z);
+}
+
+bool Qylon::GraphicsVTKWidget::loadPointCloud(QString file)
+{
+    currentCloud->clear();
+    if(file.last(3)=="pcd"){
+        if(pcl::io::loadPCDFile(file.toStdString(),*currentCloud) == -1){
+            qDebug() << "Couldn't open file" << file;
+            return false;
+        }else{
+            setPointCloud(currentCloud);
+            viewer->resetCamera();
+            return true;
+        }
+    }else if(file.last(3)=="ply"){
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        if(pcl::io::loadPLYFile(file.toStdString(),*currentCloud) == -1){
+            qDebug() << "Couldn't open file" << file;
+            return false;
+        }else{
+            setPointCloud(currentCloud);
+            viewer->resetCamera();
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Qylon::GraphicsVTKWidget::savePointCloud(QString file)
+{
+    if(file.last(3)=="pcd"){
+        if(pcl::io::savePCDFileASCII(file.toStdString(),*currentCloud) == -1){
+            qDebug() << "Couldn't save file" << file;
+            return false;
+        }else{
+            setPointCloud(currentCloud);
+            return true;
+        }
+    }else if(file.last(3)=="ply"){
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        if(pcl::io::savePLYFileASCII(file.toStdString(),*currentCloud) == -1){
+            qDebug() << "Couldn't save file" << file;
+            return false;
+        }else{
+            setPointCloud(currentCloud);
+            return true;
+        }
+    }
+    return false;
 }
 
 void Qylon::GraphicsVTKWidget::refreshView(){
@@ -96,31 +174,91 @@ void Qylon::GraphicsVTKWidget::refreshView(){
 
 void Qylon::GraphicsVTKWidget::callbackPicked(const pcl::visualization::PointPickingEvent &event, void *arg)
 {
-    int idx = event.getPointIndex();
-    if (idx == -1) {
-        qDebug() << "No point picked";
-        return;
-    }
 
-    float x, y, z;
-    event.getPoint(x, y, z);
-
-    GraphicsVTKWidget *widget = static_cast<GraphicsVTKWidget*>(arg);
-    widget->currentPickedPoint->setText("[x:" + QString::number(x) +", y:" + QString::number(y) + ", z:" + QString::number(z)+"]");
-    widget->currentPickedPoint->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-
-    // Clicked point in 3D coordinates
-    pcl::PointXYZ picked_point(x, y, z);
-
-    // Get camera parameters
-    pcl::visualization::Camera camera;
-    widget->viewer->getCameraParameters(camera);
-
-    widget->viewer->removeShape("arrow");
-    widget->viewer->addSphere(picked_point, 2, 1.0, 0.0, 0.0, "arrow");
-    widget->refreshView();
 }
 
+void Qylon::GraphicsVTKWidget::callbackMouse(const pcl::visualization::MouseEvent &event, void *arg)
+{
+    GraphicsVTKWidget *widget = static_cast<GraphicsVTKWidget*>(arg);
+    widget->viewer->getRenderWindow()->GetRenderers()->GetDebug();
+    switch(event.getType()){
+    case pcl::visualization::MouseEvent::MouseMove:{
+        int x = event.getX();
+        int y = event.getY();
+        widget->currentMousePoint->setText("X:"+QString::number(x) + ",Y:" + QString::number(y));
+        widget->viewer->getRenderWindow()->Render();  // Explicitly render the scene
+        widget->viewer->spinOnce();  // Update the viewer's state
+
+        vtkSmartPointer<vtkPointPicker> picker = vtkSmartPointer<vtkPointPicker>::New();
+        picker->SetTolerance(0.003);
+        picker->Pick(x, y, 0, widget->viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer());
+
+        double picked[3];
+        picker->GetPickPosition(picked);
+
+        int pickedIdx = picker->GetPointId();
+        if (pickedIdx == -1 || pickedIdx >= widget->currentCloud->points.size()) {
+            // qDebug() << "No valid point picked.";
+            return;
+        }
+        // qDebug() << "Picked position: X:" << picked[0] << "Y:" << picked[1] << "Z:" << picked[2];
+
+        pcl::PointXYZRGB pickedPoint;
+        pickedPoint.x = picked[0];
+        pickedPoint.y = picked[1];
+        pickedPoint.z = picked[2];
+        emit widget->sendCurrentPoint(pickedPoint.x, pickedPoint.y, pickedPoint.z);
+
+        pcl::visualization::Camera camera;
+        widget->viewer->getCameraParameters(camera);
+        double cameraPos[3] = {camera.pos[0], camera.pos[1], camera.pos[2]};
+
+        double distance = sqrt(
+            pow(cameraPos[0] - picked[0], 2) +
+            pow(cameraPos[1] - picked[1], 2) +
+            pow(cameraPos[2] - picked[2], 2)
+            );
+        double sphereSize = distance * 0.005;
+
+        widget->viewer->removeShape("sphere");
+        widget->viewer->addSphere(pickedPoint, sphereSize, 1.0, 0.0, 0.0, "sphere");
+        widget->refreshView();
+    }break;
+    case pcl::visualization::MouseEvent::MouseButtonPress:{}break;
+    case pcl::visualization::MouseEvent::MouseButtonRelease:{}break;
+    case pcl::visualization::MouseEvent::MouseScrollDown:{}break;
+    case pcl::visualization::MouseEvent::MouseScrollUp:{}break;
+    case pcl::visualization::MouseEvent::MouseDblClick:{}break;
+    default:{}
+    }
+}
+
+void Qylon::GraphicsVTKWidget::callbackAreaPicked(const pcl::visualization::AreaPickingEvent &event, void *arg)
+{
+    qDebug() << "Area picked";
+    pcl::Indices indices;
+    event.getPointsIndices(indices);
+    GraphicsVTKWidget *widget = static_cast<GraphicsVTKWidget*>(arg);
+
+}
+bool Qylon::GraphicsVTKWidget::event(QEvent *event)
+{
+    PCLQVTKWidget::event(event);
+    if(!viewer) return true;
+
+    pcl::visualization::Camera camera;
+    viewer->getCameraParameters(camera);
+    double pos[3] = {camera.pos[0], camera.pos[1], camera.pos[2]};
+    double focal[3] = {camera.focal[0], camera.focal[1], camera.focal[2]};
+    double vector[3] = {camera.view[0], camera.view[1], camera.view[2]};
+
+    emit sendCameraPosition(camera.pos[0], camera.pos[1], camera.pos[2],
+                            camera.focal[0], camera.focal[1], camera.focal[2],
+                            camera.view[0], camera.view[1], camera.view[2]);
+    return true;
+}
+
+/*
 void Qylon::GraphicsVTKWidget::mousePressEvent(QMouseEvent *event)
 {
     PCLQVTKWidget::mousePressEvent(event);
@@ -155,23 +293,6 @@ void Qylon::GraphicsVTKWidget::mouseReleaseEvent(QMouseEvent *event)
     mousePressed = false;
 }
 
-bool Qylon::GraphicsVTKWidget::event(QEvent *event)
-{
-    PCLQVTKWidget::event(event);
-    if(!viewer) return true;
 
-    pcl::visualization::Camera camera;
-    viewer->getCameraParameters(camera);
-    double pos[3] = {camera.pos[0], camera.pos[1], camera.pos[2]};
-    double focal[3] = {camera.focal[0], camera.focal[1], camera.focal[2]};
-    double vector[3] = {camera.view[0], camera.view[1], camera.view[2]};
-
-
-    currentCameraPosition->setText("Pos["+QString::number(camera.pos[0]) + ", " + QString::number(camera.pos[1]) + ", " + QString::number(camera.pos[2]) + "]\n"
-                                   + "Focal["+QString::number(camera.focal[0]) + ", " + QString::number(camera.focal[1]) + ", " + QString::number(camera.focal[2]) + "]\n"
-                                   + "View[" +QString::number(camera.view[0]) + ", " + QString::number(camera.view[1]) + ", " + QString::number(camera.view[2]) + "]\n"
-                                   );
-    currentCameraPosition->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-    return true;
-}
+*/
 #endif
