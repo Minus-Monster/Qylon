@@ -80,6 +80,7 @@ void Qylon::GraphicsWidget::initialize(){
 
     QAction *actionSave = new QAction(QIcon(":/Resources/Icon/icons8-save-as-48.png"), "", this);
     actionSave->setToolTip("Save the current image");
+    actionSave->setShortcut(QKeySequence::Save);
     toolBar.addAction(actionSave);
     connect(actionSave, &QAction::triggered, this, [=](){
         auto filePath = QFileDialog::getSaveFileName(this, "Save the current image", QDir::currentPath() + "/untitled.png", "Image(*.png *.jpg *.bmp *.tif *.tiff)");
