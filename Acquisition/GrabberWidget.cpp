@@ -8,23 +8,24 @@
 #include <QHeaderView>
 #include <QAction>
 #include <QMessageBox>
+#include <QToolButton>
 
 Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 {
     setWindowTitle("Basler Frame Grabber Configuration");
-    setWindowIcon(QIcon(":/Qylon/Resources/Icon.png"));
+    setWindowIcon(QIcon(":/Resources/Icon.png"));
+
 
     layout = new QVBoxLayout(this);
     setLayout(layout);
-    setMinimumWidth(250);
+    setMinimumWidth(270);
 
-    // GroupBox 'Initialization'
-    QVBoxLayout *layoutLoadFiles = new QVBoxLayout;
     QHBoxLayout *layoutLoadApplet = new QHBoxLayout;
-    QPushButton *buttonLoadApplet = new QPushButton;
-    buttonLoadApplet->setFlat(true);
-    buttonLoadApplet->setIcon(QIcon(":/Resources/Icon/icons8-opened-folder-48.png"));
-    connect(buttonLoadApplet, &QPushButton::clicked, this, [=](){
+    QToolButton *buttonLoadApplet = new QToolButton;
+    buttonLoadApplet->setAutoRaise(true);
+    buttonLoadApplet->setIconSize(QSize(20,20));
+    buttonLoadApplet->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-opened-folder-48.png"), "Load applet"));
+    connect(buttonLoadApplet, &QToolButton::triggered, this, [=](){
         auto get = QFileDialog::getOpenFileName(this, "Load an applet", QDir::homePath(), "*.hap *.dll");
         if(get.isEmpty()) return;
 
@@ -37,11 +38,20 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     layoutLoadApplet->addWidget(lineLoadApplet);
 
     QHBoxLayout *layoutLoadConfig = new QHBoxLayout;
-    QPushButton *buttonLoadConfig = new QPushButton;
-    buttonLoadConfig->setFlat(true);
-    buttonLoadConfig->setIcon(QIcon(":/Resources/Icon/icons8-opened-folder-48.png"));
-
-    connect(buttonLoadConfig, &QPushButton::clicked, this, [=](){
+    QToolButton *buttonEditMCF = new QToolButton;
+    buttonEditMCF->setEnabled(false);
+    buttonEditMCF->setAutoRaise(true);
+    buttonEditMCF->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-note-48.png"),"MCF Editor"));
+    buttonEditMCF->setIconSize(QSize(20,20));
+    buttonEditMCF->setEnabled(false);
+    connect(buttonEditMCF, &QToolButton::triggered, this, [&](){
+        if(mcfEditor!=nullptr) mcfEditor->exec();
+    });
+    QToolButton *buttonLoadConfig = new QToolButton;
+    buttonLoadConfig->setAutoRaise(true);
+    buttonLoadConfig->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-opened-folder-48.png"), "Load configuration file"));
+    buttonLoadConfig->setIconSize(QSize(20,20));
+    connect(buttonLoadConfig, &QToolButton::triggered, this, [=](){
         auto get = QFileDialog::getOpenFileName(this, "Load a configuration file", QDir::homePath(), "*.mcf");
         if(get.isEmpty()) return;
 
@@ -50,11 +60,12 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     });
     lineLoadConfig = new QLineEdit;
     lineLoadConfig->setPlaceholderText("Load a configuration file");
+
     layoutLoadConfig->addWidget(buttonLoadConfig);
     layoutLoadConfig->addWidget(lineLoadConfig);
-
-    layoutLoadFiles->addLayout(layoutLoadApplet);
-    layoutLoadFiles->addLayout(layoutLoadConfig);
+    layoutLoadConfig->addWidget(buttonEditMCF);
+    layout->addLayout(layoutLoadApplet);
+    layout->addLayout(layoutLoadConfig);
 
     QSpinBox *spinBoxImageBuffer = new QSpinBox;
     spinBoxImageBuffer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
@@ -63,49 +74,46 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     QHBoxLayout *layoutImageBuffer = new QHBoxLayout;
     layoutImageBuffer->addWidget(new QLabel("Image Buffer"));
     layoutImageBuffer->addWidget(spinBoxImageBuffer);
-    layoutLoadFiles->addLayout(layoutImageBuffer);
+    layout->addLayout(layoutImageBuffer);
 
-    QPushButton *buttonInit = new QPushButton("Initialization");
-    buttonInit->setCheckable(true);
-    layoutLoadFiles->addWidget(buttonInit);
+    QToolButton *buttonInit = new QToolButton;
+    buttonInit->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-software-installer-48.png"), "Set-up"));
+    buttonInit->defaultAction()->setCheckable(true);
+    buttonInit->setAutoRaise(true);
+    buttonInit->setIconSize(QSize(20,20));
+    buttonInit->setToolButtonStyle(Qt::ToolButtonStyle::ToolButtonTextBesideIcon);
+    layoutImageBuffer->addStretch(100);
+    layoutImageBuffer->addWidget(buttonInit);
 
-    QGroupBox *groupBoxInit = new QGroupBox("Initialization");
-    QHBoxLayout *layoutInit = new QHBoxLayout;
-    layout->addWidget(groupBoxInit);
-    groupBoxInit->setLayout(layoutInit);
-    layoutInit->addLayout(layoutLoadFiles);
-    groupBoxInit->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
-
-    // GroupBox 'Configuration'
-    QGroupBox *groupBoxConfigurations = new QGroupBox("Configurations");
-    groupBoxConfigurations->setHidden(true);
-    layout->addWidget(groupBoxConfigurations);
-    QVBoxLayout *layoutConfigurations = new QVBoxLayout;
-    groupBoxConfigurations->setLayout(layoutConfigurations);
-    groupBoxConfigurations->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     tabWidgetDMA = new QTabWidget;
-    layoutConfigurations->addWidget(tabWidgetDMA);
-    QPushButton *pushButtonEditMCF = new QPushButton("MCF Editor");
-    pushButtonEditMCF->setEnabled(false);
-    connect(pushButtonEditMCF, &QPushButton::clicked, this, [&](){
-        mcfEditor->exec();
-    });
-    layoutConfigurations->addWidget(pushButtonEditMCF);
-    connect(buttonInit, &QPushButton::clicked, this, [=](bool checked){
-        if(!checked){
+    tabWidgetDMA->setHidden(true);
+
+    connect(buttonInit, &QToolButton::triggered, this, [=](QAction *action){
+        if(!action->isChecked()){
             parent->release();
             tabWidgetDMA->clear();
-            groupBoxConfigurations->setHidden(true);
+            tabWidgetDMA->setHidden(true);
         }else{
+            if(this->lineLoadApplet->text().isEmpty()){
+                QMessageBox::warning(this, this->windowTitle(), "Not set an applet path. \nSet the applet file path first.");
+                action->setChecked(false);
+                return;
+            }
             if(!parent->isInitialized()){
-                parent->loadApplet(this->lineLoadApplet->text());
+                if(!parent->loadApplet(this->lineLoadApplet->text())){
+                    QMessageBox::warning(this, this->windowTitle(), "Applet loading failed. \nCheck the applet file or the environment.");
+                    action->setChecked(false);
+                    return;
+                }
                 parent->loadConfiguration(this->lineLoadConfig->text());
                 parent->initialize(spinBoxImageBuffer->value());
             }
             initTabWidget();
-            groupBoxConfigurations->setHidden(false);
+            tabWidgetDMA->setHidden(false);
         }
-    });    
+    });
+    layout->addSpacerItem(new QSpacerItem(0, 20, QSizePolicy::Minimum, QSizePolicy::Minimum));
+    layout->addWidget(tabWidgetDMA);
     layout->addSpacerItem(new QSpacerItem(0, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
     connect(obj, &Grabber::loadedApplet, lineLoadApplet, &QLineEdit::setText);
@@ -117,18 +125,16 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         lineLoadConfig->setEnabled(!on);
         buttonLoadApplet->setEnabled(!on);
         buttonLoadConfig->setEnabled(!on);
-        pushButtonEditMCF->setEnabled(on);
+        buttonEditMCF->setEnabled(on);
         if(on){
             initTabWidget();
             getMCFStructure(lineLoadConfig->text());
-            groupBoxConfigurations->setHidden(false);
         }else{
             tabWidgetDMA->clear();
-            groupBoxConfigurations->setHidden(true);
         }
     });
     connect(obj, &Grabber::grabbingState, this, [=](bool on){
-        pushButtonEditMCF->setEnabled(!on);
+        buttonEditMCF->setEnabled(!on);
         tabWidgetDMA->setEnabled(!on);
     });
     connect(obj, &Grabber::updatedParametersValue, this, [=]{
@@ -254,25 +260,43 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
     QVBoxLayout *mcfLayout = new QVBoxLayout;
     mcfEditor->setLayout(mcfLayout);
     mcfEditor->setWindowTitle("MCF Editor");
-    mcfEditor->setWindowIcon(QIcon(":/Resources/Icon.png"));
+    mcfEditor->setWindowIcon(this->windowIcon());
 
     QLineEdit *lineEditSearch = new QLineEdit;
     lineEditSearch->setFrame(true);
     lineEditSearch->setPlaceholderText("Search:");
     lineEditSearch->setClearButtonEnabled(true);
     lineEditSearch->setStyleSheet("QLineEdit{ border: 1px solid gray; height: 20px; }");
-    mcfLayout->addWidget(lineEditSearch);
 
 
     QTreeWidget *widget = new QTreeWidget(mcfEditor);
     widget->setHeaderLabels(QStringList() << "Parameter" << "Value");
     widget->header()->resizeSection(0, 200);
-    mcfLayout->addWidget(widget);
-    QPushButton *saveButton = new QPushButton("Save MCF");
-    mcfLayout->addWidget(saveButton);
+
+    QHBoxLayout *layoutButtons = new QHBoxLayout;
+
+    QToolButton *saveButton = new QToolButton;
+    saveButton->setAutoRaise(true);
+    saveButton->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-save-as-48.png"), "Save"));
+    saveButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    saveButton->setIconSize(QSize(20,20));
     saveButton->setFocusPolicy(Qt::FocusPolicy::NoFocus);
-    connect(saveButton, &QPushButton::clicked, this, [this]() {
-        QString savePath = QFileDialog::getSaveFileName(this, "Save MCF", QDir::currentPath(), "MCF Files (*.mcf);;All Files (*)");
+    connect(saveButton, &QToolButton::triggered, this, [=]{
+        auto val = QMessageBox::warning(this, "MCF Editor", "Are you sure to overwrite mcf file whith this settings?",
+                                        QMessageBox::Yes | QMessageBox::No);
+        if(val == QMessageBox::Yes){
+            parent->saveCurrentConfig(this->lineLoadConfig->text());
+        }else return;
+    });
+
+    QToolButton *saveAsButton = new QToolButton;
+    saveAsButton->setAutoRaise(true);
+    saveAsButton->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-save-as-48.png"), "Save as"));
+    saveAsButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    saveAsButton->setIconSize(QSize(20,20));
+    saveAsButton->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+    connect(saveAsButton, &QToolButton::triggered, this, [=]{
+        QString savePath = QFileDialog::getSaveFileName(this, "Save MCF", QDir::currentPath(), "MCF File (*.mcf)");
         if (!savePath.isEmpty()) {
             if(parent->saveCurrentConfig(savePath)){
                 QMessageBox::information(this, "MCF Editor", "File saved successfully.");
@@ -282,8 +306,29 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
         }
     });
 
+    QToolButton *buttonRefresh = new QToolButton;
+    buttonRefresh->setAutoRaise(true);
+    buttonRefresh->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-refresh-48.png"), "Refresh"));
+    buttonRefresh->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    buttonRefresh->setIconSize(QSize(20,20));
+    connect(buttonRefresh, &QToolButton::triggered, this, [=]{
+        refreshMCFValues();
+    });
+
+    layoutButtons->addWidget(saveButton);
+    layoutButtons->addWidget(saveAsButton);
+    layoutButtons->addWidget(buttonRefresh);
+    layoutButtons->addStretch(100);
+
+    mcfLayout->addLayout(layoutButtons);
+    mcfLayout->addWidget(lineEditSearch);
+    mcfLayout->addWidget(widget);
+
     mcfEditor->setMinimumSize(400,300);
     widget->setMinimumSize(400,300);
+
+    mcfEditor->setWindowFlags(mcfEditor->windowFlags() & ~Qt::WindowContextHelpButtonHint);
+
 
     if(file.open(QIODevice::ReadOnly | QIODevice::Text)){
         QTextStream in(&file);
@@ -307,7 +352,7 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
             lineEditParameterValue->setFrame(false);
             lineEditParameterValue->setObjectName(values.first());
             connect(lineEditParameterValue, &QLineEdit::returnPressed, this, [lineEditParameterValue, currentParent, this](){
-                int r = QMessageBox::question(nullptr, "MCF Editor", "Are you sure to change this value?", QMessageBox::Cancel | QMessageBox::Ok, QMessageBox::Cancel);
+                int r = QMessageBox::question(mcfEditor, "MCF Editor", "Are you sure to change this value?", QMessageBox::Cancel | QMessageBox::Ok, QMessageBox::Cancel);
                 if(r == QMessageBox::Cancel){
                     lineEditParameterValue->undo();
                 }

@@ -3,7 +3,6 @@
 #ifdef GRABBER_ENABLED
 #include "basler_fg.h"
 #include "fg_struct.h"
-#include "sisoboards.h"
 
 #include <QObject>
 #include <QImage>
