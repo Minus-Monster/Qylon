@@ -20,6 +20,7 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
 
     status = new QLabel("Camera Status : ");
     buttonRefresh = new QToolButton(this);
+    buttonRefresh->setIconSize(QSize(20,20));
     buttonRefresh->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-refresh-48.png"),"Refresh"));
     buttonRefresh->setAutoRaise(true);
     connect(buttonRefresh, &QToolButton::triggered, this, [=]{
@@ -29,6 +30,7 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     buttonConnect = new QToolButton(this);
     buttonConnect->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-connect-48.png"),"Connect"));
     buttonConnect->setAutoRaise(true);
+    buttonConnect->setIconSize(QSize(20,20));
     connect(buttonConnect, &QToolButton::triggered, this, [=]{
         this->connectCamera();
     });
@@ -37,6 +39,7 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     buttonDisconnect->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-disconnected-48.png"),"Disconnect"));
     buttonDisconnect->setAutoRaise(true);
     buttonDisconnect->setEnabled(false);
+    buttonDisconnect->setIconSize(QSize(20,20));
     connect(buttonDisconnect, &QToolButton::triggered, this, [=]{
         this->disconnectCamera();
     });
