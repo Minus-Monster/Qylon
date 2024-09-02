@@ -47,5 +47,12 @@
         <file>Resources/Icon/icons8-camera-48.png</file>
         <file>Resources/Icon/icons8-back-48.png</file>
         <file>Resources/Icon/icons8-add-image-48.png</file>
+        <file>Resources/Icon/icons8-setup-48.png</file>
+        <file>Resources/Icon/icons8-software-installer-48.png</file>
+        <file>Resources/Icon/icons8-edit-48.png</file>
+        <file>Resources/Icon/icons8-note-48.png</file>
+        <file>Resources/Icon/icons8-histogram-48.png</file>
+        <file>Resources/Icon/icons8-normal-distribution-histogram-48.png</file>
+        <file>Resources/Icon/icons8-statistics-48.png</file>
     </qresource>
 </RCC>
