@@ -7,6 +7,7 @@
 #include <QHeaderView>
 #include <QSpinBox>
 #include <QLineEdit>
+#include <QAction>
 
 Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
 {
