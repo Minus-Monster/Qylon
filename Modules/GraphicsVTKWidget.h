@@ -35,68 +35,96 @@ namespace Qylon{
 class WidgetInformation : public QWidget{
     Q_OBJECT
 public:
-    WidgetInformation() : treeWidget(new QTreeWidget),
-        itemCurrentPoint(new QTreeWidgetItem()),
-        itemPos(new QTreeWidgetItem),
-        itemFocal(new QTreeWidgetItem()),
-        itemView(new QTreeWidgetItem()),
-        itemCamera(new QTreeWidgetItem)    {
+    WidgetInformation() : treeWidget(new QTreeWidget){
         setLayout(&layout);
         layout.addWidget(treeWidget);
-        treeWidget->setHeaderLabels(QStringList() << "Feature" << "Values" << "Values" << "Values");
+        treeWidget->setHeaderLabels(QStringList() << "Feature" << "Value");
 
         // Set item labels
-        itemCurrentPoint->setText(0, "Picked");
-        itemPos->setText(0, "Position");
-        itemFocal->setText(0, "Focal Point");
-        itemView->setText(0, "View Direction");
+        itemXCoordinate.setText(0, "X Coordinate");
+        itemYCoordinate.setText(0, "Y Coordinate");
+        itemZCoordinate.setText(0, "Z Coordinate");
+        itemDistance.setText(0, "Distance");
 
-        itemCamera->setText(0, "F.O.V");
-        itemCamera->addChild(itemPos);
-        itemCamera->addChild(itemFocal);
-        itemCamera->addChild(itemView);
+        itemPos.setText(0, "Position");
+        itemFocal.setText(0, "Focal Point");
+        itemView.setText(0, "View Direction");
 
-        // Add items to the tree widget
-        treeWidget->addTopLevelItem(itemCamera);
-        treeWidget->addTopLevelItem(itemCurrentPoint);
-        treeWidget->expandItem(itemCamera);
+        itemPos.addChild(&itemPosX);
+        itemPos.addChild(&itemPosY);
+        itemPos.addChild(&itemPosZ);
+        itemPosX.setText(0, "X");
+        itemPosY.setText(0, "Y");
+        itemPosZ.setText(0, "Z");
+
+        itemFocal.addChild(&itemFocalX);
+        itemFocal.addChild(&itemFocalY);
+        itemFocal.addChild(&itemFocalZ);
+        itemFocalX.setText(0, "X");
+        itemFocalY.setText(0, "Y");
+        itemFocalZ.setText(0, "Z");
+
+        itemView.addChild(&itemViewX);
+        itemView.addChild(&itemViewY);
+        itemView.addChild(&itemViewZ);
+        itemViewX.setText(0, "X");
+        itemViewY.setText(0, "Y");
+        itemViewZ.setText(0, "Z");
+
+        treeWidget->addTopLevelItem(&itemPos);
+        treeWidget->addTopLevelItem(&itemFocal);
+        treeWidget->addTopLevelItem(&itemView);
+        treeWidget->addTopLevelItem(&itemXCoordinate);
+        treeWidget->addTopLevelItem(&itemYCoordinate);
+        treeWidget->addTopLevelItem(&itemZCoordinate);
+        treeWidget->addTopLevelItem(&itemDistance);
     }
 
 public slots:
     void setCameraPosition(double p_x, double p_y, double p_z,
                            double f_x, double f_y, double f_z,
                            double v_x, double v_y, double v_z) {
-        // Update Position item
-        itemPos->setText(1, QString::number(p_x));
-        itemPos->setText(2, QString::number(p_y));
-        itemPos->setText(3, QString::number(p_z));
+        itemPosX.setText(1, QString::number(p_x));
+        itemPosY.setText(1, QString::number(p_y));
+        itemPosZ.setText(1, QString::number(p_z));
 
-        // Update Focal Point item
-        itemFocal->setText(1, QString::number(f_x));
-        itemFocal->setText(2, QString::number(f_y));
-        itemFocal->setText(3, QString::number(f_z));
+        itemFocalX.setText(1, QString::number(f_x));
+        itemFocalY.setText(1, QString::number(f_y));
+        itemFocalZ.setText(1, QString::number(f_z));
 
-        // Update View Direction item
-        itemView->setText(1, QString::number(v_x));
-        itemView->setText(2, QString::number(v_y));
-        itemView->setText(3, QString::number(v_z));
+        itemViewX.setText(1, QString::number(v_x));
+        itemViewY.setText(1, QString::number(v_y));
+        itemViewZ.setText(1, QString::number(v_z));
     }
 
     void setCurrentPoint(double x, double y, double z) {
         // Update Current Point item
-        itemCurrentPoint->setText(1, QString::number(x));
-        itemCurrentPoint->setText(2, QString::number(y));
-        itemCurrentPoint->setText(3, QString::number(z));
+        itemXCoordinate.setText(1, QString::number(x) + " mm");
+        itemYCoordinate.setText(1, QString::number(y) + " mm");
+        itemZCoordinate.setText(1, QString::number(z) + " mm");
+        itemDistance.setText(1, QString::number(sqrt(x*x+y*y+z*z)) + " mm");
     }
 
 private:
     QVBoxLayout layout;
     QTreeWidget *treeWidget;
-    QTreeWidgetItem *itemCamera;
-    QTreeWidgetItem *itemCurrentPoint;
-    QTreeWidgetItem *itemPos;
-    QTreeWidgetItem *itemFocal;
-    QTreeWidgetItem *itemView;
+    QTreeWidgetItem itemXCoordinate;
+    QTreeWidgetItem itemYCoordinate;
+    QTreeWidgetItem itemZCoordinate;
+    QTreeWidgetItem itemDistance;
+
+    QTreeWidgetItem itemPos;
+    QTreeWidgetItem itemPosX;
+    QTreeWidgetItem itemPosY;
+    QTreeWidgetItem itemPosZ;
+    QTreeWidgetItem itemFocal;
+    QTreeWidgetItem itemFocalX;
+    QTreeWidgetItem itemFocalY;
+    QTreeWidgetItem itemFocalZ;
+    QTreeWidgetItem itemView;
+    QTreeWidgetItem itemViewX;
+    QTreeWidgetItem itemViewY;
+    QTreeWidgetItem itemViewZ;
 };
 class GraphicsVTKWidget : public PCLQVTKWidget{
     Q_OBJECT
@@ -120,7 +148,6 @@ signals:
     void sendCurrentPoint(double x, double y, double z);
 
 private:
-    static void callbackPicked(const pcl::visualization::PointPickingEvent &event, void *arg);
     static void callbackMouse(const pcl::visualization::MouseEvent &event, void *arg);
     static void callbackAreaPicked(const pcl::visualization::AreaPickingEvent &event, void *arg);
     void refreshView();
@@ -140,6 +167,9 @@ private:
 
 protected:
     bool event(QEvent* event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
     /*
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
