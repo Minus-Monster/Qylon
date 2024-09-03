@@ -15,6 +15,7 @@ set(QYLON_HEADERS
     Modules/GraphicsScene.h
     Modules/GraphicsVTKWidget.h
     Modules/GraphicsWidget.h
+
     Modules/TiffReader.h
     Modules/Console.h
     Processing/vTools.h
@@ -31,6 +32,7 @@ set(QYLON_SOURCES
     Acquisition/Grabber.cpp
     Acquisition/GrabberWidget.cpp
     Modules/GraphicsWidget.cpp
+
     Modules/GraphicsView.cpp
     Modules/GraphicsScene.cpp
     Modules/GraphicsVTKWidget.cpp

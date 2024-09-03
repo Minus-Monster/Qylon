@@ -15,54 +15,50 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     list = new QComboBox;
     list->setMinimumWidth(120);
     widget = new QTreeWidget;
-    widget->setHeaderLabels(QStringList() << "Features" << "Value");
+    widget->setHeaderLabels(QStringList() << "Feature" << "Value");
 
-    name_tag = new QLabel("Camera : ");
     status = new QLabel("Camera Status : ");
-    refreshButton = new QPushButton(QIcon(":/Resources/Icon/icons8-refresh-48.png"),"");
-    refreshButton->setFlat(true);
-    refreshButton->setToolTip("Refresh");
-    connect(refreshButton, &QPushButton::clicked, this, [=](bool){
+    buttonRefresh = new QToolButton(this);
+    buttonRefresh->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-refresh-48.png"),"Refresh"));
+    buttonRefresh->setAutoRaise(true);
+    connect(buttonRefresh, &QToolButton::triggered, this, [=]{
         this->updateCameraList();
     });
-    connectButton = new QPushButton(QIcon(":/Resources/Icon/icons8-connect-48.png"),"");
-    connectButton->setFlat(true);
-    connectButton->setToolTip("Connect");
-    connect(connectButton, &QPushButton::clicked, this, [=](bool){
+
+    buttonConnect = new QToolButton(this);
+    buttonConnect->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-connect-48.png"),"Connect"));
+    buttonConnect->setAutoRaise(true);
+    connect(buttonConnect, &QToolButton::triggered, this, [=]{
         this->connectCamera();
     });
 
-    disconnectButton = new QPushButton(QIcon(":/Resources/Icon/icons8-disconnected-48.png"),"");
-    disconnectButton->setFlat(true);
-    disconnectButton->setToolTip("Disconnect");
-    disconnectButton->setEnabled(false);
-    connect(disconnectButton, &QPushButton::clicked, this, [=](bool){
+    buttonDisconnect = new QToolButton(this);
+    buttonDisconnect->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-disconnected-48.png"),"Disconnect"));
+    buttonDisconnect->setAutoRaise(true);
+    buttonDisconnect->setEnabled(false);
+    connect(buttonDisconnect, &QToolButton::triggered, this, [=]{
         this->disconnectCamera();
     });
 
     QHBoxLayout *camNamelayout = new QHBoxLayout;
-    camNamelayout->addWidget(name_tag);
     camNamelayout->addWidget(list);
-    camNamelayout->addWidget(refreshButton);
+    // camNamelayout->addWidget(refreshButton);
+    camNamelayout->addWidget(buttonRefresh);
     camNamelayout->setSpacing(-1);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;
-    buttonLayout->addWidget(connectButton);
-    buttonLayout->addWidget(disconnectButton);
+    buttonLayout->addWidget(buttonConnect);
+    buttonLayout->addWidget(buttonDisconnect);
     buttonLayout->setSpacing(-1);
 
     QHBoxLayout *camAndButton = new QHBoxLayout;
     camAndButton->addLayout(camNamelayout);
-    camAndButton->addStretch(100);
     camAndButton->addLayout(buttonLayout);
 
 
     QVBoxLayout *treeAndStatus = new QVBoxLayout;
-    treeAndStatus->addWidget(status);
-    //    QLineEdit *search = new QLineEdit;
-    //    search->setClearButtonEnabled(true);
-    //    treeAndStatus->addWidget(search);
     treeAndStatus->addWidget(widget);
+    treeAndStatus->addWidget(status);
 
 
     QVBoxLayout *layout = new QVBoxLayout;
@@ -84,9 +80,9 @@ void Qylon::CameraWidget::connectCamera()
 {
     if(parent->openCamera(list->currentText())){
         list->setEnabled(false);
-        connectButton->setEnabled(false);
-        refreshButton->setEnabled(false);
-        disconnectButton->setEnabled(true);
+        buttonConnect->setEnabled(false);
+        buttonRefresh->setEnabled(false);
+        buttonDisconnect->setEnabled(true);
 
         //        updateTreeWidget();
         widgetGenerator(&parent->getInstantCamera()->GetNodeMap());
@@ -97,9 +93,9 @@ void Qylon::CameraWidget::connectCamera()
 void Qylon::CameraWidget::disconnectCamera()
 {
     list->setEnabled(true);
-    connectButton->setEnabled(true);
-    refreshButton->setEnabled(true);
-    disconnectButton->setEnabled(false);
+    buttonConnect->setEnabled(true);
+    buttonRefresh->setEnabled(true);
+    buttonDisconnect->setEnabled(false);
     parent->closeCamera();
     widget->clear();
     status->setText("Camera Status : disconnected the camera");
@@ -108,9 +104,9 @@ void Qylon::CameraWidget::disconnectCamera()
 void Qylon::CameraWidget::connectedCameraFromOutside()
 {
     list->setEnabled(false);
-    connectButton->setEnabled(false);
-    refreshButton->setEnabled(false);
-    disconnectButton->setEnabled(true);
+    buttonConnect->setEnabled(false);
+    buttonRefresh->setEnabled(false);
+    buttonDisconnect->setEnabled(true);
     widgetGenerator(&this->parent->getInstantCamera()->GetNodeMap());
     status->setText("Camera Status : connected the camera");
 }
@@ -191,10 +187,10 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             });
             connect(spinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int value){
                 try{
-                    qDebug() << "Exp?" << value;
+                    // qDebug() << "Exp?" << value;
                     GenApi_3_1_Basler_pylon::CIntegerPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
                     ptr->SetValue(value);
-                    statusMessage(QString(ptr->GetNode()->GetDisplayName()) + " is changed to " + QString::number(ptr->GetValue())) ;
+                    statusMessage(QString(ptr->GetNode()->GetDisplayName()) + " sets to " + QString::number(ptr->GetValue())) ;
                     //                    auto val = this->parent->setNodeValue(spinBox->accessibleName(), value);
                     //                    statusMessage(QString(val->GetNode()->GetDisplayName()) + " is changed to " + QString::number(val->GetValue())) ;
                     emit nodeUpdated();
@@ -246,7 +242,7 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
                     GenApi_3_1_Basler_pylon::CFloatPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
                     //                    if(!GenApi_3_1_Basler_pylon::IsWritable(ptr)) statusMessage("Couldn't apply the value due to deny of writing");
                     ptr->SetValue(value);
-                    statusMessage(QString(ptr->GetNode()->GetDisplayName()) + " is changed to " + QString::number(ptr->GetValue())) ;
+                    statusMessage(QString(ptr->GetNode()->GetDisplayName()) + " sets to " + QString::number(ptr->GetValue())) ;
                     emit nodeUpdated();
                 }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
                     statusMessage(e.GetDescription());
@@ -354,7 +350,7 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
                     GenApi_3_1_Basler_pylon::CEnumerationPtr ptr = this->parent->getNodemap(comboBox->accessibleName().toStdString().c_str());
                     auto val = ptr->GetEntryByName(comboBox->currentData().toString().toStdString().c_str());
                     ptr->SetIntValue(val->GetNumericValue());
-                    statusMessage(QString(ptr->GetNode()->GetDisplayName().c_str()) + " is changed to " + val->GetSymbolic() );
+                    statusMessage(QString(ptr->GetNode()->GetDisplayName().c_str()) + " sets to " + val->GetSymbolic() );
                     emit nodeUpdated();
                 }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
                     statusMessage(e.GetDescription());
@@ -379,7 +375,7 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
                     qDebug() << e.what();
                 }
             });
-            connect(button, &QPushButton::clicked, [=](){
+            connect(button, &QPushButton::clicked, this, [=](){
                 try{
                     GenApi_3_1_Basler_pylon::CCommandPtr ptr = sub->GetNodeMap()->GetNode(button->accessibleName().toStdString().c_str());
                     ptr->Execute();

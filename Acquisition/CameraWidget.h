@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QSpinBox>
+#include <QToolButton>
 
 #include "Camera.h"
 
@@ -42,10 +43,14 @@ private:
     QList<QTreeWidgetItem*> manageItems;
     QComboBox *list;
 
-    QLabel *name_tag;
-    QPushButton *refreshButton;
-    QPushButton *connectButton;
-    QPushButton *disconnectButton;
+    // QPushButton *refreshButton;
+    // QPushButton *connectButton;
+    // QPushButton *disconnectButton;
+
+    QToolButton *buttonRefresh;
+    QToolButton *buttonConnect;
+    QToolButton *buttonDisconnect;
+
 };
 }
 

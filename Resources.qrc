@@ -28,5 +28,24 @@
         <file>Resources/Icon/icons8-collapse-48.png</file>
         <file>Resources/Icon/icons8-debug-48.png</file>
         <file>Resources/Icon/icons8-expand-48.png</file>
+        <file>Resources/Icon/icons8-view-48.png</file>
+        <file>Resources/Icon/icons8-timer-48.png</file>
+        <file>Resources/Icon/icons8-star-48.png</file>
+        <file>Resources/Icon/icons8-sent-48.png</file>
+        <file>Resources/Icon/icons8-project-setup-48.png</file>
+        <file>Resources/Icon/icons8-play-property-48.png</file>
+        <file>Resources/Icon/icons8-more-48.png</file>
+        <file>Resources/Icon/icons8-high-importance-48.png</file>
+        <file>Resources/Icon/icons8-forward-48.png</file>
+        <file>Resources/Icon/icons8-folder-48.png</file>
+        <file>Resources/Icon/icons8-expand-arrow-48.png</file>
+        <file>Resources/Icon/icons8-collapse-arrow-48.png</file>
+        <file>Resources/Icon/icons8-cinema-film-play-48.png</file>
+        <file>Resources/Icon/icons8-chevron-right-48.png</file>
+        <file>Resources/Icon/icons8-chevron-left-48.png</file>
+        <file>Resources/Icon/icons8-cameras-48.png</file>
+        <file>Resources/Icon/icons8-camera-48.png</file>
+        <file>Resources/Icon/icons8-back-48.png</file>
+        <file>Resources/Icon/icons8-add-image-48.png</file>
     </qresource>
 </RCC>
