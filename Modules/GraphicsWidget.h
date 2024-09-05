@@ -16,6 +16,7 @@
 #include <QTimer>
 #include "GraphicsView.h"
 #include "GraphicsScene.h"
+#include "Processing/HistogramWidget.h"
 
 namespace Qylon{
 class GraphicsWidgetSettings;
@@ -52,8 +53,10 @@ private:
     GraphicsWidgetSettings *settings;
     GraphicsView *view;
     GraphicsScene *scene;
+    HistogramWidget *histogramWidget=nullptr;
 
-    QLabel *labelCoordinate;
+    QLabel *labelCoordinateX;
+    QLabel *labelCoordinateY;
     QLabel *labelPixelColor;
     QLabel *labelImageInformation;
     QLineEdit *lineEditPixelColor;

@@ -3,50 +3,51 @@
 #include "TiffReader.h"
 #endif
 #include "Processing/ImageTools.h"
+#include "Processing/HistogramWidget.h"
 
 Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
     : settings(new GraphicsWidgetSettings(this))
     , view(new GraphicsView)
-    , labelCoordinate(new QLabel)
+    , labelCoordinateX(new QLabel)
+    , labelCoordinateY(new QLabel)
     , labelPixelColor(new QLabel)
     , labelImageInformation(new QLabel)
     , lineEditPixelColor(new QLineEdit)
 {
     setParent(parent);
+    if(parent!=nullptr) setWindowTitle(parent->windowTitle());
     setWindowIcon(QIcon(":/Resources/Icon.png"));
+    setWindowTitle("Graphics Viewer");
 
     toolBar.setWindowTitle("Image Tools");
     toolBar.layout()->setSpacing(1);
     toolBar.setIconSize(QSize(24,24));
     toolBar.setStyleSheet("QToolBar{border: 1px solid lightgray; border-bottom: 1px solid lightgray;}");
     view->setStyleSheet("QGraphicsView{border-style:none; border-top: 1px solid lightgray; border-left:1px solid lightgray; border-right:1px solid lightgray;}");
-    statusBar.setSizeGripEnabled(false);
+    statusBar.setSizeGripEnabled(true);
     statusBar.setStyleSheet("QStatusBar::item { border: none; } QStatusBar{border:1px solid lightgray;}");
-    statusBar.setFixedHeight(45);
 
     setLayout(&layout);
     layout.setSpacing(0);
     layout.setContentsMargins(0,0,0,0);
 
-    labelCoordinate->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    labelCoordinate->setText(" X 0\n Y 0");
-    labelCoordinate->setFixedWidth(90);
+    labelCoordinateX->setFixedWidth(45);
+    labelCoordinateY->setFixedWidth(45);
 
     labelPixelColor->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    labelPixelColor->setText(" RGB\n [0,0,0]");
-    labelPixelColor->setFixedWidth(90);
+    labelPixelColor->setFixedWidth(110);
 
-    labelImageInformation->setFixedWidth(170);
-
-    lineEditPixelColor->setFixedWidth(24);
+    lineEditPixelColor->setFixedWidth(13);
+    lineEditPixelColor->setFixedHeight(13);
+    lineEditPixelColor->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
     lineEditPixelColor->setReadOnly(true);
     lineEditPixelColor->setFrame(false);
+    lineEditPixelColor->setHidden(true);
 
     settings->setBaseSize(500,500);
 
-    labelFPS.setFixedWidth(80);
     connect(&fpsTimer, &QTimer::timeout, this, [&](){
-        labelFPS.setText("FPS:" + QString::number(timerCnt));
+        labelFPS.setText(QString::number(timerCnt) +" fps ");
         timerCnt=0;
     });
     initialize();
@@ -64,8 +65,7 @@ void Qylon::GraphicsWidget::initialize(){
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     toolBar.addWidget(spacer);
 
-    QAction *actionLoad = new QAction(QIcon(":/Resources/Icon/icons8-image-file-add-48.png"),"", this);
-    actionLoad->setToolTip("Load an image");
+    QAction *actionLoad = new QAction(QIcon(":/Resources/Icon/icons8-image-file-add-48.png"),"Load an image", this);
     toolBar.addAction(actionLoad);
     connect(actionLoad, &QAction::triggered, this, [=](){
         auto fileName = QFileDialog::getOpenFileName(this, "Load an image", QDir::currentPath(), "Image(*.png *.jpg *.jpeg *bmp *.tiff *.tif)");
@@ -74,32 +74,58 @@ void Qylon::GraphicsWidget::initialize(){
         if(fileName.contains(".tiff") || fileName.contains(".tif")){
 #ifdef TIFF_ENABLED
             this->setImage(openTiff(fileName));
+#else
+            this->setImage(QImage(fileName));
 #endif
         }else this->setImage(QImage(fileName));
     });
 
-    QAction *actionSave = new QAction(QIcon(":/Resources/Icon/icons8-save-as-48.png"), "", this);
-    actionSave->setToolTip("Save the current image");
+    QAction *actionSave = new QAction(QIcon(":/Resources/Icon/icons8-save-as-48.png"), "Save this image", this);
     actionSave->setShortcut(QKeySequence::Save);
     toolBar.addAction(actionSave);
     connect(actionSave, &QAction::triggered, this, [=](){
-        auto filePath = QFileDialog::getSaveFileName(this, "Save the current image", QDir::currentPath() + "/untitled.png", "Image(*.png *.jpg *.bmp *.tif *.tiff)");
+        auto filePath = QFileDialog::getSaveFileName(this, "Save this image", QDir::currentPath() + "/untitled.png", "Image(*.png *.jpg *.bmp *.tif *.tiff)");
         if(filePath.isEmpty()) return;
 
-        if(this->currentImage.format() == QImage::Format_Grayscale16 && (filePath.contains("*.tif") || filePath.contains("*.tiff"))){
+        if(this->currentImage.format() == QImage::Format_Grayscale16 && (filePath.contains("*.tif") || filePath.contains("*.tiff")))
             return;
-        }
-        if(this->currentImage.save(filePath)){
-            QMessageBox::information(this, "", "This current image was successfully saved.");
+
+        if(this->currentImage.save(filePath))
+            QMessageBox::information(this, this->windowTitle(), "This current image was successfully saved.");
+        else
+            QMessageBox::critical(this, this->windowTitle(), "Failed to save this current image.");
+
+    });
+
+    QAction *actionSettings = new QAction(QIcon(":/Resources/Icon/icons8-setting-48.png"), "Settings", this);
+    toolBar.addAction(actionSettings);
+    connect(actionSettings, &QAction::triggered, this, [=](){
+        settings->show();
+    });
+    connect(settings, &GraphicsWidgetSettings::setBitShift, this, &GraphicsWidget::setBitShift);
+
+    toolBar.addSeparator();
+    QAction *actionHistogram = new QAction(QIcon(":/Resources/Icon/icons8-histogram-48.png"), "Histogram", this);
+    toolBar.addAction(actionHistogram);
+    actionHistogram->setCheckable(true);
+    connect(actionHistogram, &QAction::toggled, this, [=](bool on){
+        if(on){
+            if(!histogramWidget) histogramWidget = new HistogramWidget;
+            histogramWidget->setWindowIcon(this->windowIcon());
+            connect(histogramWidget, &HistogramWidget::closed, this, [=](){
+                actionHistogram->setChecked(false);
+            });
+            if(!currentImage.isNull())histogramWidget->setImage(currentImage);
+            histogramWidget->show();
         }else{
-            QMessageBox::critical(this, "", "Failed to save this current image.");
+            histogramWidget->hide();
+            histogramWidget->deleteLater();
+            histogramWidget = nullptr;
         }
     });
 
-
-    QAction *actionGridLine = new QAction(QIcon(":/Resources/Icon/icons8-crosshair-48.png"), "", this);
+    QAction *actionGridLine = new QAction(QIcon(":/Resources/Icon/icons8-crosshair-48.png"), "Crosshair", this);
     actionGridLine->setCheckable(true);
-    actionGridLine->setToolTip("Crosshair");
     toolBar.addAction(actionGridLine);
     connect(actionGridLine, &QAction::toggled, this, [=](bool on){
         if(scene->Pixmap.pixmap().isNull()){
@@ -108,14 +134,6 @@ void Qylon::GraphicsWidget::initialize(){
         }
         setCrossHair(on, settings->getCrosshairColor(), settings->getCrosshairWidth());
     });
-
-    QAction *actionSettings = new QAction(QIcon(":/Resources/Icon/icons8-setting-48.png"), "", this);
-    actionSettings->setToolTip("Settings");
-    toolBar.addAction(actionSettings);
-    connect(actionSettings, &QAction::triggered, this, [=](){
-        settings->show();
-    });
-    connect(settings, &GraphicsWidgetSettings::setBitShift, this, &GraphicsWidget::setBitShift);
 
 
     toolBar.addSeparator();
@@ -145,22 +163,19 @@ void Qylon::GraphicsWidget::initialize(){
         doubleSpinBoxRatio->setValue(ratio * 100);
     });
 
-    QAction *actionZoomIn = new QAction(QIcon(":/Resources/Icon/icons8-zoom-in-48.png"), "");
-    actionZoomIn->setToolTip("Zoom In");
+    QAction *actionZoomIn = new QAction(QIcon(":/Resources/Icon/icons8-zoom-in-48.png"), "Zoom In");
     connect(actionZoomIn, &QAction::triggered, this, [=](){
         this->view->setScale((float)1.2);
     });
     toolBar.addAction(actionZoomIn);
 
-    QAction *actionZoomOut = new QAction(QIcon(":/Resources/Icon/icons8-zoom-out-48.png"), "");
-    actionZoomOut->setToolTip("Zoom Out");
+    QAction *actionZoomOut = new QAction(QIcon(":/Resources/Icon/icons8-zoom-out-48.png"), "Zoom Out");
     connect(actionZoomOut, &QAction::triggered, this, [=](){
         this->view->setScale((float)0.8);
     });
     toolBar.addAction(actionZoomOut);
 
-    QAction *actionOriginal = new QAction(QIcon(":/Resources/Icon/icons8-one-to-one-48.png"), "");
-    actionOriginal->setToolTip("100%");
+    QAction *actionOriginal = new QAction(QIcon(":/Resources/Icon/icons8-one-to-one-48.png"), "Original Size");
     connect(actionOriginal, &QAction::triggered, this, [=](){
         this->view->resetScale();
     });
@@ -169,10 +184,9 @@ void Qylon::GraphicsWidget::initialize(){
     QIcon fitIcon;
     fitIcon.addPixmap(QPixmap(":/Resources/Icon/icons8-expand-48.png"), QIcon::Normal, QIcon::Off);
     fitIcon.addPixmap(QPixmap(":/Resources/Icon/icons8-collapse-48.png"), QIcon::Normal, QIcon::On);
-    QAction *actionFit = new QAction(QIcon(fitIcon), "");
+    QAction *actionFit = new QAction(QIcon(fitIcon), "Fit");
     actionFit->setCheckable(true);
     actionFit->setChecked(false);
-    actionFit->setToolTip("Fit");
     connect(actionFit, &QAction::triggered, this, [=](bool on){
         if(on) currentRatioValue = doubleSpinBoxRatio->value();
         this->view->setFit(on);
@@ -194,12 +208,13 @@ void Qylon::GraphicsWidget::initialize(){
         auto rPos = point.toPoint();
         int r, g, b = 0;
         this->scene->Pixmap.pixmap().toImage().pixelColor(rPos.x(), rPos.y()).getRgb(&r, &g, &b);
-        QString coord = " X " + QString::number(rPos.x()) +"\n Y " + QString::number(rPos.y());
-        this->labelCoordinate->setText(coord);
+        this->labelCoordinateX->setText(" X: " + QString::number(rPos.x()));
+        this->labelCoordinateY->setText("Y: " + QString::number(rPos.y()));
 
         // auto corr = (int)((r + g + b) / 3) > 150 ? 0 : 255;
         QString style =  QString("QLineEdit { background-color : rgb(") + QString::number(r) + ", " + QString::number(g) + ", " + QString::number(b) + QString("); }");
         this->lineEditPixelColor->setStyleSheet(style);
+        if(this->lineEditPixelColor->isHidden()) this->lineEditPixelColor->setHidden(false);
 
         QString color;
         if(currentImage.depth() == 16){
@@ -214,28 +229,18 @@ void Qylon::GraphicsWidget::initialize(){
             if(currentImage.allGray()){
                 color = QString::number(currentImage.pixelColor(rPos.x(), rPos.y()).value());
             }else{
-                color = " RGB\n [" + QString::number(r) + "," + QString::number(g) + "," + QString::number(b) + "]";
+                color = "RGB[" + QString::number(r) + "," + QString::number(g) + "," + QString::number(b) + "]";
             }
         }
         this->labelPixelColor->setText(color);
     });
-    QLabel *lbl1 = new QLabel("|");
-    lbl1->setStyleSheet("color:lightgray;");
-    QLabel *lbl2 = new QLabel("|");
-    lbl2->setStyleSheet("color:lightgray;");
-    QLabel *lbl3 = new QLabel("|");
-    lbl3->setStyleSheet("color:lightgray;");
 
-    statusBar.addWidget(labelCoordinate);
-    statusBar.addWidget(lbl1);
+    statusBar.addWidget(labelCoordinateX);
+    statusBar.addWidget(labelCoordinateY);
     statusBar.addWidget(lineEditPixelColor);
     statusBar.addWidget(labelPixelColor);
-    statusBar.addWidget(lbl2);
     statusBar.addWidget(labelImageInformation);
-    statusBar.addWidget(lbl3);
-
-    statusBar.addWidget(&labelFPS);
-
+    statusBar.addPermanentWidget(&labelFPS);
 
     // Putting Graphics View
     layout.addWidget(&toolBar);
@@ -259,7 +264,6 @@ void Qylon::GraphicsWidget::setGraphicsItemsVisible(bool on)
 void Qylon::GraphicsWidget::clear()
 {
     QMutexLocker locker(&mutex);
-    QList<QGraphicsItem*> queue;
     try{
         for(auto &item : scene->items()){
             if(item != &scene->Pixmap){
@@ -330,20 +334,34 @@ void Qylon::GraphicsWidget::setImage(const QImage image){
 
     ++timerCnt;
     currentImage = image;
+    QString colorFormat;
+    switch(image.pixelFormat().colorModel()){
+    case QPixelFormat::RGB: colorFormat="RGB"; break;
+    case QPixelFormat::BGR: colorFormat="BGR"; break;
+    case QPixelFormat::Indexed: colorFormat="Indexed"; break;
+    case QPixelFormat::Grayscale: colorFormat="Grayscale"; break;
+    case QPixelFormat::CMYK: colorFormat="CMYK"; break;
+    case QPixelFormat::HSL: colorFormat="HSL"; break;
+    case QPixelFormat::HSV: colorFormat="HSV"; break;
+    case QPixelFormat::YUV: colorFormat="YUV"; break;
+    case QPixelFormat::Alpha: colorFormat="Alpha"; break;
+    default: colorFormat="Unknowned"; break;
+    }
 
     if(bitShift !=0 && image.format() == QImage::Format_Grayscale16){
         scene->Pixmap.setPixmap(QPixmap::fromImage(shiftImage(image, bitShift)));
     }else{
         scene->Pixmap.setPixmap(QPixmap::fromImage(image));
     }
-    labelImageInformation->setText(QString::number(image.depth()) + "-bit, " +
-                                   QString((image.isGrayscale()) ? "Mono" : "Color") +
-                                   ", " +
-                                   QString::number(image.width()) + "x" +
-                                   QString::number(image.height()));
+    labelImageInformation->setText(QString("%1-bit %2 (%3C), %4x%5")
+                                       .arg(image.depth()).arg(colorFormat)
+                                       .arg(image.pixelFormat().channelCount()).arg(image.width()).arg(image.height()));
+
     scene->setSceneRect(0, 0, image.width(), image.height());
     if(lineH) lineH->setLine(0, scene->sceneRect().height()/2, scene->sceneRect().width(), scene->sceneRect().height()/2);
     if(lineV) lineV->setLine(scene->sceneRect().width()/2,0,scene->sceneRect().width()/2, scene->sceneRect().height());
+
+    if(histogramWidget) histogramWidget->setImage(image);
 
     view->setFit(view->isFit());
     view->setLogo(false);

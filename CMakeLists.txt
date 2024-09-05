@@ -24,6 +24,7 @@ set(QYLON_HEADERS
     Processing/SerialCommunication.h
     Processing/SerialCommunicationWidget.h
     Processing/ImageTools.h
+    Processing/HistogramWidget.h
 )
 set(QYLON_SOURCES
     Qylon.cpp
@@ -43,6 +44,7 @@ set(QYLON_SOURCES
     Processing/SerialCommunication.cpp
     Processing/SerialCommunicationWidget.cpp
     Processing/ImageTools.cpp
+    Processing/HistogramWidget.cpp
 )
 set(QYLON_RESOURCES
     Resources.qrc
