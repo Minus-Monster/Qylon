@@ -36,6 +36,7 @@ public:
     void setRectColor(QColor color){ rectangleColor = color; }
     void setEllipseColor(QColor color){ ellipseColor = color; }
     void setOutlineColor(QColor color){ outlineColor = color; }
+    const QImage& getImage(){ return currentImage; }
 
 signals:
     void updateWidget();

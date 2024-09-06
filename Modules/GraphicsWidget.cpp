@@ -87,9 +87,6 @@ void Qylon::GraphicsWidget::initialize(){
         auto filePath = QFileDialog::getSaveFileName(this, "Save this image", QDir::currentPath() + "/untitled.png", "Image(*.png *.jpg *.bmp *.tif *.tiff)");
         if(filePath.isEmpty()) return;
 
-        if(this->currentImage.format() == QImage::Format_Grayscale16 && (filePath.contains("*.tif") || filePath.contains("*.tiff")))
-            return;
-
         if(this->currentImage.save(filePath))
             QMessageBox::information(this, this->windowTitle(), "This current image was successfully saved.");
         else
