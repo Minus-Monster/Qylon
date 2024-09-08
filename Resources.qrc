@@ -54,5 +54,13 @@
         <file>Resources/Icon/icons8-histogram-48.png</file>
         <file>Resources/Icon/icons8-normal-distribution-histogram-48.png</file>
         <file>Resources/Icon/icons8-statistics-48.png</file>
+        <file>Resources/Icon/icons8-close-window-48.png</file>
+        <file>Resources/Icon/icons8-images-folder-48.png</file>
+        <file>Resources/Icon/icons8-maximize-window-48.png</file>
+        <file>Resources/Icon/icons8-measure-48.png</file>
+        <file>Resources/Icon/icons8-minimize-window-48.png</file>
+        <file>Resources/Icon/icons8-ruler-48.png</file>
+        <file>Resources/Icon/icons8-surface-48.png</file>
+        <file>Resources/Icon/icons8-toggle-full-screen-48.png</file>
     </qresource>
 </RCC>
