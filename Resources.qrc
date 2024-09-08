@@ -62,5 +62,8 @@
         <file>Resources/Icon/icons8-ruler-48.png</file>
         <file>Resources/Icon/icons8-surface-48.png</file>
         <file>Resources/Icon/icons8-toggle-full-screen-48.png</file>
+        <file>Resources/Icon/icons8-close-48.png</file>
+        <file>Resources/Icon/icons8-minimize-48.png</file>
+        <file>Resources/Icon/icons8-restore-window-48.png</file>
     </qresource>
 </RCC>
