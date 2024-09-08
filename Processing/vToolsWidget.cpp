@@ -1,3 +1,4 @@
+#ifdef PYLON_ENABLED
 #include "vToolsWidget.h"
 
 Qylon::vToolsWidget::vToolsWidget(vTools *parentVTools, QWidget *parent) : QWidget(parent), layout(new QVBoxLayout(this)){
@@ -98,3 +99,4 @@ void Qylon::vToolsWidget::updateOutputControl(){
         }
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#ifdef PYLON_ENABLED
 #include "vTools.h"
 #include <QDebug>
 #include <QImage>
@@ -437,5 +438,5 @@ QString Qylon::vTools::toString(Pylon::DataProcessing::SCircleF circle)
     return "CenterXY-Radius[" + QString::number(circle.Center.X) + "," + QString::number(circle.Center.Y) + "," + QString::number(circle.Radius) +"]";
 }
 
-
+#endif
 

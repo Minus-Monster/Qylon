@@ -1,5 +1,6 @@
 #ifndef VTOOLS_H
 #define VTOOLS_H
+#ifdef PYLON_ENABLED
 #include <QImage>
 #include <QObject>
 #include <QThread>
@@ -73,3 +74,4 @@ private:
 }
 
 #endif // VTOOLS_H
+#endif

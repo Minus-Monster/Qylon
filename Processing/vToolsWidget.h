@@ -1,5 +1,6 @@
 #ifndef VTOOLSWIDGET_H
 #define VTOOLSWIDGET_H
+#ifdef PYLON_ENABLED
 
 #include <QWidget>
 #include <QDebug>
@@ -9,6 +10,7 @@
 #include <QGroupBox>
 #include <QCheckBox>
 #include <QCloseEvent>
+
 #include "Processing/vTools.h"
 
 namespace Qylon{
@@ -31,5 +33,5 @@ private:
     QVBoxLayout *layoutOutputControl;
 };
 }
-
+#endif
 #endif // VTOOLSWIDGET_H
