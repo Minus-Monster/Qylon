@@ -1,0 +1,18 @@
+QDockWidget::title {
+    background-color: transparent;
+    padding:5px;
+}
+QDockWidget {
+    font-weight: bold;
+    color: rgb(21, 72, 127);
+    titlebar-close-icon: url(:/Resources/Icon/icons8-close-window-48.png);
+    titlebar-normal-icon: url(:/Resources/Icon/icons8-toggle-full-screen-48.png);
+
+}
+QDockWidget::close-button {
+    icon-size: 100px;
+}
+
+QDockWidget::normal-button {
+    icon-size: 30px;
+}
