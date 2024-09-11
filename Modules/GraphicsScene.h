@@ -10,25 +10,25 @@ namespace Qylon{
 class GraphicsScene : public QGraphicsScene{
     Q_OBJECT
 public:
-    QGraphicsPixmapItem Pixmap;
     GraphicsScene();
     ~GraphicsScene();
-    QPointF getCurrentMousePoint(){ return movePoint; }
-
-signals:
-    void currentPos(QPointF point);
-
+    void setImage(const QImage &image){
+        currentImage = image;
+        Pixmap.setPixmap(QPixmap::fromImage(image));
+    }
+    bool isExisting(QGraphicsItem* item){
+        auto items =this->items();
+        for(int i=0; i<items.size(); ++i){
+            if(item == items.at(i)) return true;
+        }
+        return false;
+    }
+    const QImage& getImage(){ return currentImage;}
+    QGraphicsPixmapItem* getPixmapItem(){ return &Pixmap;}
 private:
-    bool pressed = false;
-    QPointF pressPoint;
-    QPointF movePoint;
-    QPointF releasePoint;
+    QImage currentImage;
+    QGraphicsPixmapItem Pixmap;
 
-protected:
-    bool eventFilter(QObject* obj, QEvent* event) override;
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
-    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 };
 }
 #endif // GRAPHICSSCENE_H

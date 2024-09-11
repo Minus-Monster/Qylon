@@ -3,11 +3,10 @@
 #include "TiffReader.h"
 #endif
 #include "Processing/ImageTools.h"
-#include "Processing/HistogramWidget.h"
 
 Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
     : settings(new GraphicsWidgetSettings(this))
-    , view(new GraphicsView)
+    , view(new GraphicsView(this))
     , labelCoordinateX(new QLabel)
     , labelCoordinateY(new QLabel)
     , labelPixelColor(new QLabel)
@@ -54,13 +53,10 @@ Qylon::GraphicsWidget::GraphicsWidget(QWidget *parent)
 }
 
 Qylon::GraphicsWidget::~GraphicsWidget(){
-    delete scene;
+    view->deleteLater();
 }
 
 void Qylon::GraphicsWidget::initialize(){
-    scene = new GraphicsScene;
-    view->setScene(scene);
-
     QWidget *spacer = new QWidget;
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     toolBar.addWidget(spacer);
@@ -75,7 +71,7 @@ void Qylon::GraphicsWidget::initialize(){
 #ifdef TIFF_ENABLED
             this->setImage(openTiff(fileName));
 #else
-            this->setImage(QImage(fileName));
+                this->setImage(QImage(fileName));
 #endif
         }else this->setImage(QImage(fileName));
     });
@@ -102,30 +98,39 @@ void Qylon::GraphicsWidget::initialize(){
     connect(settings, &GraphicsWidgetSettings::setBitShift, this, &GraphicsWidget::setBitShift);
 
     toolBar.addSeparator();
+
+    QAction *actionLineProfile = new QAction(QIcon(":/Resources/Icon/icons8-measure-48.png"), "Line Profile", this);
+    toolBar.addAction(actionLineProfile);
+    actionLineProfile->setCheckable(true);
+    connect(actionLineProfile, &QAction::toggled, this, [=](bool on){
+        if(view->getCurrentImage().isNull()){
+            actionLineProfile->setChecked(false);
+            return;
+        }
+        view->setLineProfileMode(on);
+    });
+
     QAction *actionHistogram = new QAction(QIcon(":/Resources/Icon/icons8-histogram-48.png"), "Histogram", this);
     toolBar.addAction(actionHistogram);
     actionHistogram->setCheckable(true);
     connect(actionHistogram, &QAction::toggled, this, [=](bool on){
-        if(on){
-            if(!histogramWidget) histogramWidget = new HistogramWidget;
-            histogramWidget->setWindowIcon(this->windowIcon());
-            connect(histogramWidget, &HistogramWidget::closed, this, [=](){
-                actionHistogram->setChecked(false);
-            });
-            if(!currentImage.isNull())histogramWidget->setImage(currentImage);
-            histogramWidget->show();
-        }else{
-            histogramWidget->hide();
-            histogramWidget->deleteLater();
-            histogramWidget = nullptr;
+        if(view->getCurrentImage().isNull()){
+            actionHistogram->setChecked(false);
+            return;
         }
+        view->setHistogramMode(on);
+    });
+    connect(view, &GraphicsView::histogramWidgetClosed, this, [=]{
+        actionHistogram->blockSignals(true);
+        actionHistogram->setChecked(false);
+        actionHistogram->blockSignals(false);
     });
 
     QAction *actionGridLine = new QAction(QIcon(":/Resources/Icon/icons8-crosshair-48.png"), "Crosshair", this);
     actionGridLine->setCheckable(true);
     toolBar.addAction(actionGridLine);
     connect(actionGridLine, &QAction::toggled, this, [=](bool on){
-        if(scene->Pixmap.pixmap().isNull()){
+        if(view->getCurrentImage().isNull()){
             actionGridLine->setChecked(false);
             return;
         }
@@ -201,10 +206,10 @@ void Qylon::GraphicsWidget::initialize(){
     });
     toolBar.addWidget(doubleSpinBoxRatio);
 
-    connect(scene, &GraphicsScene::currentPos, this, [=](QPointF point) {
+    connect(view, &GraphicsView::currentPos, this, [=](QPointF point) {
         auto rPos = point.toPoint();
         int r, g, b = 0;
-        this->scene->Pixmap.pixmap().toImage().pixelColor(rPos.x(), rPos.y()).getRgb(&r, &g, &b);
+        view->getCurrentImage().pixelColor(rPos.x(), rPos.y()).getRgb(&r, &g, &b);
         this->labelCoordinateX->setText(" X: " + QString::number(rPos.x()));
         this->labelCoordinateY->setText("Y: " + QString::number(rPos.y()));
 
@@ -245,44 +250,24 @@ void Qylon::GraphicsWidget::initialize(){
     layout.addWidget(&statusBar);
 }
 
+void Qylon::GraphicsWidget::addWidget(QWidget *widget)
+{
+    auto action = toolBar.actions().front();
+    toolBar.insertWidget(action, widget);
+}
+
 void Qylon::GraphicsWidget::setToolBarEnable(bool on){
     toolBar.setHidden(!on);
 }
 
-void Qylon::GraphicsWidget::setGraphicsItemsVisible(bool on)
-{
-    for(int i=0; i<scene->items().size(); ++i){
-        if(scene->items().at(i) == lineH || scene->items().at(i) == lineV) continue;
-        if(&scene->Pixmap != scene->items().at(i)) scene->items().at(i)->setVisible(on);
-    }
-    graphicsItemVisible = on;
-}
-
 void Qylon::GraphicsWidget::clear()
 {
-    QMutexLocker locker(&mutex);
-    try{
-        for(auto &item : scene->items()){
-            if(item != &scene->Pixmap){
-                if(item == lineV || item == lineH) continue;
-                scene->removeItem(item);
-                delete item;
-            }else{
-                scene->Pixmap.setPixmap(QPixmap());
-            }
-        }
-    }catch(std::exception &e){
-        qDebug() << "clear function :" << e.what();
-    }catch(...){
-        qDebug() << "clear function :" << "Unknowned error occurred.";
-    }
+    view->clear();
 }
 
 void Qylon::GraphicsWidget::reset()
 {
-    clear();
-    scene->setSceneRect(0,0,0,0);
-    setLogo(true);
+    view->reset();
 }
 
 void Qylon::GraphicsWidget::setLogo(bool on){
@@ -295,34 +280,13 @@ void Qylon::GraphicsWidget::setCrossHair(bool on, QColor color, int width)
     color = settings->getCrosshairColor();
     width = settings->getCrosshairWidth();
 
-    if(on){
-        if(!lineH){
-            lineH = new QGraphicsLineItem;
-        }
-        if(!lineV){
-            lineV = new QGraphicsLineItem;
-        }
-        QPen pen(color);
-        pen.setWidth(width);
-        lineH->setPen(pen);
-        lineH->setLine(0, scene->sceneRect().height()/2, scene->sceneRect().width(), scene->sceneRect().height()/2);
-        lineH->setZValue(10);
-        lineV->setPen(pen);
-        lineV->setLine(scene->sceneRect().width()/2,0,scene->sceneRect().width()/2, scene->sceneRect().height());
-        lineV->setZValue(10);
-        if(!scene->items().contains(lineH)) scene->addItem(lineH);
-        if(!scene->items().contains(lineV)) scene->addItem(lineV);
-    }else{
+    view->setCrossHair(crosshair, color, width);
+    if(!on){
         for(int i=0; i< toolBar.actions().size(); ++i){
             if(toolBar.actions().at(i)->toolTip() == "Crosshair"){
                 toolBar.actions().at(i)->setChecked(false);
             }
         }
-        delete lineH;
-        delete lineV;
-        lineH = nullptr;
-        lineV = nullptr;
-
     }
 }
 
@@ -346,19 +310,14 @@ void Qylon::GraphicsWidget::setImage(const QImage image){
     }
 
     if(bitShift !=0 && image.format() == QImage::Format_Grayscale16){
-        scene->Pixmap.setPixmap(QPixmap::fromImage(shiftImage(image, bitShift)));
+        view->setImage(shiftImage(image, bitShift));
     }else{
-        scene->Pixmap.setPixmap(QPixmap::fromImage(image));
+        view->setImage(image);
     }
     labelImageInformation->setText(QString("%1-bit %2 (%3C), %4x%5")
                                        .arg(image.depth()).arg(colorFormat)
                                        .arg(image.pixelFormat().channelCount()).arg(image.width()).arg(image.height()));
 
-    scene->setSceneRect(0, 0, image.width(), image.height());
-    if(lineH) lineH->setLine(0, scene->sceneRect().height()/2, scene->sceneRect().width(), scene->sceneRect().height()/2);
-    if(lineV) lineV->setLine(scene->sceneRect().width()/2,0,scene->sceneRect().width()/2, scene->sceneRect().height());
-
-    if(histogramWidget) histogramWidget->setImage(image);
 
     view->setFit(view->isFit());
     view->setLogo(false);
@@ -371,35 +330,7 @@ void Qylon::GraphicsWidget::updateImage()
 
 bool Qylon::GraphicsWidget::drawGraphicsItem(QGraphicsItem *item)
 {
-    QMutexLocker locker(&mutex);
-    try{
-        if(!item) return false;
-        if(QGraphicsRectItem* rect = dynamic_cast<QGraphicsRectItem*>(item)){
-            QBrush brush(rectangleColor);
-            rect->setBrush(brush);
-            rect->setPen(Qt::NoPen);
-        }else if(QGraphicsEllipseItem *ellipse = dynamic_cast<QGraphicsEllipseItem*>(item)){
-            QBrush brush(ellipseColor);
-            ellipse->setBrush(brush);
-            ellipse->setPen(Qt::NoPen);
-        }else if(QGraphicsLineItem *line = dynamic_cast<QGraphicsLineItem*>(item)){
-            QPen pen(outlineColor);
-            pen.setWidth(2);
-            line->setPen(pen);
-        }else{
-            qDebug() <<"Else case occurred";
-            return false;
-        }
-        item->setVisible(graphicsItemVisible);
-        scene->addItem(item);
-    }catch(std::exception &e){
-        qDebug() << "DrawGraphicsItem function :" << e.what();
-        return false;
-    }catch(...){
-        qDebug() << "DrawGraphicsItem function :" << "Unknowned error occurred.";
-        return false;
-    }
-    return true;
+    return view->addGraphicsItem(item);
 }
 
 void Qylon::GraphicsWidget::setFit(bool on){

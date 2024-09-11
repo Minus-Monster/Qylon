@@ -15,8 +15,6 @@
 #include <QMutex>
 #include <QTimer>
 #include "GraphicsView.h"
-#include "GraphicsScene.h"
-#include "Processing/HistogramWidget.h"
 
 namespace Qylon{
 class GraphicsWidgetSettings;
@@ -26,8 +24,8 @@ public:
     GraphicsWidget(QWidget *parent = nullptr);
     ~GraphicsWidget();
     void initialize();
+    void addWidget(QWidget *widget);
     void setToolBarEnable(bool on);
-    void setGraphicsItemsVisible(bool on);
     void clear();   // Remove all items from scene
     void reset();   // Remove all items from scene including sceneRect
     void setLogo(bool on);
@@ -37,6 +35,7 @@ public:
     void setEllipseColor(QColor color){ ellipseColor = color; }
     void setOutlineColor(QColor color){ outlineColor = color; }
     const QImage& getImage(){ return currentImage; }
+    GraphicsView* getView(){ return view; }
 
 signals:
     void updateWidget();
@@ -51,10 +50,8 @@ public slots:
     void removeAllGraphicsItem();
 
 private:
-    GraphicsWidgetSettings *settings;
-    GraphicsView *view;
-    GraphicsScene *scene;
-    HistogramWidget *histogramWidget=nullptr;
+    GraphicsWidgetSettings *settings = nullptr;
+    GraphicsView *view = nullptr;
 
     QLabel *labelCoordinateX;
     QLabel *labelCoordinateY;
@@ -72,8 +69,6 @@ private:
 
     bool graphicsItemVisible=true;
 
-    QGraphicsLineItem *lineH = nullptr;
-    QGraphicsLineItem *lineV = nullptr;
     bool crosshair = false;
 
     QColor rectangleColor = QColor(20,72,126,127);
@@ -100,7 +95,7 @@ public:
         groupBoxDrawingOption->setCheckable(true);
         groupBoxDrawingOption->setChecked(true);
         connect(groupBoxDrawingOption, &QGroupBox::toggled, this, [&](bool on){
-            reinterpret_cast<GraphicsWidget*>(this->parent())->setGraphicsItemsVisible(on);
+            reinterpret_cast<GraphicsWidget*>(this->parent())->getView()->setGraphicsItemsVisible(on);
         });
         layout.addWidget(groupBoxDrawingOption);
 
