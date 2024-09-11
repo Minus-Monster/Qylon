@@ -15,7 +15,7 @@ set(QYLON_HEADERS
     Modules/GraphicsScene.h
     Modules/GraphicsVTKWidget.h
     Modules/GraphicsWidget.h
-
+    Modules/Graph.h
     Modules/TiffReader.h
     Modules/Console.h
     Processing/vTools.h
@@ -25,6 +25,7 @@ set(QYLON_HEADERS
     Processing/SerialCommunicationWidget.h
     Processing/ImageTools.h
     Processing/HistogramWidget.h
+    Processing/LineProfileWidget.h
 )
 set(QYLON_SOURCES
     Qylon.cpp
@@ -38,6 +39,7 @@ set(QYLON_SOURCES
     Modules/GraphicsScene.cpp
     Modules/GraphicsVTKWidget.cpp
     Modules/Console.cpp
+    Modules/Graph.cpp
     Processing/vTools.cpp
     Processing/vToolsWidget.cpp
     Processing/OutputCommunication.cpp
@@ -45,6 +47,7 @@ set(QYLON_SOURCES
     Processing/SerialCommunicationWidget.cpp
     Processing/ImageTools.cpp
     Processing/HistogramWidget.cpp
+    Processing/LineProfileWidget.cpp
 )
 set(QYLON_RESOURCES
     Resources.qrc
@@ -160,34 +163,34 @@ endif(FgLib5_FOUND)
 
 
 
-# OPENCV Loading
-find_path(OpenCV_DIR OpenCVConfig.cmake
-    HINTS "C:/opencv/build"
-)
-find_package(OpenCV QUIET)
-if(OpenCV_FOUND)
-    message(STATUS "OpenCV ${OpenCV_VERSION} found")
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenCV_LIBS})
-    target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
-    target_compile_definitions(${PROJECT_NAME} PUBLIC OPENCV_ENABLED)
-    # target_include_directories(${PROJECT_NAME} PUBLIC
-    #     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    #     $<INSTALL_INTERFACE:include>
-    # )
-endif()
+# # OPENCV Loading
+# find_path(OpenCV_DIR OpenCVConfig.cmake
+#     HINTS "C:/opencv/build"
+# )
+# find_package(OpenCV QUIET)
+# if(OpenCV_FOUND)
+#     message(STATUS "OpenCV ${OpenCV_VERSION} found")
+#     target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenCV_LIBS})
+#     target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
+#     target_compile_definitions(${PROJECT_NAME} PUBLIC OPENCV_ENABLED)
+#     # target_include_directories(${PROJECT_NAME} PUBLIC
+#     #     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#     #     $<INSTALL_INTERFACE:include>
+#     # )
+# endif()
 
-# PCL Loading
-find_package(PCL QUIET COMPONENTS common io filters visualization)
-if(PCL_FOUND)
-    message(STATUS "PCL ${PCL_VERSION} found")
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${PCL_LIBRARIES})
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PCL_INCLUDE_DIRS})
-    target_compile_definitions(${PROJECT_NAME} PUBLIC PCL_ENABLED)
-    #VTK
-    find_package(VTK REQUIRED)
-    if(VTK_FOUND)
-        message(STATUS "VTK ${VTK_VERSION} found")
-        target_link_libraries(${PROJECT_NAME} PUBLIC ${VTK_LIBRARIES})
-        target_include_directories(${PROJECT_NAME} PUBLIC ${VTK_INCLUDE_DIRS})
-    endif()
-endif()
+# # PCL Loading
+# find_package(PCL QUIET COMPONENTS common io filters visualization)
+# if(PCL_FOUND)
+#     message(STATUS "PCL ${PCL_VERSION} found")
+#     target_link_libraries(${PROJECT_NAME} PUBLIC ${PCL_LIBRARIES})
+#     target_include_directories(${PROJECT_NAME} PUBLIC ${PCL_INCLUDE_DIRS})
+#     target_compile_definitions(${PROJECT_NAME} PUBLIC PCL_ENABLED)
+#     #VTK
+#     find_package(VTK REQUIRED)
+#     if(VTK_FOUND)
+#         message(STATUS "VTK ${VTK_VERSION} found")
+#         target_link_libraries(${PROJECT_NAME} PUBLIC ${VTK_LIBRARIES})
+#         target_include_directories(${PROJECT_NAME} PUBLIC ${VTK_INCLUDE_DIRS})
+#     endif()
+# endif()

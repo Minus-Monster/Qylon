@@ -6,6 +6,7 @@
 #include <pylon/ImageFormatConverter.h>
 #include <pylon/PylonImage.h>
 #endif
+
 namespace Qylon{
 /// <summary>
 /// Only effects for 16bit grayscale image.
@@ -138,8 +139,109 @@ inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){
     return outImage;
 }
 
+struct HistogramStatistic{
+    double Mean;
+    double StdDev;
+    int N;
+    int Mode;
+    int MaxFrequency;
+    int MinPixelValue;
+    int MaxPixelValue;
+};
+inline std::vector<std::vector<int>> getHistogramData(const QImage &image, std::vector<HistogramStatistic> &info){
+    std::vector<std::vector<int>> histogram;
+    if(image.isNull()) return histogram;
+    if(image.pixelFormat().channelCount() == 0){
+        qDebug() << "Histogram Analyzing error. Image channel size is 0";
+        return histogram;
+    }
+    bool grayscale = image.isGrayscale();
+    int colorChannel = (grayscale ? 1 : (image.pixelFormat().channelCount() - image.pixelFormat().alphaUsage()));
+    int bitDepth = image.depth()/image.pixelFormat().channelCount();
+    int imageSize = image.width() * image.height();
+
+    info.resize(colorChannel);
+    histogram.resize(colorChannel);
+    for(int channel=0; channel < colorChannel; ++channel){
+        histogram[channel].resize(1ULL <<bitDepth);
+        long long sum=0;
+        long long sumSquaredDiffs = 0;
+        int maxFrequency = 0;
+        int minPixelValue = -1;
+        int maxPixelValue = 0;
+        int mode = 0;
+        for(int y = 0; y < image.height(); ++y){
+            const void* line = image.scanLine(y);
+            for(int x = 0; x < image.width(); ++x){
+                int value;
+                if(!grayscale){ // Color
+                    QColor color = QColor::fromRgb(reinterpret_cast<const QRgb*>(line)[x]);
+                    int rgb[3] = {color.red(), color.green(), color.blue()};
+                    value = rgb[channel];
+                }else if(bitDepth ==8) value = reinterpret_cast<const uchar*>(line)[x];
+                else value = reinterpret_cast<const quint16*>(line)[x];
+                histogram[channel][value]++;
 
 
+                // Calculating histogram statistic
+                sum += value;
+                if(minPixelValue ==- 1 || value < minPixelValue) minPixelValue = value;
+                if(value > maxPixelValue){ maxPixelValue = value;}
+                if(histogram[channel][value] > maxFrequency){
+                    maxFrequency = histogram[channel][value];
+                    mode = value;
+                }
+            }
+        }
+        int channelMean = (double)sum/imageSize;
+        for(int i = 0; i < histogram[channel].size(); ++i) {
+            if(histogram[channel][i] > 0) sumSquaredDiffs += histogram[channel][i] * pow(i - channelMean, 2);
+        }
+
+        info[channel].N = imageSize;
+        info[channel].Mean = channelMean;
+        info[channel].StdDev = sqrt((double)sumSquaredDiffs/imageSize);
+        info[channel].Mode = mode;
+        info[channel].MinPixelValue = minPixelValue;
+        info[channel].MaxPixelValue = maxPixelValue;
+        info[channel].MaxFrequency = maxFrequency;
+    }
+    return histogram;
+}
+
+inline std::vector<std::vector<int>> getLineProfileData(const QImage &image, QLineF line){
+    std::vector<std::vector<int>> lineProfile;
+    if (image.isNull()) return lineProfile;
+
+    int numSteps = (int)line.length()+1;
+    int bitDepth = image.depth()/image.pixelFormat().channelCount();\
+        bool grayscale = image.isGrayscale();
+    int colorChannel = (grayscale ? 1 : (image.pixelFormat().channelCount() - image.pixelFormat().alphaUsage()));
+    bool reverse = (int)line.p1().x() > (int)line.p2().x();
+
+    lineProfile.resize(colorChannel);
+    for(int channel = 0; channel <colorChannel; ++channel){
+        for (int i = 0; i < numSteps; ++i) {
+            double t = i/(double)numSteps;
+            QPointF point = line.pointAt(reverse ? 1.-t : t);
+            QPoint pixelPoint = point.toPoint();
+            if (image.rect().contains(pixelPoint)) {
+                int value =0;
+                if(bitDepth!=8 && grayscale){
+                    value = reinterpret_cast<const quint16*>(image.scanLine(pixelPoint.y()))[pixelPoint.x()];
+                }else if(!grayscale){ // Color Channel
+                    QColor color = QColor::fromRgb(reinterpret_cast<const QRgb*>(image.scanLine(pixelPoint.y()))[pixelPoint.x()]);
+                    int rgb[3] = {color.red(), color.green(), color.blue()};
+                    value = rgb[channel];
+                }else{
+                    value = qGray(image.pixel(pixelPoint));
+                }
+                lineProfile[channel].push_back(value);
+            }
+        }
+    }
+    return lineProfile;
+}
 #endif
 }
 #endif // IMAGETOOLS_H
