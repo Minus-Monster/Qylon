@@ -12,7 +12,7 @@
 Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
 {
     setWindowTitle("Basler pylon Camera Configuration");
-    setWindowIcon(QIcon(":/Qylon/Resources/Icon.png"));
+    setWindowIcon(QIcon(":/Resources/Icon.png"));
     list = new QComboBox;
     list->setMinimumWidth(120);
     widget = new QTreeWidget;

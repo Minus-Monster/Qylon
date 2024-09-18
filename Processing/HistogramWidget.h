@@ -24,6 +24,7 @@ public:
         graph->resize(600, 230);
         graph->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+        setWindowIcon(QIcon(":/Resources/Icon.png"));
         setWindowTitle("Histogram Analyzer");
         setLayout(&layout);
         layout.addWidget(graph);
