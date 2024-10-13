@@ -138,7 +138,7 @@ inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){
     }
     return outImage;
 }
-
+#endif
 struct HistogramStatistic{
     double Mean;
     double StdDev;
@@ -242,6 +242,6 @@ inline std::vector<std::vector<int>> getLineProfileData(const QImage &image, QLi
     }
     return lineProfile;
 }
-#endif
+
 }
 #endif // IMAGETOOLS_H
