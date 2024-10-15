@@ -1,4 +1,5 @@
 #include "GraphicsView.h"
+#include <qapplication.h>
 Qylon::GraphicsView::GraphicsView(QWidget *parent) : QGraphicsView(parent){
     setMouseTracking(true);
     setFrameShape(Shape::Box);
@@ -222,6 +223,7 @@ void Qylon::GraphicsView::mousePressEvent(QMouseEvent *event){
     }else{
         setDragMode(DragMode::ScrollHandDrag);
         setCursor(Qt::ClosedHandCursor);
+
     }
     QGraphicsView::mousePressEvent(event);
 }
@@ -246,13 +248,15 @@ void Qylon::GraphicsView::mouseReleaseEvent(QMouseEvent *event){
     auto pos = mapToScene(event->pos());
     if((pos.x() <0 || pos.x() >= scene.sceneRect().width()) ||
         (pos.y() <0 || pos.y() >= scene.sceneRect().height()) || pos == clickedPos){
-        isDragging = false;
         if(lineProfileWidget){
             lineProfileWidget->setLine(QLineF());
             lineProfileWidget->hide();
             if(scene.isExisting(lineProfileWidget->getRuler())) scene.removeItem(lineProfileWidget->getRuler());
             this->viewport()->update();
         }
+        setDragMode(DragMode::NoDrag);
+        setCursor(Qt::CrossCursor);
+        isDragging = false;
         return;
     }
 
@@ -263,6 +267,7 @@ void Qylon::GraphicsView::mouseReleaseEvent(QMouseEvent *event){
         lineProfileWidget->show();
         this->viewport()->update();
     }
+
     isDragging = false;
 
     setDragMode(DragMode::NoDrag);
