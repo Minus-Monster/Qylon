@@ -66,5 +66,6 @@
         <file>Resources/Icon/icons8-minimize-48.png</file>
         <file>Resources/Icon/icons8-restore-window-48.png</file>
         <file>StyleSheet.qss</file>
+        <file>Resources/Icon.ico</file>
     </qresource>
 </RCC>
