@@ -95,13 +95,14 @@ find_path(pylon_cmake Findpylon.cmake
     HINTS "$ENV{PYLON_DEV_DIR}/lib/cmake"
     "$ENV{PYLON_ROOT}/lib/cmake"
     "$ENV{PYLON_ROOT}/Development/lib/cmake"
+    "$ENV{ProgramFiles}/Basler/pylon 8/Development/lib/cmake"
     "$ENV{ProgramFiles}/Basler/pylon 7/Development/lib/cmake"
     "$ENV{ProgramFiles}/Basler/pylon 6/Development/lib/cmake"
     "$ENV{ProgramFiles}/Basler/pylon 5/Development/lib/cmake"
     "/opt/pylon/lib/cmake"
 )
 list(APPEND CMAKE_MODULE_PATH ${pylon_cmake})
-find_package(pylon 7.4.0 QUIET)
+find_package(pylon QUIET)
 if(pylon_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC pylon::pylon)
     target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
@@ -114,7 +115,7 @@ find_path(pylon_vTools FindpylonDataProcessing.cmake
     HINTS "$ENV{PYLON_DEV_DIR}/Samples/pylonDataProcessing/C++/cmake"
 )
 list(APPEND CMAKE_MODULE_PATH ${pylon_vTools})
-find_package(pylonDataProcessing REQUIRED)
+find_package(pylonDataProcessing QUIET)
 if(pylonDataProcessing_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
     message(STATUS "pylonDataProcessing SDK found")
