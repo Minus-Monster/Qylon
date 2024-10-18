@@ -22,17 +22,11 @@ If you have any questions or purposes, Please feel free to contact me via e-mail
 ```
 Qylon
 ├── Acquisition modules
-│   ├── Camera (Almost Implemented, started ToF supporting)
-│   ├── Frame Grabber (Almost Implemented, Waiting for enough resources)
-│   └── From Image
-│
-├── Processing modules
-│   ├── vTools (Finished)
-│   └── QDC (OpenCV, AVL, etc)
-│
-└── Modules
-    ├── GraphicsWidget including VTK
-    └── TIFFReader
+│   ├── Camera
+│   └── Frame Grabber
+│   
+└── Processing modules
+    └── vTools
 ``` 
 
 ### Environment
