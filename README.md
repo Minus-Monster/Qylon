@@ -39,7 +39,7 @@ Now supports Qt 6.
 You can build using CMake.
 
 Adding the below codes in your CMakeLists.txt.
-(This is not completely finished. Frame Grabber doesn't work properly at this moment.)
+
 ```c++
 add_subdirectory("../Qylon" Qylon) # writing your current Qylon directory path
 target_link_libraries(${PROJECT_NAME} PUBLIC Qylon)
