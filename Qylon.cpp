@@ -1,6 +1,3 @@
-#ifdef PYLON_ENABLED
-#include "Acquisition/Camera.h"
-#endif
 #include <Qylon.h>
 namespace Qylon{
 void Qylon::Qylon::log(QString strings){

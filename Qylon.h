@@ -5,8 +5,8 @@
 #include <QThread>
 #include <QTime>
 #ifdef PYLON_ENABLED
-#include "Acquisition/Camera.h"
-#include "Processing/vTools.h"
+#include "Camera/Camera.h"
+#include "vTools/vTools.h"
 #endif
 #ifdef GRABBER_ENABLED
 #include "Acquisition/Grabber.h"

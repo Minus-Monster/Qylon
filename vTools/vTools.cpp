@@ -1,11 +1,10 @@
 #ifdef PYLON_ENABLED
 #include "vTools.h"
+#include "vTools/vToolsWidget.h"
 #include <QDebug>
 #include <QImage>
 #include <Qylon.h>
 #include <QGraphicsItem>
-#include "Processing/ImageTools.h"
-#include "Processing/vToolsWidget.h"
 
 Qylon::vTools::vTools(Qylon *parentQylon) : parent(parentQylon), _waitObject(Pylon::WaitObjectEx::Create())
 {

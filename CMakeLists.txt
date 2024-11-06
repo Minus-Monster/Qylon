@@ -5,9 +5,11 @@ project(Qylon VERSION 2.0)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
+option(WITH_PYLON "Add pylon SDK for Qylon" OFF)
+option(WITH_GRABBER "Add Framegrabber SDK for Qylon" OFF)
+
 set(QYLON_HEADERS
     Qylon.h
-
     Camera/Camera.h
     Camera/CameraWidget.h
     Grabber/Grabber.h
@@ -17,7 +19,6 @@ set(QYLON_HEADERS
 )
 set(QYLON_SOURCES
     Qylon.cpp
-
     Camera/Camera.cpp
     Camera/CameraWidget.cpp
     Grabber/Grabber.cpp
@@ -43,6 +44,9 @@ else(Qt5_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
 endif()
 
+
+
+
 set(INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 file(MAKE_DIRECTORY ${INCLUDE_DIR})
 
@@ -59,80 +63,83 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 # Pylon Loading
 # Locate the cmake find module for pylon ...
-find_path(pylon_cmake Findpylon.cmake
-    HINTS "$ENV{PYLON_DEV_DIR}/lib/cmake"
-    "$ENV{PYLON_ROOT}/lib/cmake"
-    "$ENV{PYLON_ROOT}/Development/lib/cmake"
-    "$ENV{ProgramFiles}/Basler/pylon 8/Development/lib/cmake"
-    "$ENV{ProgramFiles}/Basler/pylon 7/Development/lib/cmake"
-    "$ENV{ProgramFiles}/Basler/pylon 6/Development/lib/cmake"
-    "$ENV{ProgramFiles}/Basler/pylon 5/Development/lib/cmake"
-    "/opt/pylon/lib/cmake"
-)
-list(APPEND CMAKE_MODULE_PATH ${pylon_cmake})
-find_package(pylon REQUIRED)
-if(pylon_FOUND)
-    target_link_libraries(${PROJECT_NAME} PUBLIC pylon::pylon)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
-    message(STATUS "pylon SDK ${pylon_VERSION} found")
-endif()
+if(WITH_PYLON)
+    find_path(pylon_cmake Findpylon.cmake
+        HINTS "$ENV{PYLON_DEV_DIR}/lib/cmake"
+        "$ENV{PYLON_ROOT}/lib/cmake"
+        "$ENV{PYLON_ROOT}/Development/lib/cmake"
+        "$ENV{ProgramFiles}/Basler/pylon 8/Development/lib/cmake"
+        "$ENV{ProgramFiles}/Basler/pylon 7/Development/lib/cmake"
+        "$ENV{ProgramFiles}/Basler/pylon 6/Development/lib/cmake"
+        "$ENV{ProgramFiles}/Basler/pylon 5/Development/lib/cmake"
+        "/opt/pylon/lib/cmake"
+    )
+    list(APPEND CMAKE_MODULE_PATH ${pylon_cmake})
+    find_package(pylon REQUIRED)
+    if(pylon_FOUND)
+        target_link_libraries(${PROJECT_NAME} PUBLIC pylon::pylon)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
+        message(STATUS "pylon SDK ${pylon_VERSION} found")
+    endif()
 
-# vTools
-find_path(pylon_vTools FindpylonDataProcessing.cmake
-    HINTS "/opt/pylon/share/pylon/Samples/pylonDataProcessing/C++/cmake"
-    HINTS "$ENV{PYLON_DEV_DIR}/Samples/pylonDataProcessing/C++/cmake"
-)
-list(APPEND CMAKE_MODULE_PATH ${pylon_vTools})
-find_package(pylonDataProcessing REQUIRED)
-if(pylonDataProcessing_FOUND)
-    target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
-    message(STATUS "pylonDataProcessing SDK found")
+    # vTools
+    find_path(pylon_vTools FindpylonDataProcessing.cmake
+        HINTS "/opt/pylon/share/pylon/Samples/pylonDataProcessing/C++/cmake"
+        HINTS "$ENV{PYLON_DEV_DIR}/Samples/pylonDataProcessing/C++/cmake"
+    )
+    list(APPEND CMAKE_MODULE_PATH ${pylon_vTools})
+    find_package(pylonDataProcessing REQUIRED)
+    if(pylonDataProcessing_FOUND)
+        target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
+        message(STATUS "pylonDataProcessing SDK found")
+    endif()
 endif()
 
 # Grabber Loading
-file(TO_CMAKE_PATH "$ENV{BASLER_FG_SDK_DIR}" BASLER_FG_SDK_DIR)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_INSTALL_PREFIX}/cmake/modules" "${BASLER_FG_SDK_DIR}/cmake/modules")
-find_package(FgLib5 QUIET)
-if(FgLib5_FOUND)
-    add_definitions(${SISOPLATFORM_DEFINITIONS})
-    message(STATUS "Frame grabber SDK ${FgLib5_VERSION_STRING} found")
-    target_include_directories(${PROJECT_NAME} PUBLIC ${FgLib5_INCLUDE_DIR})
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${FgLib5_LIBRARY})
+if(WITH_GRABBER)
+    file(TO_CMAKE_PATH "$ENV{BASLER_FG_SDK_DIR}" BASLER_FG_SDK_DIR)
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_INSTALL_PREFIX}/cmake/modules" "${BASLER_FG_SDK_DIR}/cmake/modules")
+    find_package(FgLib5 QUIET)
+    if(FgLib5_FOUND)
+        add_definitions(${SISOPLATFORM_DEFINITIONS})
+        message(STATUS "Frame grabber SDK ${FgLib5_VERSION_STRING} found")
+        target_include_directories(${PROJECT_NAME} PUBLIC ${FgLib5_INCLUDE_DIR})
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${FgLib5_LIBRARY})
 
-    find_package(ClSerSis REQUIRED)
-    if(ClSerSis_FOUND)
-        message(STATUS "Frame grabber SDK ClSerSis found")
-        target_include_directories(${PROJECT_NAME} PUBLIC ${ClSerSis_INCLUDE_DIR})
-        target_link_libraries(${PROJECT_NAME} PUBLIC ${ClSerSis_LIBRARY})
-    endif(ClSerSis_Found)
+        find_package(ClSerSis REQUIRED)
+        if(ClSerSis_FOUND)
+            message(STATUS "Frame grabber SDK ClSerSis found")
+            target_include_directories(${PROJECT_NAME} PUBLIC ${ClSerSis_INCLUDE_DIR})
+            target_link_libraries(${PROJECT_NAME} PUBLIC ${ClSerSis_LIBRARY})
+        endif(ClSerSis_Found)
 
-    find_package(SisoIoLib REQUIRED)
-    if(SisoIoLib_FOUND)
-        message(STATUS "Frame grabber SDK SisoIoLib found")
-        target_include_directories(${PROJECT_NAME} PUBLIC ${SisoIoLib_INCLUDE_DIR})
-        target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoIoLib_LIBRARY})
-    endif(SisoIoLib_FOUND)
+        find_package(SisoIoLib REQUIRED)
+        if(SisoIoLib_FOUND)
+            message(STATUS "Frame grabber SDK SisoIoLib found")
+            target_include_directories(${PROJECT_NAME} PUBLIC ${SisoIoLib_INCLUDE_DIR})
+            target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoIoLib_LIBRARY})
+        endif(SisoIoLib_FOUND)
 
-    find_package(SisoPlatform REQUIRED)
-    if(SisoPlatform_FOUND)
-        message(STATUS "Frame grabber SDK SisoPlatform found")
-        target_include_directories(${PROJECT_NAME} PUBLIC ${SisoPlatform_INCLUDE_DIR})
-        target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoPlatform_LIBRARY})
-    endif(SisoPlatform_FOUND)
+        find_package(SisoPlatform REQUIRED)
+        if(SisoPlatform_FOUND)
+            message(STATUS "Frame grabber SDK SisoPlatform found")
+            target_include_directories(${PROJECT_NAME} PUBLIC ${SisoPlatform_INCLUDE_DIR})
+            target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoPlatform_LIBRARY})
+        endif(SisoPlatform_FOUND)
 
-    find_package(SisoGenicamLib REQUIRED)
-    if(SisoGenicamLib_FOUND)
-        message(STATUS "Frame grabber SDK SisoGenicamLib found")
-        target_include_directories(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_INCLUDE_DIR})
-        target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_LIBRARY})
-    endif(SisoGenicamLib_FOUND)
+        find_package(SisoGenicamLib REQUIRED)
+        if(SisoGenicamLib_FOUND)
+            message(STATUS "Frame grabber SDK SisoGenicamLib found")
+            target_include_directories(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_INCLUDE_DIR})
+            target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_LIBRARY})
+        endif(SisoGenicamLib_FOUND)
 
-    target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
-endif(FgLib5_FOUND)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
+    endif(FgLib5_FOUND)
+endif()
 
 
-
-# # OPENCV Loading
+## OPENCV Loading
 find_path(OpenCV_DIR OpenCVConfig.cmake
     HINTS "C:/dev/opencv/build"
 )

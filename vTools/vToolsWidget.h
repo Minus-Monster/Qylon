@@ -11,7 +11,7 @@
 #include <QCheckBox>
 #include <QCloseEvent>
 
-#include "Processing/vTools.h"
+#include "vTools/vTools.h"
 
 namespace Qylon{
 class vToolsWidget : public QWidget

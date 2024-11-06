@@ -2,7 +2,6 @@
 #include "Qylon.h"
 #include "Camera.h"
 #include "CameraWidget.h"
-#include "Processing/ImageTools.h"
 
 #ifdef PCL_ENABLED
 #include <pcl/point_cloud.h>
