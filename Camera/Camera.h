@@ -12,17 +12,17 @@
 #include <QObject>
 #include <QImage>
 #include <QMutexLocker>
+#include <QThread>
 #include <pylon/PylonIncludes.h>
 #include <pylon/BaslerUniversalInstantCamera.h>
-
 
 namespace Qylon{
 class Qylon;
 class CameraWidget;
 class Camera : public QObject,
-        public Pylon::CImageEventHandler,
-        public Pylon::CConfigurationEventHandler,
-        public Pylon::CCameraEventHandler
+               public Pylon::CImageEventHandler,
+               public Pylon::CConfigurationEventHandler,
+               public Pylon::CCameraEventHandler
 {
     Q_OBJECT
 public:
@@ -40,6 +40,9 @@ public:
     void continuousGrab();
     void stopGrab();
     bool isOpened();
+
+    void softwareTriggerReady(bool on);
+    QImage softwareTrigger();
 
     Qylon *getQylon();
     Pylon::CBaslerUniversalInstantCamera *getInstantCamera();
@@ -71,6 +74,8 @@ private:
     Qylon *parent = nullptr;
     Pylon::CBaslerUniversalInstantCamera currentInstantCamera;
 
+    bool softwareTriggerMode = false;
+
     mutable QMutex memberLock;
     mutable QMutex imageLock;
     QImage currentImage;
@@ -79,6 +84,7 @@ private:
     QImage currentIntensity;
 
     Pylon::CImageFormatConverter formatConverter;
+    Pylon::CAcquireContinuousConfiguration* acquireConfig = nullptr;
 
 #ifdef PCL_ENABLED
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcPtr;
@@ -87,7 +93,6 @@ private:
     CameraWidget *widget;
 
 protected:
-
     // Pylon::CImageEventHandler functions
     virtual void OnImagesSkipped( Pylon::CInstantCamera& camera, size_t countOfSkippedImages );
     virtual void OnImageGrabbed( Pylon::CInstantCamera& camera, const Pylon::CGrabResultPtr& grabResult );
@@ -112,6 +117,22 @@ protected:
 
     // Pylon::CCameraEventHandler function
     virtual void OnCameraEvent( Pylon::CInstantCamera& camera, intptr_t userProvidedId, GenApi::INode* pNode );
+};
+
+class CameraThread : public QThread{
+    Q_OBJECT
+public:
+    CameraThread(QObject *parent=nullptr) : QThread(parent){}
+    void run() override{
+        while(isInterruptionRequested()){
+            try{
+
+            }catch(const Pylon::GenericException &e){
+                // log(QString::fromStdString(e.GetDescription()));
+            }
+        }
+    }
+
 };
 }
 inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){

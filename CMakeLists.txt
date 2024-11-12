@@ -45,8 +45,6 @@ else(Qt5_FOUND)
 endif()
 
 
-
-
 set(INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 file(MAKE_DIRECTORY ${INCLUDE_DIR})
 

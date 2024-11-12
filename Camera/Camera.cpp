@@ -19,9 +19,10 @@ Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
     connect(this, &Camera::removed, widget, &CameraWidget::disconnectCamera);
     connect(this, &Camera::connected, widget, &CameraWidget::connectedCameraFromOutside);
 
+    acquireConfig = new Pylon::CAcquireContinuousConfiguration;
     // The order of these codes is critically importatnt
     currentInstantCamera.RegisterImageEventHandler(this, Pylon::RegistrationMode_ReplaceAll, Pylon::Cleanup_None);
-    currentInstantCamera.RegisterConfiguration(new Pylon::CAcquireContinuousConfiguration(), Pylon::RegistrationMode_ReplaceAll, Pylon::Cleanup_Delete );
+    currentInstantCamera.RegisterConfiguration(acquireConfig, Pylon::RegistrationMode_ReplaceAll, Pylon::Cleanup_Delete );
     currentInstantCamera.RegisterConfiguration(this, Pylon::RegistrationMode_Append, Pylon::Cleanup_None );
 }
 
@@ -153,6 +154,50 @@ void Qylon::Camera::stopGrab()
 
 bool Qylon::Camera::isOpened(){
     return currentInstantCamera.IsOpen();
+}
+
+// Using it after opening the camera
+void Qylon::Camera::softwareTriggerReady(bool on)
+{
+    if(on){
+        currentInstantCamera.DeregisterImageEventHandler(this);
+        currentInstantCamera.DeregisterConfiguration(acquireConfig);
+        currentInstantCamera.DeregisterConfiguration(this);
+        acquireConfig=nullptr;
+
+        currentInstantCamera.TriggerMode.SetValue(Basler_UniversalCameraParams::TriggerMode_On);
+        currentInstantCamera.TriggerSource.SetValue(Basler_UniversalCameraParams::TriggerSource_Software);
+
+        currentInstantCamera.StartGrabbing();
+        emit widget->nodeUpdated();
+        emit grabbingState(true);
+    }else{
+        currentInstantCamera.StopGrabbing();
+
+        // The order of these codes is critically importatnt
+        currentInstantCamera.TriggerMode.SetValue(Basler_UniversalCameraParams::TriggerMode_Off);
+
+        acquireConfig = new Pylon::CAcquireContinuousConfiguration;
+        currentInstantCamera.RegisterImageEventHandler(this, Pylon::RegistrationMode_ReplaceAll, Pylon::Cleanup_None);
+        currentInstantCamera.RegisterConfiguration(acquireConfig, Pylon::RegistrationMode_ReplaceAll, Pylon::Cleanup_Delete );
+        currentInstantCamera.RegisterConfiguration(this, Pylon::RegistrationMode_Append, Pylon::Cleanup_None );
+        emit widget->nodeUpdated();
+        emit grabbingState(false);
+    }
+}
+
+QImage Qylon::Camera::softwareTrigger()
+{
+    currentInstantCamera.ExecuteSoftwareTrigger();
+    Pylon::CGrabResultPtr ptrGrabResult;
+    currentInstantCamera.RetrieveResult(5000, ptrGrabResult, Pylon::TimeoutHandling_ThrowException);
+    if (ptrGrabResult->GrabSucceeded()){
+        Pylon::CPylonImage image;
+        image.AttachGrabResultBuffer(ptrGrabResult);
+        return convertPylonImageToQImage(image);
+    }
+    Qylon::log("Software trigger acquisition is failed.");
+    return QImage();
 }
 
 Pylon::CBaslerUniversalInstantCamera *Qylon::Camera::getInstantCamera(){
