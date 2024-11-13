@@ -118,22 +118,6 @@ protected:
     // Pylon::CCameraEventHandler function
     virtual void OnCameraEvent( Pylon::CInstantCamera& camera, intptr_t userProvidedId, GenApi::INode* pNode );
 };
-
-class CameraThread : public QThread{
-    Q_OBJECT
-public:
-    CameraThread(QObject *parent=nullptr) : QThread(parent){}
-    void run() override{
-        while(isInterruptionRequested()){
-            try{
-
-            }catch(const Pylon::GenericException &e){
-                // log(QString::fromStdString(e.GetDescription()));
-            }
-        }
-    }
-
-};
 }
 inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){
     Pylon::CImageFormatConverter converter;
