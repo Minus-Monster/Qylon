@@ -29,21 +29,24 @@ set(QYLON_SOURCES
 set(QYLON_RESOURCES
     Resources.qrc
 )
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-if(Qt6_FOUND)
-    message(STATUS "Configuring for Qt6")
-    find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
-    qt_add_resources(QYLON_RESOURCES_RCC ${QYLON_RESOURCES})
-    add_library(${PROJECT_NAME} STATIC ${QYLON_HEADERS} ${QYLON_SOURCES} ${QYLON_RESOURCES_RCC})
-    target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort Qt6::Network)
-else(Qt5_FOUND)
-    message(STATUS "Configuring for Qt5")
-    find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
-    qt5_add_resources(QYLON_RESOURCES_RCC ${QYLON_RESOURCES})
-    add_library(${PROJECT_NAME} STATIC ${QYLON_HEADERS} ${QYLON_SOURCES} ${QYLON_RESOURCES_RCC})
-    target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::SerialPort Qt5::Network)
-endif()
 
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
+if(Qt6_FOUND)
+    message(STATUS "[${PROJECT_NAME}] Configuring for Qt6")
+else(Qt5_FOUND)
+    message(STATUS "[${PROJECT_NAME}] Configuring for Qt5")
+    # qt5_add_resources(QYLON_RESOURCES_RCC ${QYLON_RESOURCES})
+endif()
+qt_add_resources(QYLON_RESOURCES_RCC ${QYLON_RESOURCES})
+add_library(${PROJECT_NAME} STATIC ${QYLON_HEADERS} ${QYLON_SOURCES} ${QYLON_RESOURCES_RCC})
+target_link_libraries(${PROJECT_NAME} PUBLIC
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Gui
+    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::SerialPort
+    Qt${QT_VERSION_MAJOR}::Network
+)
 
 set(INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 file(MAKE_DIRECTORY ${INCLUDE_DIR})
@@ -61,7 +64,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 # Pylon Loading
 # Locate the cmake find module for pylon ...
-if(WITH_PYLON)
+if(WITH_PYLON AND NOT pylon_FOUND)
     find_path(pylon_cmake Findpylon.cmake
         HINTS "$ENV{PYLON_DEV_DIR}/lib/cmake"
         "$ENV{PYLON_ROOT}/lib/cmake"
@@ -77,7 +80,7 @@ if(WITH_PYLON)
     if(pylon_FOUND)
         target_link_libraries(${PROJECT_NAME} PUBLIC pylon::pylon)
         target_compile_definitions(${PROJECT_NAME} PUBLIC PYLON_ENABLED)
-        message(STATUS "pylon SDK ${pylon_VERSION} found")
+        message(STATUS "[${PROJECT_NAME}] pylon SDK ${pylon_VERSION} found")
     endif()
 
     # vTools
@@ -89,7 +92,7 @@ if(WITH_PYLON)
     find_package(pylonDataProcessing REQUIRED)
     if(pylonDataProcessing_FOUND)
         target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
-        message(STATUS "pylonDataProcessing SDK found")
+        message(STATUS "[${PROJECT_NAME}] pylonDataProcessing SDK found")
     endif()
 endif()
 
@@ -100,34 +103,34 @@ if(WITH_GRABBER)
     find_package(FgLib5 QUIET)
     if(FgLib5_FOUND)
         add_definitions(${SISOPLATFORM_DEFINITIONS})
-        message(STATUS "Frame grabber SDK ${FgLib5_VERSION_STRING} found")
+        message(STATUS "[${PROJECT_NAME}] Frame grabber SDK ${FgLib5_VERSION_STRING} found")
         target_include_directories(${PROJECT_NAME} PUBLIC ${FgLib5_INCLUDE_DIR})
         target_link_libraries(${PROJECT_NAME} PUBLIC ${FgLib5_LIBRARY})
 
         find_package(ClSerSis REQUIRED)
         if(ClSerSis_FOUND)
-            message(STATUS "Frame grabber SDK ClSerSis found")
+            message(STATUS "[${PROJECT_NAME}] Frame grabber SDK ClSerSis found")
             target_include_directories(${PROJECT_NAME} PUBLIC ${ClSerSis_INCLUDE_DIR})
             target_link_libraries(${PROJECT_NAME} PUBLIC ${ClSerSis_LIBRARY})
         endif(ClSerSis_Found)
 
         find_package(SisoIoLib REQUIRED)
         if(SisoIoLib_FOUND)
-            message(STATUS "Frame grabber SDK SisoIoLib found")
+            message(STATUS "[${PROJECT_NAME}] Frame grabber SDK SisoIoLib found")
             target_include_directories(${PROJECT_NAME} PUBLIC ${SisoIoLib_INCLUDE_DIR})
             target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoIoLib_LIBRARY})
         endif(SisoIoLib_FOUND)
 
         find_package(SisoPlatform REQUIRED)
         if(SisoPlatform_FOUND)
-            message(STATUS "Frame grabber SDK SisoPlatform found")
+            message(STATUS "[${PROJECT_NAME}] Frame grabber SDK SisoPlatform found")
             target_include_directories(${PROJECT_NAME} PUBLIC ${SisoPlatform_INCLUDE_DIR})
             target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoPlatform_LIBRARY})
         endif(SisoPlatform_FOUND)
 
         find_package(SisoGenicamLib REQUIRED)
         if(SisoGenicamLib_FOUND)
-            message(STATUS "Frame grabber SDK SisoGenicamLib found")
+            message(STATUS "[${PROJECT_NAME}] Frame grabber SDK SisoGenicamLib found")
             target_include_directories(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_INCLUDE_DIR})
             target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_LIBRARY})
         endif(SisoGenicamLib_FOUND)
@@ -136,21 +139,24 @@ if(WITH_GRABBER)
     endif(FgLib5_FOUND)
 endif()
 
-
-## OPENCV Loading
-find_path(OpenCV_DIR OpenCVConfig.cmake
-    HINTS "C:/dev/opencv/build"
-)
-find_package(OpenCV QUIET)
 if(OpenCV_FOUND)
-    message(STATUS "OpenCV ${OpenCV_VERSION} found")
+    message(STATUS "[${PROJECT_NAME}] OpenCV ${OpenCV_VERSION} already found")
     target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenCV_LIBS})
     target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
-    target_compile_definitions(${PROJECT_NAME} PUBLIC OPENCV_ENABLED)
-    # target_include_directories(${PROJECT_NAME} PUBLIC
-    #     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    #     $<INSTALL_INTERFACE:include>
-    # )
+    target_compile_definitions(${PROJECT_NAME} PRIVATE OPENCV_ENABLED)
+else()
+    find_path(OpenCV_DIR OpenCVConfig.cmake
+        HINTS "C:/dev/opencv/build"
+    )
+    find_package(OpenCV QUIET)
+    if(OpenCV_FOUND)
+        message(STATUS "[${PROJECT_NAME}] OpenCV ${OpenCV_VERSION} found")
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenCV_LIBS})
+        target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE OPENCV_ENABLED)
+    else()
+        message(WARNING "[${PROJECT_NAME}] OpenCV not found.")
+    endif()
 endif()
 
 # # PCL Loading
