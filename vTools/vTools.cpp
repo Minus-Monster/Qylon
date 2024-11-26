@@ -1,4 +1,4 @@
-#ifdef PYLON_ENABLED
+#ifdef VTOOLS_ENABLED
 #include "vTools.h"
 #include "vTools/vToolsWidget.h"
 #include <QDebug>

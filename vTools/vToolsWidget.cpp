@@ -1,4 +1,4 @@
-#ifdef PYLON_ENABLED
+#ifdef VTOOLS_ENABLED
 #include "vToolsWidget.h"
 
 Qylon::vToolsWidget::vToolsWidget(vTools *parentVTools, QWidget *parent) : QWidget(parent), layout(new QVBoxLayout(this)){

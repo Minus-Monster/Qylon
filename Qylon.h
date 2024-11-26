@@ -6,7 +6,9 @@
 #include <QTime>
 #ifdef PYLON_ENABLED
 #include "Camera/Camera.h"
+#ifdef VTOOLS_ENABLED
 #include "vTools/vTools.h"
+#endif
 #endif
 #ifdef GRABBER_ENABLED
 #include "Acquisition/Grabber.h"
@@ -31,7 +33,9 @@ public:
     const Pylon::CDeviceInfo getCameraIndexfromName(QString cameraName);
     const Pylon::CDeviceInfo getCameraIndexfromNumber(unsigned int number);
     Camera *addCamera();
+#ifdef VTOOLS_ENABLED
     vTools *addVTools();
+#endif
 #endif
 #ifdef GRABBER_ENABLED
     Grabber *addGrabber(int boardNumIndex =0);
@@ -48,7 +52,9 @@ private:
     Pylon::CTlFactory *tlFactory;
     Pylon::DeviceInfoList_t *devices = nullptr;
     QList<Camera*> cameraList;
+#ifdef VTOOLS_ENABLED
     QList<vTools*> vToolsList;
+#endif
     QStringList currentCameraList;
 #endif
 #ifdef GRABBER_ENABLED

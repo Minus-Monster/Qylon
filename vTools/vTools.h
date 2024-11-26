@@ -1,6 +1,6 @@
 #ifndef VTOOLS_H
 #define VTOOLS_H
-#ifdef PYLON_ENABLED
+#ifdef VTOOLS_ENABLED
 #include <QImage>
 #include <QObject>
 #include <QThread>

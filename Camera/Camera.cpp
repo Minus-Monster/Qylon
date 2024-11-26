@@ -188,16 +188,20 @@ void Qylon::Camera::softwareTriggerReady(bool on)
 
 QImage Qylon::Camera::softwareTrigger()
 {
-    currentInstantCamera.ExecuteSoftwareTrigger();
-    Pylon::CGrabResultPtr ptrGrabResult;
-    currentInstantCamera.RetrieveResult(5000, ptrGrabResult, Pylon::TimeoutHandling_ThrowException);
-    if (ptrGrabResult->GrabSucceeded()){
-        Pylon::CPylonImage image;
-        image.AttachGrabResultBuffer(ptrGrabResult);
-        return convertPylonImageToQImage(image);
+    try{
+        currentInstantCamera.ExecuteSoftwareTrigger();
+        Pylon::CGrabResultPtr ptrGrabResult;
+        currentInstantCamera.RetrieveResult(5000, ptrGrabResult, Pylon::TimeoutHandling_ThrowException);
+        if (ptrGrabResult->GrabSucceeded()){
+            Pylon::CPylonImage image;
+            image.AttachGrabResultBuffer(ptrGrabResult);
+            return convertPylonImageToQImage(image);
+        }
+    }catch(const Pylon::GenericException &e){
+        Qylon::log("Software trigger acquisition is failed.");
+        return QImage();
     }
-    Qylon::log("Software trigger acquisition is failed.");
-    return QImage();
+
 }
 
 Pylon::CBaslerUniversalInstantCamera *Qylon::Camera::getInstantCamera(){

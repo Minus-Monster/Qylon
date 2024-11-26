@@ -1,6 +1,6 @@
 #ifndef VTOOLSWIDGET_H
 #define VTOOLSWIDGET_H
-#ifdef PYLON_ENABLED
+#ifdef VTOOLS_ENABLED
 
 #include <QWidget>
 #include <QDebug>

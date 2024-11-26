@@ -63,7 +63,7 @@ Camera *Qylon::Qylon::addCamera(){
 
     return obj;
 }
-
+#ifdef VTOOLS_ENABLED
 vTools *Qylon::Qylon::addVTools()
 {
     vTools *obj = new vTools(this);
@@ -72,7 +72,7 @@ vTools *Qylon::Qylon::addVTools()
 
     return obj;
 }
-
+#endif
 QStringList Qylon::Qylon::getCameraList()
 {
     return currentCameraList;

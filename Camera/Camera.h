@@ -211,7 +211,9 @@ inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){
     case Pylon::PixelType_Data64s:
     case Pylon::PixelType_Data32f:
     case Pylon::PixelType_Data64f:
+#if defined(PYLON_VERSION_MAJOR) && PYLON_VERSION_MAJOR >=8
     case Pylon::PixelType_Error8:
+#endif
         break;
     }
     QImage outImage(pylonImg.GetWidth(), pylonImg.GetHeight(), format);

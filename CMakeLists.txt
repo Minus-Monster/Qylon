@@ -89,9 +89,10 @@ if(WITH_PYLON AND NOT pylon_FOUND)
         HINTS "$ENV{PYLON_DEV_DIR}/Samples/pylonDataProcessing/C++/cmake"
     )
     list(APPEND CMAKE_MODULE_PATH ${pylon_vTools})
-    find_package(pylonDataProcessing REQUIRED)
+    find_package(pylonDataProcessing QUIET)
     if(pylonDataProcessing_FOUND)
         target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE VTOOLS_ENABLED)
         message(STATUS "[${PROJECT_NAME}] pylonDataProcessing SDK found")
     endif()
 
