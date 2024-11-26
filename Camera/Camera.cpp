@@ -87,7 +87,6 @@ bool Qylon::Camera::openCamera(QString cameraName){
         }
         return true;
     }catch (const Pylon::GenericException &e){
-        qDebug() << "Open Setup error" << e.what();
         Qylon::log(e.GetDescription());
     }catch (QString error){
         Qylon::log(error);

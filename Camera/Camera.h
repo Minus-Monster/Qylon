@@ -201,6 +201,7 @@ inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){
     case Pylon::PixelType_Coord3D_C8:
     case Pylon::PixelType_Coord3D_C16:
     case Pylon::PixelType_Coord3D_ABC32f:
+#if defined(PYLON_VERSION_MAJOR) && PYLON_VERSION_MAJOR >=8
     case Pylon::PixelType_Data8:
     case Pylon::PixelType_Data8s:
     case Pylon::PixelType_Data16:
@@ -211,7 +212,6 @@ inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){
     case Pylon::PixelType_Data64s:
     case Pylon::PixelType_Data32f:
     case Pylon::PixelType_Data64f:
-#if defined(PYLON_VERSION_MAJOR) && PYLON_VERSION_MAJOR >=8
     case Pylon::PixelType_Error8:
 #endif
         break;
