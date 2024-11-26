@@ -94,6 +94,8 @@ if(WITH_PYLON AND NOT pylon_FOUND)
         target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
         message(STATUS "[${PROJECT_NAME}] pylonDataProcessing SDK found")
     endif()
+
+    find_package(PCL QUIET COMPONENTS common io filters visualization)
 endif()
 
 # Grabber Loading
@@ -159,18 +161,17 @@ else()
     endif()
 endif()
 
-# # PCL Loading
-# find_package(PCL QUIET COMPONENTS common io filters visualization)
-# if(PCL_FOUND)
-#     message(STATUS "PCL ${PCL_VERSION} found")
-#     target_link_libraries(${PROJECT_NAME} PUBLIC ${PCL_LIBRARIES})
-#     target_include_directories(${PROJECT_NAME} PUBLIC ${PCL_INCLUDE_DIRS})
-#     target_compile_definitions(${PROJECT_NAME} PUBLIC PCL_ENABLED)
-#     #VTK
-#     find_package(VTK REQUIRED)
-#     if(VTK_FOUND)
-#         message(STATUS "VTK ${VTK_VERSION} found")
-#         target_link_libraries(${PROJECT_NAME} PUBLIC ${VTK_LIBRARIES})
-#         target_include_directories(${PROJECT_NAME} PUBLIC ${VTK_INCLUDE_DIRS})
-#     endif()
-# endif()
+# PCL Loading
+if(PCL_FOUND)
+    message(STATUS "PCL ${PCL_VERSION} found")
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${PCL_LIBRARIES})
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PCL_INCLUDE_DIRS})
+    target_compile_definitions(${PROJECT_NAME} PUBLIC PCL_ENABLED)
+    #VTK
+    find_package(VTK REQUIRED)
+    if(VTK_FOUND)
+        message(STATUS "VTK ${VTK_VERSION} found")
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${VTK_LIBRARIES})
+        target_include_directories(${PROJECT_NAME} PUBLIC ${VTK_INCLUDE_DIRS})
+    endif()
+endif()

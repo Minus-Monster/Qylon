@@ -280,8 +280,16 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
                         emit grabbedConfidence();
                     }break;
                     case Pylon::ComponentType_Undefined:
+                    case Pylon::ComponentType_Reflectance:
+                    case Pylon::ComponentType_Scatter:
+                    case Pylon::ComponentType_Disparity:
+                    case Pylon::ComponentType_IntensityCombined_STA:
+                    case Pylon::ComponentType_Error_STA:
+                    case Pylon::ComponentType_RawCombined_STA:
+                    case Pylon::ComponentType_Calibration_STA:
                         break;
-                    }}
+                    }
+                }
             }
             emit grabbed();
         }catch(const Pylon::GenericException &e){
