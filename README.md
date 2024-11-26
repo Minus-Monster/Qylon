@@ -41,6 +41,8 @@ You can build using CMake.
 Adding the below codes in your CMakeLists.txt.
 
 ```c++
+set(WITH_PYLON ON CACHE BOOL "Build with pylon") // Optional
+set(WITH_GRABBER ON CACHE BOOL "Build with Grabber") // Optional
 add_subdirectory("../Qylon" Qylon) # writing your current Qylon directory path
 target_link_libraries(${PROJECT_NAME} PUBLIC Qylon)
 ```
@@ -56,7 +58,13 @@ Qylon::Camera *qylonCamera = qy.addCamera();
 QObject::connect(qylonCamera, &Qylon::Camera::grabbed, &yourMainwindow, [=](){
     qylonCamera->drawLock();
     QImage resultImage = qylonCamera.getImage();
-}
+});
+
+Qylon::Grabber *qylonGrabber = qy.addGrabber();
+QObject::connect(qylonGrabber, &Qylon::Grabber::sendImage, &yourMainwindow, [=](QImage image, int dma){
+    QImage resultImage = image;
+});
+
 ```
 
 - Connect to the camera
@@ -65,6 +73,13 @@ Qylon::Qylon qy;
 Qylon::Camera *camera = qy.addCamera();
 camera->openCamera("Camera's Friendly Name");
 camera->continuousGrab();
+
+Qylon::Grabber *grabber = qy.addGrabber();
+grabber->loadApplet("Applet's Path");
+grabber->loadConfiguration("Configuration file's path");
+grabber->initialize(DMA number of the Grabber);
+grabber->continuousGrab(Frame count, DMA number);
+
 ```
 
 - Multi-cameras setting
@@ -75,6 +90,12 @@ Qylon::Camera *camera2 = qy->addCamera();
 
 camera1->openCamera("Camera's Friendly Name");
 camera2->openCamera("Camera's Friendly Name");
+
+Qylon::Grabber *grabber = qy->addGrabber();
+grabber->loadApplet("Applet's Path");
+grabber->loadConfiguration("Configuration file's path");
+grabber->initialize(DMA number of the Grabber = 2(Typically, if you are using 2 cameras) );
+
 ```
 
 - Configurations via GUI
@@ -82,6 +103,10 @@ camera2->openCamera("Camera's Friendly Name");
 Qylon::Qylon qy;
 Qylon::Camera *camera = qy.addCmaera();
 QWidget *widget = camera->getWidget();
+widget->show();
+
+Qylon::Grabber *grabber = qy.addGrabber();
+QWidget *widget = grabber->getWidget();
 widget->show();
 ```
 
