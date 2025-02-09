@@ -89,67 +89,43 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
 
     try{
         for(const auto &value : valueContainer){
+            bool pass = false;
+            for(int i=0; i < filter->items.size(); ++i){
+                if(filter->items.at(i).first == value.first && !filter->items.at(i).second){
+                    pass = true;
+                }
+            }
+            if(pass) continue;
+
             switch(value.second.GetDataType()){
-            case Pylon::DataProcessing::EVariantDataType::VariantDataType_Boolean:{
-                if(value.second.IsArray()){
-                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.GetArrayValue(i).ToBool())));
-                    }
-                }else{
-                    outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.ToBool())));
-                }
-            } break;
-            case Pylon::DataProcessing::VariantDataType_Int64:{
-                if(value.second.IsArray()){
-                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.GetArrayValue(i).ToInt64())));
-                    }
-                }else{
-                    outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.ToInt64())));
-                }
-            } break;
-            case Pylon::DataProcessing::VariantDataType_UInt64:{
-                if(value.second.IsArray()){
-                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.GetArrayValue(i).ToUInt64())));
-                    }
-                }else{
-                    outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.ToUInt64())));
-                }
-            } break;
-            case Pylon::DataProcessing::VariantDataType_String:{
-                if(value.second.IsArray()){
-                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), value.second.GetArrayValue(i).ToString().c_str()));
-                    }
-                }else{
-                    outputTextList.push_back(valueCombinationToString(value.first.c_str(), value.second.ToString().c_str()));
-                }
-            } break;
+            case Pylon::DataProcessing::EVariantDataType::VariantDataType_Boolean:
+            case Pylon::DataProcessing::VariantDataType_Int64:
+            case Pylon::DataProcessing::VariantDataType_UInt64:
+            case Pylon::DataProcessing::VariantDataType_String:
             case Pylon::DataProcessing::VariantDataType_Float:{
                 if(value.second.IsArray()){
                     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.GetArrayValue(i).ToDouble())));
+                        Pylon::DataProcessing::CVariant currentValue = value.second.GetArrayValue(i);
+                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), currentValue.Convert(Pylon::DataProcessing::EVariantDataType::VariantDataType_String).ToString().c_str()) );
                     }
                 }else{
-                    outputTextList.push_back(valueCombinationToString(value.first.c_str(), QString::number(value.second.ToDouble())));
+                    outputTextList.push_back(valueCombinationToString(value.first.c_str(), value.second.Convert(Pylon::DataProcessing::EVariantDataType::VariantDataType_String).ToString().c_str()) );
                 }
-            } break;
+                break;
+            }
             case Pylon::DataProcessing::VariantDataType_PylonImage:{
-                if(value.second.IsArray()){
-                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        QPair<QString, Pylon::CPylonImage> image;
-                        image.first = QString(value.first.c_str());
-                        image.second = value.second.GetArrayValue(i).ToImage();
-                        images.push_back(image);
-                    }
-                }else{
+                auto addImage = [&](const Pylon::DataProcessing::CVariant& variant){
                     QPair<QString, Pylon::CPylonImage> image;
                     image.first = QString(value.first.c_str());
-                    image.second = value.second.ToImage();
+                    image.second = variant.ToImage();
                     images.push_back(image);
-                }
-            } break;
+                };
+                if(value.second.IsArray()){
+                    for(int i=0; i<value.second.GetNumArrayValues(); ++i)
+                        addImage(value.second.GetArrayValue(i));
+                }else addImage(value.second);
+                break;
+            }
             case Pylon::DataProcessing::VariantDataType_Region:{
                 if(value.second.IsArray()){
                     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
@@ -188,57 +164,34 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                     items.push_back(item);
                     outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(currentRegion)));
                 }
-            } break;
+                break;
+            }
             case Pylon::DataProcessing::VariantDataType_PointF2D:{
-                if(value.second.IsArray()){
-                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        auto point= value.second.GetArrayValue(i).ToPointF2D();
-                        QGraphicsEllipseItem *circleItem = new QGraphicsEllipseItem;
-                        double x = point.X-1;
-                        double y = point.Y-1;
-                        double width = 2;
-                        double height = 2;
-
-                        circleItem->setRect(QRectF(x,y,width,height));
-
-                        QPair<QString, QGraphicsItem*> item;
-                        item.first = QString(value.first.c_str());
-                        item.second = circleItem;
-                        items.push_back(item);
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(QPointF(point.X, point.Y))));
-                    }
-                }else{
-                    auto point= value.second.ToPointF2D();
+                auto addPoint=[&](const Pylon::DataProcessing::CVariant& variant){
+                    QPair<QString, QGraphicsItem*> item;
                     QGraphicsEllipseItem *circleItem = new QGraphicsEllipseItem;
+                    auto point = variant.ToPointF2D();
                     double x = point.X-1;
                     double y = point.Y-1;
                     double width = 2;
                     double height = 2;
 
-                    circleItem->setRect(QRectF(x,y,width,height));
-
-                    QPair<QString, QGraphicsItem*> item;
+                    circleItem->setRect(QRectF(x, y, width, height));
                     item.first = QString(value.first.c_str());
                     item.second = circleItem;
                     items.push_back(item);
                     outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(QPointF(point.X, point.Y))));
-                }
-            } break;
-            case Pylon::DataProcessing::VariantDataType_LineF2D:{
+                };
                 if(value.second.IsArray()){
                     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        auto line= value.second.GetArrayValue(i).ToLineF2D();
-                        QGraphicsLineItem *lineItem = new QGraphicsLineItem;
-                        lineItem->setLine(line.PointA.X, line.PointA.Y, line.PointB.X, line.PointB.Y);
-
-                        QPair<QString, QGraphicsItem*> item;
-                        item.first = QString(value.first.c_str());
-                        item.second = lineItem;
-                        items.push_back(item);
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(lineItem->line())));
+                        addPoint(value.second.GetArrayValue(i));
                     }
-                }else{
-                    auto line= value.second.ToLineF2D();
+                }else addPoint(value.second);
+                break;
+            }
+            case Pylon::DataProcessing::VariantDataType_LineF2D:{
+                auto addLine=[&](const Pylon::DataProcessing::CVariant& variant){
+                    auto line= variant.ToLineF2D();
                     QGraphicsLineItem *lineItem = new QGraphicsLineItem;
                     lineItem->setLine(line.PointA.X, line.PointA.Y, line.PointB.X, line.PointB.Y);
 
@@ -247,28 +200,18 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                     item.second = lineItem;
                     items.push_back(item);
                     outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(lineItem->line())));
-                }
-            } break;
-            case Pylon::DataProcessing::VariantDataType_RectangleF:{
+                };
                 if(value.second.IsArray()){
                     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        auto rect = value.second.GetArrayValue(i).ToRectangleF();
-                        QRectF currentRect(rect.Center.X - (rect.Width/2),rect.Center.Y - (rect.Height/2),rect.Width,rect.Height);
-                        QGraphicsRectItem *rectItem = new QGraphicsRectItem(currentRect);
-                        rectItem->setTransformOriginPoint(currentRect.center());
-                        rectItem->setRotation(-((rect.Rotation*180)/3.141592));
-
-                        QPair<QString, QGraphicsItem*> item;
-                        item.first = QString(value.first.c_str());
-                        item.second = rectItem;
-                        items.push_back(item);
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(currentRect)));
-
+                        addLine(value.second.GetArrayValue(i));
                     }
-                }else{
-                    auto rect = value.second.ToRectangleF();
+                }else addLine(value.second);
+                break;
+            }
+            case Pylon::DataProcessing::VariantDataType_RectangleF:{
+                auto addRectangle=[&](const Pylon::DataProcessing::CVariant& variant){
+                    auto rect = variant.ToRectangleF();
                     QRectF currentRect(rect.Center.X - (rect.Width/2),rect.Center.Y - (rect.Height/2),rect.Width,rect.Height);
-
                     QGraphicsRectItem *rectItem = new QGraphicsRectItem(currentRect);
                     rectItem->setTransformOriginPoint(currentRect.center());
                     rectItem->setRotation(-((rect.Rotation*180)/3.141592));
@@ -278,28 +221,17 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                     item.second = rectItem;
                     items.push_back(item);
                     outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(currentRect)));
-                }
-            } break;
-            case Pylon::DataProcessing::VariantDataType_CircleF:{
+                };
                 if(value.second.IsArray()){
                     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        auto circle= value.second.GetArrayValue(i).ToCircleF();
-                        QGraphicsEllipseItem *circleItem = new QGraphicsEllipseItem;
-                        double x = circle.Center.X - circle.Radius;
-                        double y = circle.Center.Y - circle.Radius;
-                        double width = circle.Radius * 2.;
-                        double height = circle.Radius * 2.;
-
-                        circleItem->setRect(QRectF(x,y,width,height));
-
-                        QPair<QString, QGraphicsItem*> item;
-                        item.first = QString(value.first.c_str());
-                        item.second = circleItem;
-                        items.push_back(item);
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(circle)));
+                        addRectangle(value.second.GetArrayValue(i));
                     }
-                }else{
-                    auto circle= value.second.ToCircleF();
+                }else addRectangle(value.second);
+                break;
+            }
+            case Pylon::DataProcessing::VariantDataType_CircleF:{
+                auto addCircle = [&](const Pylon::DataProcessing::CVariant& variant){
+                    auto circle= variant.ToCircleF();
                     QGraphicsEllipseItem *circleItem = new QGraphicsEllipseItem;
                     double x = circle.Center.X - circle.Radius;
                     double y = circle.Center.Y - circle.Radius;
@@ -313,35 +245,23 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                     item.second = circleItem;
                     items.push_back(item);
                     outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(circle)));
-                }
-            } break;
-            case Pylon::DataProcessing::VariantDataType_EllipseF:{
+                };
                 if(value.second.IsArray()){
                     for(int i=0; i<value.second.GetNumArrayValues(); ++i){
-                        auto ellipse= value.second.GetArrayValue(i).ToEllipseF();
-                        QGraphicsEllipseItem *ellipseItem = new QGraphicsEllipseItem;
-                        double x = ellipse.Center.X - ellipse.Radius1;
-                        double y = ellipse.Center.Y - ellipse.Radius2;
-                        double width = 2.* ellipse.Radius1;
-                        double height = 2.* ellipse.Radius2;
-
-                        ellipseItem->setTransformOriginPoint(ellipse.Center.X, ellipse.Center.Y);
-                        ellipseItem->setRotation(ellipse.Rotation*180./ 3.141592);
-                        ellipseItem->setRect(x,y,width,height);
-
-                        QPair<QString, QGraphicsItem*> item;
-                        item.first = QString(value.first.c_str());
-                        item.second = ellipseItem;
-                        items.push_back(item);
-                        outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(ellipse)));
+                        addCircle(value.second.GetArrayValue(i));
                     }
-                }else{
-                    auto ellipse= value.second.ToEllipseF();
+                }else addCircle(value.second);
+                break;
+            }
+            case Pylon::DataProcessing::VariantDataType_EllipseF:{
+                auto addEllipse = [&](const Pylon::DataProcessing::CVariant& variant){
+                    auto ellipse= variant.ToEllipseF();
                     QGraphicsEllipseItem *ellipseItem = new QGraphicsEllipseItem;
                     double x = ellipse.Center.X - ellipse.Radius1;
                     double y = ellipse.Center.Y - ellipse.Radius2;
                     double width = 2.* ellipse.Radius1;
                     double height = 2.* ellipse.Radius2;
+
                     ellipseItem->setTransformOriginPoint(ellipse.Center.X, ellipse.Center.Y);
                     ellipseItem->setRotation(ellipse.Rotation*180./ 3.141592);
                     ellipseItem->setRect(x,y,width,height);
@@ -351,9 +271,14 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                     item.second = ellipseItem;
                     items.push_back(item);
                     outputTextList.push_back(valueCombinationToString(value.first.c_str(), toString(ellipse)));
-                }
-
-            } break;
+                };
+                if(value.second.IsArray()){
+                    for(int i=0; i<value.second.GetNumArrayValues(); ++i){
+                        addEllipse(value.second.GetArrayValue(i));
+                    }
+                }else addEllipse(value.second);
+                break;
+            }
             case Pylon::DataProcessing::VariantDataType_TransformationData:{qDebug() << "Transformation";} break;
             case Pylon::DataProcessing::VariantDataType_Composite:{ qDebug() << "Composite";} break;
             case Pylon::DataProcessing::VariantDataType_None:{ qDebug() << "None";} break;

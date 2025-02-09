@@ -92,7 +92,7 @@ if(WITH_PYLON AND NOT pylon_FOUND)
     find_package(pylonDataProcessing QUIET)
     if(pylonDataProcessing_FOUND)
         target_link_libraries(${PROJECT_NAME} PUBLIC pylon::DataProcessing)
-        target_compile_definitions(${PROJECT_NAME} PRIVATE VTOOLS_ENABLED)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC VTOOLS_ENABLED)
         message(STATUS "[${PROJECT_NAME}] pylonDataProcessing SDK found")
     endif()
 
