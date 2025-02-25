@@ -11,7 +11,7 @@
 #endif
 #endif
 #ifdef GRABBER_ENABLED
-#include "Acquisition/Grabber.h"
+#include "Grabber/Grabber.h"
 #endif
 //#include "Processing/QDC.h"
 
