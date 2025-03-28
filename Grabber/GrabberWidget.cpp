@@ -15,7 +15,6 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     setWindowTitle("Basler Frame Grabber Configuration");
     setWindowIcon(QIcon(":/Resources/Icon.png"));
 
-
     layout = new QVBoxLayout(this);
     setLayout(layout);
     setMinimumWidth(270);
@@ -26,7 +25,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     buttonLoadApplet->setIconSize(QSize(20,20));
     buttonLoadApplet->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-opened-folder-48.png"), "Load applet"));
     connect(buttonLoadApplet, &QToolButton::triggered, this, [=](){
-        auto get = QFileDialog::getOpenFileName(this, "Load an applet", QDir::homePath(), "*.hap *.dll");
+        auto get = QFileDialog::getOpenFileName(this, "Load an applet", QDir::homePath(), "*.hap *.dll *.so");
         if(get.isEmpty()) return;
 
         this->lineLoadApplet->setText(get);
@@ -34,6 +33,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     });
     lineLoadApplet = new QLineEdit;
     lineLoadApplet->setPlaceholderText("Load an applet");
+    // lineLoadApplet->setText("/opt/Basler/FramegrabberSDK/dll/mE5-MA-VCL/libAcq_SingleFullAreaGray.so");
     layoutLoadApplet->addWidget(buttonLoadApplet);
     layoutLoadApplet->addWidget(lineLoadApplet);
 
@@ -56,7 +56,11 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         if(get.isEmpty()) return;
 
         this->lineLoadConfig->setText(get);
-        this->parent->loadConfiguration(get);
+        if(this->parent->loadConfiguration(get)){
+            getMCFStructure(get);
+        }else{
+            qDebug() << "Failed to load";
+        }
     });
     lineLoadConfig = new QLineEdit;
     lineLoadConfig->setPlaceholderText("Load a configuration file");
@@ -70,7 +74,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     QSpinBox *spinBoxImageBuffer = new QSpinBox;
     spinBoxImageBuffer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     spinBoxImageBuffer->setRange(1,10);
-    spinBoxImageBuffer->setValue(3);
+    spinBoxImageBuffer->setValue(1);
     QHBoxLayout *layoutImageBuffer = new QHBoxLayout;
     layoutImageBuffer->addWidget(new QLabel("Image Buffer"));
     layoutImageBuffer->addWidget(spinBoxImageBuffer);
@@ -85,14 +89,14 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     layoutImageBuffer->addStretch(100);
     layoutImageBuffer->addWidget(buttonInit);
 
-    tabWidgetDMA = new QTabWidget;
-    tabWidgetDMA->setHidden(true);
-
     connect(buttonInit, &QToolButton::triggered, this, [=](QAction *action){
         if(!action->isChecked()){
             parent->release();
-            tabWidgetDMA->clear();
-            tabWidgetDMA->setHidden(true);
+            layout->removeWidget(tabWidgetDMA);
+            delete tabWidgetDMA;
+            tabWidgetDMA = nullptr;
+            layout->invalidate();
+            adjustSize();
         }else{
             if(this->lineLoadApplet->text().isEmpty()){
                 QMessageBox::warning(this, this->windowTitle(), "Not set an applet path. \nSet the applet file path first.");
@@ -109,12 +113,10 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
                 parent->initialize(spinBoxImageBuffer->value());
             }
             initTabWidget();
-            tabWidgetDMA->setHidden(false);
+
         }
     });
     layout->addSpacerItem(new QSpacerItem(0, 20, QSizePolicy::Minimum, QSizePolicy::Minimum));
-    layout->addWidget(tabWidgetDMA);
-    layout->addSpacerItem(new QSpacerItem(0, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
     connect(obj, &Grabber::loadedApplet, lineLoadApplet, &QLineEdit::setText);
     connect(obj, &Grabber::loadedConfig, lineLoadConfig, &QLineEdit::setText);
@@ -126,16 +128,10 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         buttonLoadApplet->setEnabled(!on);
         buttonLoadConfig->setEnabled(!on);
         buttonEditMCF->setEnabled(on);
-        if(on){
-            initTabWidget();
-            getMCFStructure(lineLoadConfig->text());
-        }else{
-            tabWidgetDMA->clear();
-        }
     });
     connect(obj, &Grabber::grabbingState, this, [=](bool on){
         buttonEditMCF->setEnabled(!on);
-        tabWidgetDMA->setEnabled(!on);
+        if(tabWidgetDMA != nullptr) tabWidgetDMA->setEnabled(!on);
     });
     connect(obj, &Grabber::updatedParametersValue, this, [=]{
         refreshMCFValues();
@@ -144,7 +140,10 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 
 void Qylon::GrabberWidget::initTabWidget()
 {
-    tabWidgetDMA->clear();
+    if(tabWidgetDMA == nullptr){
+        tabWidgetDMA = new QTabWidget;
+        layout->addWidget(tabWidgetDMA);
+    }
     if(!parent->isInitialized()) return;
 
     int cntDMA =this->parent->getDMACount();

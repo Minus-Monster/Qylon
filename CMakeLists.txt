@@ -57,10 +57,12 @@ file(COPY ${QYLON_HEADERS} DESTINATION ${INCLUDE_DIR})
 
 # Add the include directory to the project
 target_include_directories(${PROJECT_NAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
     $<BUILD_INTERFACE:${INCLUDE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
 
+message(STATUS "[${PROJECT_NAME}] WITH_PYLON=${WITH_PYLON}, WITH_GRABBER=${WITH_GRABBER}")
 # Pylon Loading
 # Locate the cmake find module for pylon ...
 if(WITH_PYLON AND NOT pylon_FOUND)
@@ -152,6 +154,7 @@ if(WITH_GRABBER)
 
             find_package(FgLib5 REQUIRED)
             if(FgLib5_FOUND)
+                target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
                 add_definitions(${SISOPLATFORM_DEFINITIONS})
                 message(STATUS "[${PROJECT_NAME}] Framegrabber SDK ${FgLib5_VERSION_STRING} found")
                 target_include_directories(${PROJECT_NAME} PUBLIC ${FgLib5_INCLUDE_DIR})
@@ -180,8 +183,6 @@ if(WITH_GRABBER)
                     target_include_directories(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_INCLUDE_DIR})
                     target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_LIBRARY})
                 endif(SisoGenicamLib_FOUND)
-
-                target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
             endif(FgLib5_FOUND)
         else()
             message(FATAL_ERROR "[${PROJECT_NAME}] FramegrabberSDK not found! Set BASLER_FG_SDK_DIR manually.")

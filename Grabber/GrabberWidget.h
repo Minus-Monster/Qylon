@@ -31,7 +31,7 @@ public:
 private:
     Grabber *parent;
     QVBoxLayout *layout;
-    QTabWidget *tabWidgetDMA;
+    QTabWidget *tabWidgetDMA=nullptr;
 
     QLineEdit *lineLoadApplet;
     QLineEdit *lineLoadConfig;

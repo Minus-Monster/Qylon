@@ -282,6 +282,7 @@ void Qylon::Grabber::release(){
     initialized = false;
     emit initializingState(false);
 }
+
 void Qylon::Grabber::allocateImageBuffer(int dmaIndex)
 {
     apcDataList.at(dmaIndex)->dmaIndex = dmaIndex;
@@ -303,12 +304,16 @@ void Qylon::Grabber::deallocateImageBuffer(int dmaIndex)
 {
     if(!apcDataList.at(dmaIndex)->allocated) return;
     for(int i=0; i<imageBufferSize; ++i){
-        Fg_DelMem(currentFg, apcDataList.at(dmaIndex)->memBuf, i);
-        free(apcDataList.at(dmaIndex)->imageBuffer.at(i));
+        int val = Fg_DelMem(currentFg, apcDataList.at(dmaIndex)->memBuf, i);
+        if(val == FG_OK){
+            delete[] apcDataList.at(dmaIndex)->imageBuffer[i];
+            apcDataList.at(dmaIndex)->imageBuffer[i] = nullptr;
+        }
     }
     apcDataList.at(dmaIndex)->imageBuffer.clear();
 
     auto val = Fg_FreeMemHead(currentFg, apcDataList.at(dmaIndex)->memBuf);
+    apcDataList.at(dmaIndex)->memBuf = nullptr;
     if(val == FG_OK){
     }else if(val == FG_NOT_INIT){
         Qylon::log("Memory deallocation failed.");
@@ -333,6 +338,7 @@ void Qylon::Grabber::singleGrab(int dmaIndex)
         return;
     }
     Qylon::log("Try to capture an one shot.");
+    allocateImageBuffer(dmaIndex);
     auto val = Fg_AcquireEx(currentFg, dmaIndex, 1 ,ACQ_STANDARD, apcDataList.at(dmaIndex)->memBuf);
     if(val != 0) Qylon::log(Fg_getErrorDescription(currentFg, val));
 }

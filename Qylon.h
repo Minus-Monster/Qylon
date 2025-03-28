@@ -13,7 +13,6 @@
 #ifdef GRABBER_ENABLED
 #include "Grabber/Grabber.h"
 #endif
-//#include "Processing/QDC.h"
 
 namespace Qylon{
 class Camera;
