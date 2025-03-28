@@ -115,29 +115,29 @@ void Qylon::CameraWidget::connectedCameraFromOutside()
     status->setText("Camera Status : connected the camera");
 }
 
-void Qylon::CameraWidget::widgetGenerator(GenApi_3_1_Basler_pylon::INodeMap *nodemap)
+void Qylon::CameraWidget::widgetGenerator(GenApi::INodeMap *nodemap)
 {
     widget->clear();
     manageItems.clear();
 
-    GenApi_3_1_Basler_pylon::NodeList_t nodes;
+    GenApi::NodeList_t nodes;
     nodemap->GetNodes(nodes);
     QTreeWidgetItem *cameraFeatures = new QTreeWidgetItem(widget, QStringList() << QString(this->parent->getInstantCamera()->GetDeviceInfo().GetFriendlyName()));
     manageItems.push_back(cameraFeatures);
     for(auto cat : nodes){
         if(!cat->IsFeature()) continue;
         if(cat->GetName() == "Root") continue;
-        if(!GenApi_3_1_Basler_pylon::IsAvailable(cat)) continue;
-        if(cat->GetPrincipalInterfaceType() != GenApi_3_1_Basler_pylon::EInterfaceType::intfICategory) continue;
+        if(!GenApi::IsAvailable(cat)) continue;
+        if(cat->GetPrincipalInterfaceType() != GenApi::EInterfaceType::intfICategory) continue;
 
-        GenApi_3_1_Basler_pylon::NodeList_t parentsList;
+        GenApi::NodeList_t parentsList;
         cat->GetParents(parentsList);
         if(parentsList.at(0)->GetDisplayName() == "Events Generation") continue;
 
         QTreeWidgetItem* item = new QTreeWidgetItem(cameraFeatures, QStringList() << cat->GetDisplayName().c_str());
 
         manageItems.push_back(item);
-        GenApi_3_1_Basler_pylon::NodeList_t children;
+        GenApi::NodeList_t children;
         cat->GetChildren(children);
 
         generateChildrenWidgetItem(item, children);
@@ -146,35 +146,35 @@ void Qylon::CameraWidget::widgetGenerator(GenApi_3_1_Basler_pylon::INodeMap *nod
     widget->header()->resizeSection(0,200);
 }
 
-void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, GenApi_3_1_Basler_pylon::NodeList_t children)
+void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, GenApi::NodeList_t children)
 {
     for(auto sub : children){
         if(!sub->IsFeature() ) continue;
-        if(!GenApi_3_1_Basler_pylon::IsAvailable(sub)) continue;
+        if(!GenApi::IsAvailable(sub)) continue;
 
         QTreeWidgetItem* subItem = new QTreeWidgetItem(parent, QStringList() << sub->GetDisplayName().c_str());
         manageItems.push_back(subItem);
         switch (sub->GetPrincipalInterfaceType()){
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIInteger:{
-            if(!GenApi_3_1_Basler_pylon::IsReadable(sub)) continue;
+        case GenApi::EInterfaceType::intfIInteger:{
+            if(!GenApi::IsReadable(sub)) continue;
             auto spinBox = new QSpinBox;
             try{
-                GenApi_3_1_Basler_pylon::CIntegerPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());
+                GenApi::CIntegerPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());
                 spinBox->setAccessibleName(sub->GetName().c_str());
                 spinBox->setRange(ptr->GetMin(), ptr->GetMax());
                 spinBox->setValue(ptr->GetValue());
                 spinBox->setSingleStep(ptr->GetInc());
-                spinBox->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
-            }catch (const GenICam_3_1_Basler_pylon::GenericException &e){
+                spinBox->setEnabled(GenApi::IsWritable(ptr));
+            }catch (const Pylon::GenericException &e){
                 statusMessage(e.GetDescription());
                 qDebug() << e.what();
             }
             connect(this, &CameraWidget::nodeUpdated, spinBox, [=](){
                 spinBox->blockSignals(true);
                 try{
-                    GenApi_3_1_Basler_pylon::CIntegerPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
+                    GenApi::CIntegerPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
                     spinBox->setValue(ptr->GetValue());
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
@@ -182,9 +182,9 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             });
             connect(this, &CameraWidget::grabbingState, spinBox, [=](bool){
                 try{
-                    GenApi_3_1_Basler_pylon::CIntegerPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
-                    spinBox->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                    GenApi::CIntegerPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
+                    spinBox->setEnabled(GenApi::IsWritable(ptr));
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
@@ -192,13 +192,13 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             connect(spinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int value){
                 try{
                     // qDebug() << "Exp?" << value;
-                    GenApi_3_1_Basler_pylon::CIntegerPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
+                    GenApi::CIntegerPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
                     ptr->SetValue(value);
                     statusMessage(QString(ptr->GetNode()->GetDisplayName()) + " sets to " + QString::number(ptr->GetValue())) ;
                     //                    auto val = this->parent->setNodeValue(spinBox->accessibleName(), value);
                     //                    statusMessage(QString(val->GetNode()->GetDisplayName()) + " is changed to " + QString::number(val->GetValue())) ;
                     emit nodeUpdated();
-                }catch (const GenICam_3_1_Basler_pylon::GenericException &e){
+                }catch (const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
@@ -206,17 +206,17 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             widget->setItemWidget(subItem, parent->columnCount(), spinBox);
             break;
         }
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIFloat:{
+        case GenApi::EInterfaceType::intfIFloat:{
             auto spinBox = new QDoubleSpinBox;
             try{
-                GenApi_3_1_Basler_pylon::CFloatPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());
+                GenApi::CFloatPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());
                 spinBox->setAccessibleName(sub->GetName().c_str());
                 spinBox->setDecimals(ptr->GetDisplayPrecision());
-                spinBox->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
+                spinBox->setEnabled(GenApi::IsWritable(ptr));
                 spinBox->setRange(ptr->GetMin(), ptr->GetMax());
                 spinBox->setValue(ptr->GetValue());
                 spinBox->setSingleStep(0.1);
-            }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+            }catch(const Pylon::GenericException &e){
                 statusMessage(e.GetDescription());
                 qDebug() << e.what();
 
@@ -224,9 +224,9 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             connect(this, &CameraWidget::nodeUpdated, spinBox, [=](){
                 spinBox->blockSignals(true);
                 try{
-                    GenApi_3_1_Basler_pylon::CFloatPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
+                    GenApi::CFloatPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
                     spinBox->setValue(ptr->GetValue());
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
@@ -234,21 +234,21 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             });
             connect(this, &CameraWidget::grabbingState, spinBox, [=](bool){
                 try{
-                    GenApi_3_1_Basler_pylon::CFloatPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
-                    spinBox->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                    GenApi::CFloatPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
+                    spinBox->setEnabled(GenApi::IsWritable(ptr));
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
             });
             connect(spinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double value){
                 try{
-                    GenApi_3_1_Basler_pylon::CFloatPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
+                    GenApi::CFloatPtr ptr = this->parent->getNodemap(spinBox->accessibleName().toStdString().c_str());
                     //                    if(!GenApi_3_1_Basler_pylon::IsWritable(ptr)) statusMessage("Couldn't apply the value due to deny of writing");
                     ptr->SetValue(value);
                     statusMessage(QString(ptr->GetNode()->GetDisplayName()) + " sets to " + QString::number(ptr->GetValue())) ;
                     emit nodeUpdated();
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
 
@@ -257,23 +257,23 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             widget->setItemWidget(subItem, parent->columnCount(), spinBox);
             break;
         }
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIBoolean:{
+        case GenApi::EInterfaceType::intfIBoolean:{
             auto checkBox = new QCheckBox;
             try{
-                GenApi_3_1_Basler_pylon::CBooleanPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());
+                GenApi::CBooleanPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());
                 checkBox->setChecked(ptr->GetValue());
                 checkBox->setAccessibleName(sub->GetName().c_str());
-                checkBox->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
-            }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                checkBox->setEnabled(GenApi::IsWritable(ptr));
+            }catch(const Pylon::GenericException &e){
                 statusMessage(e.GetDescription());
                 qDebug() << e.what();
             }
             connect(this, &CameraWidget::nodeUpdated, checkBox, [=](){
                 checkBox->blockSignals(true);
                 try{
-                    GenApi_3_1_Basler_pylon::CBooleanPtr ptr = this->parent->getNodemap(checkBox->accessibleName().toStdString().c_str());
+                    GenApi::CBooleanPtr ptr = this->parent->getNodemap(checkBox->accessibleName().toStdString().c_str());
                     checkBox->setChecked(ptr->GetValue());
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
@@ -281,20 +281,20 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             });
             connect(this, &CameraWidget::grabbingState, checkBox, [=](bool){
                 try{
-                    GenApi_3_1_Basler_pylon::CBooleanPtr ptr = this->parent->getNodemap(checkBox->accessibleName().toStdString().c_str());
-                    checkBox->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                    GenApi::CBooleanPtr ptr = this->parent->getNodemap(checkBox->accessibleName().toStdString().c_str());
+                    checkBox->setEnabled(GenApi::IsWritable(ptr));
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
             });
             connect(checkBox, &QCheckBox::clicked, this, [=](bool on){
                 try{
-                    GenApi_3_1_Basler_pylon::CBooleanPtr ptr = this->parent->getNodemap(checkBox->accessibleName().toStdString().c_str());
+                    GenApi::CBooleanPtr ptr = this->parent->getNodemap(checkBox->accessibleName().toStdString().c_str());
                     ptr->SetValue(on);
                     statusMessage(QString(ptr->GetNode()->GetDisplayName()) + " is " + (ptr->GetValue() ? "On" : "Off"));
                     emit nodeUpdated();
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
@@ -302,19 +302,19 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             widget->setItemWidget(subItem, parent->columnCount(), checkBox);
             break;
         }
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIString:{
+        case GenApi::EInterfaceType::intfIString:{
             /// If you want to edit nodes in this side, you need modify this function to make to write nodes
-            GenApi_3_1_Basler_pylon::CStringPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());
+            GenApi::CStringPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());
             QLineEdit *lineEdit = new QLineEdit;
-            lineEdit->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
+            lineEdit->setEnabled(GenApi::IsWritable(ptr));
             lineEdit->setFrame(false);
             lineEdit->setText(ptr->GetValue().c_str());
             widget->setItemWidget(subItem, parent->columnCount(), lineEdit);
             break;
         }
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIEnumeration:{
+        case GenApi::EInterfaceType::intfIEnumeration:{
             auto comboBox = new QComboBox;
-            GenApi_3_1_Basler_pylon::CEnumerationPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());;
+            GenApi::CEnumerationPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());;
             Pylon::StringList_t enuList;
             ptr->GetSymbolics(enuList);
 
@@ -322,7 +322,7 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             }
 
             comboBox->setAccessibleName(sub->GetName().c_str());
-            comboBox->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
+            comboBox->setEnabled(GenApi::IsWritable(ptr));
 
             for(const auto &current : enuList){
                 comboBox->addItem(QString::fromStdString(ptr->GetEntryByName(current)->GetNode()->GetDisplayName().c_str()), QVariant::fromValue((QString)current));
@@ -331,9 +331,9 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             connect(this, &CameraWidget::nodeUpdated, comboBox, [=](){
                 comboBox->blockSignals(true);
                 try{
-                    GenApi_3_1_Basler_pylon::CEnumerationPtr ptr = this->parent->getNodemap(comboBox->accessibleName().toStdString().c_str());
+                    GenApi::CEnumerationPtr ptr = this->parent->getNodemap(comboBox->accessibleName().toStdString().c_str());
                     comboBox->setCurrentText(ptr->GetCurrentEntry()->GetNode()->GetDisplayName().c_str());
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
@@ -341,9 +341,9 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             });
             connect(this, &CameraWidget::grabbingState, comboBox, [=](bool){
                 try{
-                    GenApi_3_1_Basler_pylon::CEnumerationPtr ptr = this->parent->getNodemap(comboBox->accessibleName().toStdString().c_str());
-                    comboBox->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                    GenApi::CEnumerationPtr ptr = this->parent->getNodemap(comboBox->accessibleName().toStdString().c_str());
+                    comboBox->setEnabled(GenApi::IsWritable(ptr));
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
@@ -351,12 +351,12 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             connect(comboBox, &QComboBox::currentTextChanged, this, [=](QString){
                 comboBox->blockSignals(true);
                 try{
-                    GenApi_3_1_Basler_pylon::CEnumerationPtr ptr = this->parent->getNodemap(comboBox->accessibleName().toStdString().c_str());
+                    GenApi::CEnumerationPtr ptr = this->parent->getNodemap(comboBox->accessibleName().toStdString().c_str());
                     auto val = ptr->GetEntryByName(comboBox->currentData().toString().toStdString().c_str());
                     ptr->SetIntValue(val->GetNumericValue());
                     statusMessage(QString(ptr->GetNode()->GetDisplayName().c_str()) + " sets to " + val->GetSymbolic() );
                     emit nodeUpdated();
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
@@ -365,27 +365,27 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             widget->setItemWidget(subItem, parent->columnCount(), comboBox);
             break;
         }
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfICommand:{
+        case GenApi::EInterfaceType::intfICommand:{
             auto button = new QPushButton("Execute");
-            GenApi_3_1_Basler_pylon::CCommandPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());;
-            button->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
+            GenApi::CCommandPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());;
+            button->setEnabled(GenApi::IsWritable(ptr));
             button->setAccessibleName(sub->GetName().c_str());
             connect(this, &CameraWidget::grabbingState, button, [=](bool){
                 try{
-                    GenApi_3_1_Basler_pylon::CCommandPtr ptr = this->parent->getNodemap(button->accessibleName().toStdString().c_str());
-                    button->setEnabled(GenApi_3_1_Basler_pylon::IsWritable(ptr));
-                }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                    GenApi::CCommandPtr ptr = this->parent->getNodemap(button->accessibleName().toStdString().c_str());
+                    button->setEnabled(GenApi::IsWritable(ptr));
+                }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                     qDebug() << e.what();
                 }
             });
             connect(button, &QPushButton::clicked, this, [=](){
                 try{
-                    GenApi_3_1_Basler_pylon::CCommandPtr ptr = sub->GetNodeMap()->GetNode(button->accessibleName().toStdString().c_str());
+                    GenApi::CCommandPtr ptr = sub->GetNodeMap()->GetNode(button->accessibleName().toStdString().c_str());
                     ptr->Execute();
                     statusMessage(QString(ptr->GetNode()->GetDisplayName().c_str()) + " is executed");
                     emit nodeUpdated();
-                }catch (const GenICam_3_1_Basler_pylon::GenericException &e){
+                }catch (const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
                 }
             });
@@ -393,22 +393,22 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
 
             break;
         }
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIRegister:{
-            GenApi_3_1_Basler_pylon::CRegisterPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());;
+        case GenApi::EInterfaceType::intfIRegister:{
+            GenApi::CRegisterPtr ptr = sub->GetNodeMap()->GetNode(sub->GetName());;
             widget->setItemWidget(subItem, parent->columnCount(), new QLabel(QString::number(ptr->GetAddress())));
             break;
         }
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfICategory:{
-            GenApi_3_1_Basler_pylon::NodeList_t subChildren;
+        case GenApi::EInterfaceType::intfICategory:{
+            GenApi::NodeList_t subChildren;
             sub->GetChildren(subChildren);
 
             generateChildrenWidgetItem(parent, subChildren);
             break;
         }
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIEnumEntry:
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIBase:
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIValue:
-        case GenApi_3_1_Basler_pylon::EInterfaceType::intfIPort:{
+        case GenApi::EInterfaceType::intfIEnumEntry:
+        case GenApi::EInterfaceType::intfIBase:
+        case GenApi::EInterfaceType::intfIValue:
+        case GenApi::EInterfaceType::intfIPort:{
             delete subItem;
             manageItems.pop_back();
             break;

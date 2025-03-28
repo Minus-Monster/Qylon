@@ -211,7 +211,7 @@ QWidget *Qylon::Camera::getWidget(){
     return widget;
 }
 
-GenApi_3_1_Basler_pylon::INode *Qylon::Camera::getNodemap(GenICam_3_1_Basler_pylon::gcstring nodeName)
+GenApi::INode *Qylon::Camera::getNodemap(GenICam::gcstring nodeName)
 {
     /// Packet size : GevSCPSPacketSize , Interpacketdelay = GevSCPD
     try {
@@ -223,13 +223,13 @@ GenApi_3_1_Basler_pylon::INode *Qylon::Camera::getNodemap(GenICam_3_1_Basler_pyl
 
 }
 
-GenApi_3_1_Basler_pylon::CIntegerPtr Qylon::Camera::setNodeValue(QString node, int &value)
+GenApi::CIntegerPtr Qylon::Camera::setNodeValue(QString node, int &value)
 {
     try{
-        GenApi_3_1_Basler_pylon::CIntegerPtr ptr = getNodemap(node.toStdString().c_str());
+        GenApi::CIntegerPtr ptr = getNodemap(node.toStdString().c_str());
         ptr->SetValue(value);
         return ptr;
-    }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+    }catch(const Pylon::GenericException &e){
         parent->log(e.GetDescription());
     }
     return nullptr;
@@ -267,7 +267,7 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
                             memcpy(currentIntensity.bits(), component.GetData(), component.GetDataSize());
 
                             emit grabbedIntensity();
-                        }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+                        }catch(const Pylon::GenericException &e){
                             qDebug()<< e.what();
                         }
                         break;
@@ -305,7 +305,7 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
             image.AttachGrabResultBuffer(grabResult);
             currentImage = convertPylonImageToQImage(image);
             emit grabbed();
-        }catch(const GenICam_3_1_Basler_pylon::GenericException &e){
+        }catch(const Pylon::GenericException &e){
             Qylon::log(QString("Image conversion error occurred.") + e.what());
         }
     }
@@ -364,7 +364,7 @@ void Qylon::Camera::OnCameraDeviceRemoved(Pylon::CInstantCamera &camera)
 
     PYLON_UNUSED( camera );
 }
-void Qylon::Camera::OnCameraEvent(Pylon::CInstantCamera &camera, intptr_t userProvidedId, GenApi_3_1_Basler_pylon::INode *pNode)
+void Qylon::Camera::OnCameraEvent(Pylon::CInstantCamera &camera, intptr_t userProvidedId, GenApi::INode *pNode)
 {
     qDebug() << "The event is occured from" << camera.GetDeviceInfo().GetFriendlyName()  << pNode->GetDisplayName() << pNode->GetNodeMap()->GetNode("TriggerMode");
 }

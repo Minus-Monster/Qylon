@@ -21,9 +21,9 @@ public:
     CameraWidget(Camera *obj);
 
     void updateCameraList();
-    void widgetGenerator(GenApi_3_1_Basler_pylon::INodeMap *nodemap);
-    void generateChildrenWidgetItem(QTreeWidgetItem *parent, GenApi_3_1_Basler_pylon::NodeList_t children);
-    void generateChildrenWidgetItem(QTreeWidget *parent, GenApi_3_1_Basler_pylon::NodeList_t children);
+    void widgetGenerator(GenApi::INodeMap *nodemap);
+    void generateChildrenWidgetItem(QTreeWidgetItem *parent, GenApi::NodeList_t children);
+    void generateChildrenWidgetItem(QTreeWidget *parent, GenApi::NodeList_t children);
     void statusMessage(QString message);
     QLabel *status;
 
