@@ -29,7 +29,6 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         if(get.isEmpty()) return;
 
         this->lineLoadApplet->setText(get);
-        this->parent->loadApplet(get);
     });
     lineLoadApplet = new QLineEdit;
     lineLoadApplet->setPlaceholderText("Load an applet");
@@ -56,11 +55,6 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         if(get.isEmpty()) return;
 
         this->lineLoadConfig->setText(get);
-        if(this->parent->loadConfiguration(get)){
-            getMCFStructure(get);
-        }else{
-            qDebug() << "Failed to load";
-        }
     });
     lineLoadConfig = new QLineEdit;
     lineLoadConfig->setPlaceholderText("Load a configuration file");
@@ -109,11 +103,24 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
                     action->setChecked(false);
                     return;
                 }
-                parent->loadConfiguration(this->lineLoadConfig->text());
-                parent->initialize(spinBoxImageBuffer->value());
-            }
-            initTabWidget();
+                if(!this->lineLoadConfig->text().isEmpty()){
+                    if(this->parent->loadConfiguration(this->lineLoadConfig->text())){
+                        getMCFStructure(this->lineLoadConfig->text());
+                    }else{
+                        QMessageBox::warning(this, this->windowTitle(), "Config loading failed. \nCheck the config file or the environment.");
+                        action->setChecked(false);
+                        return;
+                    }
+                }
+                if(parent->initialize(spinBoxImageBuffer->value())){
+                    initTabWidget();
+                }else{
+                    parent->release();
+                    action->setChecked(false);
+                    QMessageBox::warning(this, this->windowTitle(), "Applet loading failed. \nCheck the applet file or the environment.");
 
+                }
+            }
         }
     });
     layout->addSpacerItem(new QSpacerItem(0, 20, QSizePolicy::Minimum, QSizePolicy::Minimum));

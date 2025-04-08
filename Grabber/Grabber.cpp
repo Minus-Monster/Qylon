@@ -1,3 +1,4 @@
+#include <iostream>
 #ifdef GRABBER_ENABLED
 #include "Grabber.h"
 #include "GrabberWidget.h"
@@ -36,6 +37,10 @@ int Qylon::Grabber::CallbackFromGrabber(frameindex_t picNr, void *ctx)
 
 bool Qylon::Grabber::loadApplet(QString file){
     currentFg = Fg_Init(file.toStdString().c_str(), boardNumIndex);
+    if(file.isEmpty()){
+        Qylon::log("No path");
+        return false;
+    }
     if(currentFg == 0){
         Qylon::log("Failed to load an applet file. " + QString(Fg_getLastErrorDescription(currentFg)));
         return false;
@@ -47,7 +52,10 @@ bool Qylon::Grabber::loadApplet(QString file){
 
 bool Qylon::Grabber::loadConfiguration(QString file){
     // Deu to the specific bug on VA, This function should not be working properly.
-    emit loadedConfig(file);
+    if(file.isEmpty()){
+        Qylon::log("No path");
+        return false;
+    }
     if(currentFg == nullptr){
         Qylon::log("Grabber is not initialized.");
         return false;
@@ -58,24 +66,25 @@ bool Qylon::Grabber::loadConfiguration(QString file){
         return false;
     }
     Qylon::log(file + " is loaded");
+    emit loadedConfig(file);
     return true;
 }
 
 int Qylon::Grabber::getDMACount()
 {
-    int val;
+    int val=0;
     Fg_getParameterPropertyWithType(currentFg, FG_NR_OF_DMAS, FgProperty::PROP_ID_VALUE, &val);
     return val;
 }
 
 int Qylon::Grabber::getWidth(int dmaIndex){
-    int value;
+    int value=0;
     Fg_getParameter(currentFg, FG_WIDTH, (void*)&value, dmaIndex);
     return value;
 }
 
 int Qylon::Grabber::getHeight(int dmaIndex){
-    int value;
+    int value=0;
     Fg_getParameter(currentFg, FG_HEIGHT, (void*)&value, dmaIndex);
     return value;
 }
@@ -91,7 +100,7 @@ int Qylon::Grabber::getX(int dmaIndex)
 
 int Qylon::Grabber::getY(int dmaIndex)
 {
-    int value;
+    int value=0;
     if(!(Fg_getParameter(currentFg, FG_YOFFSET, (void*)&value, dmaIndex)== FG_OK)){
         return 0;
     }
@@ -140,6 +149,7 @@ int Qylon::Grabber::getBytesPerPixel(int dmaIndex)
     }
     return bytesPerPixel;
 }
+
 void Qylon::Grabber::setParameterValue(QString typeName, int value, int dmaIndex){
     Fg_setParameterWithType(currentFg, Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str()), value, dmaIndex);
     emit updatedParametersValue();
@@ -154,6 +164,7 @@ void Qylon::Grabber::setParameterValue(QString typeName, QString value, int dmaI
     Qylon::log(QString("DMA:" + QString::number(dmaIndex) + " " + typeName + " tries to be set to "
                        + value + " (Result:" + getParameterStringValue(typeName, dmaIndex) + ")"));
 }
+
 void Qylon::Grabber::setParameterValue(int typeNum, int value, int dmaIndex){
     Fg_setParameter(currentFg, typeNum, &value, dmaIndex);
     emit updatedParametersValue();
@@ -161,11 +172,12 @@ void Qylon::Grabber::setParameterValue(int typeNum, int value, int dmaIndex){
     Qylon::log(QString("DMA:" + QString::number(dmaIndex) + " " + typeName + " tries to be set to "
                        + QString::number(value) + " (Result:" + QString::number(getParameterIntValue(typeName, dmaIndex)) + ")"));
 }
+
 bool Qylon::Grabber::initialize(int imgBufCnt){
     try{
         imageBufferSize = imgBufCnt;
         for (int i=0; i< getDMACount(); ++i){
-            Qylon::log("Try to initialize grabber(" + QString::number(boardNumIndex) + ") with DMA " +  QString::number(i) + ". It includes " + QString::number(imgBufCnt) + " image buffer(s)."  );
+            Qylon::log("Try to initialize grabber(" + QString::number(boardNumIndex) + ") with DMA " +  QString::number(i) + ". It will include " + QString::number(imgBufCnt) + " image buffer(s)."  );
 
             auto apcData = new APC;
             struct FgApcControl ctrl;
@@ -175,17 +187,19 @@ bool Qylon::Grabber::initialize(int imgBufCnt){
             ctrl.timeout = 500000;
 
             ctrl.func = &Grabber::CallbackFromGrabber;
-            Fg_registerApcHandler(currentFg, i, &ctrl, FG_APC_CONTROL_BASIC);
-
-            apcDataList.push_back(apcData);
-
+            auto result = Fg_registerApcHandler(currentFg, i, &ctrl, FG_APC_CONTROL_BASIC);
+            if(result == FG_OK) apcDataList.push_back(apcData);
+            else{
+                delete apcData;
+                throw result;
+            }
         }
         Qylon::log("Finished to initialize grabber(" + QString::number(boardNumIndex) + ")");
         initialized = true;
         emit initializingState(true);
         return true;
     }catch(...){
-        Qylon::log("Failed to initialize grabber");
+        Qylon::log("Failed to initialize grabber. " + QString(Fg_getLastErrorDescription(currentFg)));
         initialized = false;
         emit initializingState(false);
         return false;
@@ -268,7 +282,7 @@ QWidget *Qylon::Grabber::getWidget()
 }
 
 void Qylon::Grabber::release(){
-    Qylon::log("Release all grabber memory.");
+    Qylon::log("Release all grabber's memories.");
     if(currentFg == nullptr) return;
     if(apcDataList.size() == 0) return;
 
