@@ -84,57 +84,59 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     layoutImageBuffer->addWidget(buttonInit);
 
     connect(buttonInit, &QToolButton::triggered, this, [=](QAction *action){
-        if(!action->isChecked()){
+        if(!action->isChecked()){ // Release function
             parent->release();
-            layout->removeWidget(tabWidgetDMA);
-            delete tabWidgetDMA;
-            tabWidgetDMA = nullptr;
-            layout->invalidate();
-            adjustSize();
-        }else{
+        }else{ // Init function
             if(this->lineLoadApplet->text().isEmpty()){
                 QMessageBox::warning(this, this->windowTitle(), "Not set an applet path. \nSet the applet file path first.");
                 action->setChecked(false);
                 return;
             }
-            if(!parent->isInitialized()){
-                if(!parent->loadApplet(this->lineLoadApplet->text())){
-                    QMessageBox::warning(this, this->windowTitle(), "Applet loading failed. \nCheck the applet file or the environment.");
-                    action->setChecked(false);
-                    return;
+            bool initApplet = parent->loadApplet(this->lineLoadApplet->text());
+            if(initApplet){
+                if(parent->registerAPCHandler(spinBoxImageBuffer->value())){
                 }
-                if(!this->lineLoadConfig->text().isEmpty()){
-                    if(this->parent->loadConfiguration(this->lineLoadConfig->text())){
-                        getMCFStructure(this->lineLoadConfig->text());
-                    }else{
-                        QMessageBox::warning(this, this->windowTitle(), "Config loading failed. \nCheck the config file or the environment.");
-                        action->setChecked(false);
-                        return;
-                    }
-                }
-                if(parent->initialize(spinBoxImageBuffer->value())){
-                    initTabWidget();
-                }else{
-                    parent->release();
-                    action->setChecked(false);
-                    QMessageBox::warning(this, this->windowTitle(), "Applet loading failed. \nCheck the applet file or the environment.");
-
+            }else{
+                QMessageBox::warning(this, this->windowTitle(), "Applet loading failed. \nCheck the applet file or the environment.");
+                return;
+            }
+            if(!this->lineLoadConfig->text().isEmpty()){
+                bool initConf = this->parent->loadConfiguration(this->lineLoadConfig->text());
+                if(!initConf){
+                    QMessageBox::warning(this, this->windowTitle(), "Config loading failed. \nCheck the config file or the environment.");
                 }
             }
         }
     });
     layout->addSpacerItem(new QSpacerItem(0, 20, QSizePolicy::Minimum, QSizePolicy::Minimum));
 
-    connect(obj, &Grabber::loadedApplet, lineLoadApplet, &QLineEdit::setText);
-    connect(obj, &Grabber::loadedConfig, lineLoadConfig, &QLineEdit::setText);
-    connect(obj, &Grabber::initializingState, this, [=](bool on){
-        buttonInit->setChecked(on);
-        spinBoxImageBuffer->setEnabled(!on);
-        lineLoadApplet->setEnabled(!on);
-        lineLoadConfig->setEnabled(!on);
-        buttonLoadApplet->setEnabled(!on);
-        buttonLoadConfig->setEnabled(!on);
-        buttonEditMCF->setEnabled(on);
+    connect(obj, &Grabber::loadedApplet, this, [=](QString path){
+        lineLoadApplet->setText(path);
+        lineLoadApplet->setEnabled(false);
+        spinBoxImageBuffer->setEnabled(false);
+        initTabWidget();
+    });
+    connect(obj, &Grabber::loadedConfig, this, [=](QString path){
+        lineLoadConfig->setText(path);
+        lineLoadConfig->setEnabled(false);
+        getMCFStructure(this->lineLoadConfig->text());
+        buttonEditMCF->setEnabled(true);
+    });
+    connect(obj, &Grabber::released, this, [=]{
+        lineLoadApplet->setEnabled(true);
+        lineLoadConfig->setEnabled(true);
+        spinBoxImageBuffer->setEnabled(true);
+        buttonEditMCF->setEnabled(false);
+
+        layout->removeWidget(tabWidgetDMA);
+        delete tabWidgetDMA;
+        tabWidgetDMA = nullptr;
+
+        delete mcfEditor;
+        mcfEditor = nullptr;
+
+        layout->invalidate();
+        adjustSize();
     });
     connect(obj, &Grabber::grabbingState, this, [=](bool on){
         buttonEditMCF->setEnabled(!on);

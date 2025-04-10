@@ -3,14 +3,18 @@
 #ifdef GRABBER_ENABLED
 #include "basler_fg.h"
 #include "fg_struct.h"
+#include "sisoIo.h"
 
 #include <QObject>
 #include <QImage>
 #include <QDebug>
-#include <QMutex>
 #include <QThread>
 #include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
+
+#include <map>
+#include <atomic>
+#include <mutex>
 
 namespace Qylon{
 class GrabberWidget;
@@ -50,16 +54,16 @@ public:
     void setParameterValue(QString typeName, QString value, int dmaIndex=0);
     void setParameterValue(int typeNum, int value, int dmaIndex=0);
 
-    bool initialize(int imgBufCnt=1);
-    bool isInitialized(){ return initialized;}
+    bool registerAPCHandler(int imgBufCnt=1);
 
     QWidget *getWidget();
     void release();
     void allocateImageBuffer(int dmaIndex);
     void deallocateImageBuffer(int dmaIndex);
-
     bool saveCurrentConfig(QString fileName);
-
+    bool isInitialized(){
+        qDebug() << (currentFg != nullptr);
+        return currentFg != nullptr;}
 
 signals:
     void sendImage(const QImage &image, unsigned int dmaIdx=0);
@@ -68,7 +72,7 @@ signals:
     void grabbingState(bool isGrabbing);
     void initializingState(bool isInitialized);
     void updatedParametersValue();
-
+    void released();
 
 public slots:
     void singleGrab(int dmaIndex=0);
@@ -76,6 +80,9 @@ public slots:
     void sequentialGrab(int numFrame, int dmaIndex=0);
     void stopGrab(int dmaIndex=0);
     void stopGrabAll();
+    void grabThreadLoop(int numFrame=0, int dmaIndex=0);
+    void stopThreadLoop(int dmaIndex=0);
+    bool saveImage(QString dir, QString fileName, int numFrame=1, int dmaIndex=0);
     void setImage(const QImage image, int dmaIndex=1);
     void setBuffer(unsigned short* buffer, int width, int height, int depth, int dmaIndex=1);
 
@@ -86,9 +93,9 @@ private:
     int boardNumIndex =0;           // physical number of grabber in PC.
     int imagePushCnt=0;             // When if use two or more image buffers to put images into grabber, it would be the counter.
     int imageBufferSize=1;          // the buffer size putting images into grabber.
-    bool initialized = false;
 
-    QMutex mutex;
+    std::map<int, std::atomic<bool>> stopFlags;
+    std::mutex grabberMutex;
 
     GrabberWidget *widget;
 
