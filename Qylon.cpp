@@ -1,7 +1,7 @@
 #include <Qylon.h>
 namespace Qylon{
 void Qylon::Qylon::log(QString strings){
-    qDebug() << "[QYLON]" << QTime::currentTime().toString() << ":" << strings;
+    qDebug().noquote() << "[QYLON]" << QTime::currentTime().toString() << ":" << strings;
 }
 
 Qylon::Qylon::Qylon(){
