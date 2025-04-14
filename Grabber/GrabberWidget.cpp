@@ -9,6 +9,7 @@
 #include <QAction>
 #include <QMessageBox>
 #include <QToolButton>
+#include <QMenu>
 
 Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 {
@@ -80,10 +81,20 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     buttonInit->setAutoRaise(true);
     buttonInit->setIconSize(QSize(20,20));
     buttonInit->setToolButtonStyle(Qt::ToolButtonStyle::ToolButtonTextBesideIcon);
+
+    QMenu *initMenu = new QMenu(buttonInit);
+    QAction *actionWithoutAPC = new QAction("Without APC Handler(Threading)", initMenu);
+    actionWithoutAPC->setCheckable(true);
+    initMenu->addAction(actionWithoutAPC);
+    buttonInit->setMenu(initMenu);
+    buttonInit->setPopupMode(QToolButton::DelayedPopup);
+
     layoutImageBuffer->addStretch(100);
     layoutImageBuffer->addWidget(buttonInit);
 
     connect(buttonInit, &QToolButton::triggered, this, [=](QAction *action){
+        if(action == actionWithoutAPC) return;
+
         if(!action->isChecked()){ // Release function
             parent->release();
         }else{ // Init function
@@ -94,8 +105,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
             }
             bool initApplet = parent->loadApplet(this->lineLoadApplet->text());
             if(initApplet){
-                if(parent->registerAPCHandler(spinBoxImageBuffer->value())){
-                }
+                if(!actionWithoutAPC->isChecked()) parent->registerAPCHandler(spinBoxImageBuffer->value());
             }else{
                 QMessageBox::warning(this, this->windowTitle(), "Applet loading failed. \nCheck the applet file or the environment.");
                 return;
@@ -258,7 +268,7 @@ void Qylon::GrabberWidget::initTabWidget()
 
 void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
 {
-    Qylon::log("Generating MCF Editor");
+    Qylon::log("Generating MCF Editor.");
     QFile file(mcfPath);
     QString sectionParser = "[";
     QString valueParser = "=";
