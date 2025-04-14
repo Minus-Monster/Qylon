@@ -15,6 +15,7 @@
 #include <QSpacerItem>
 #include <QGroupBox>
 #include <QTabWidget>
+#include <QKeyEvent>
 #include "Grabber.h"
 
 
@@ -39,6 +40,15 @@ private:
     QString defaultAppletPath = "";
     QString defaultConfigPath = "";
     QDialog *mcfEditor = nullptr;
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override {
+        if (event->key() == Qt::Key_Escape) {
+            hide();
+        }else{
+            QWidget::keyPressEvent(event);
+        }
+    }
 };
 }
 #endif
