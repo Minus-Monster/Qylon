@@ -57,8 +57,8 @@ bool Qylon::Grabber::loadConfiguration(QString file){
     }
     auto error = Fg_loadConfig(currentFg, file.toStdString().c_str());
     if(0 > error){
-        Qylon::log("Grabber couldn't load a configuration file. " + QString(Fg_getErrorDescription(currentFg, error)));
-        return false;
+        Qylon::log("Grabber couldn't load a configuration file. " + QString(Fg_getErrorDescription(currentFg, error)) + ". Ignoring error handling policy.");
+        // return false;
     }
     Qylon::log(file + " is loaded.");
     emit loadedConfig(file);
