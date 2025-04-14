@@ -77,8 +77,12 @@ camera->continuousGrab();
 Qylon::Grabber *grabber = qy.addGrabber();
 grabber->loadApplet("Applet's Path");
 grabber->loadConfiguration("Configuration file's path");
-grabber->initialize(DMA number of the Grabber);
-grabber->continuousGrab(Frame count, DMA number);
+grabber->registerAPCHandler(DMA number of the Grabber); // Optional, you can write down this line if you want to use the callback mode
+grabber->continuousGrab(Frame count, DMA number); // Callback mode
+
+// you can write like this f you want to use threading mode
+grabber->grabThreadLoop(frames, DMA number);
+grabber->stopThreadLoop(DMA number);
 
 ```
 
