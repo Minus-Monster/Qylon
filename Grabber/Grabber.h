@@ -61,9 +61,7 @@ public:
     void allocateImageBuffer(int dmaIndex);
     void deallocateImageBuffer(int dmaIndex);
     bool saveCurrentConfig(QString fileName);
-    bool isInitialized(){
-        qDebug() << (currentFg != nullptr);
-        return currentFg != nullptr;}
+    bool isInitialized(){ return currentFg != nullptr; }
 
 signals:
     void sendImage(const QImage &image, unsigned int dmaIdx=0);

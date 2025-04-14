@@ -60,7 +60,7 @@ bool Qylon::Grabber::loadConfiguration(QString file){
         Qylon::log("Grabber couldn't load a configuration file. " + QString(Fg_getErrorDescription(currentFg, error)));
         return false;
     }
-    Qylon::log(file + " is loaded");
+    Qylon::log(file + " is loaded.");
     emit loadedConfig(file);
     return true;
 }
@@ -409,7 +409,7 @@ void Qylon::Grabber::grabThreadLoop(int numFrame, int dmaIndex){
                 }
                 Fg_stopAcquireEx(currentFg, dmaIndex, memHandle, 0);
                 emit grabbingState(false);
-                Qylon::log("Finished grabbing in thread mode. Acquired frames:" + QString::number(cnt+1));
+                Qylon::log("Finished grabbing in thread mode. Acquired frames:" + QString::number(cnt-1));
             }
             Fg_FreeMemEx(currentFg, memHandle);
         }).detach();
@@ -459,13 +459,13 @@ bool Qylon::Grabber::saveImage(QString dir, QString fileName,int numFrame, int d
 
                     QFileInfo fileInfo(fileName);
                     QString cleanDir = QDir::cleanPath(dir);
-                    QString filePath = QDir(cleanDir).filePath(fileInfo.completeBaseName() + QString::number(cnt) +".tiff");
+                    QString filePath = QDir(cleanDir).filePath(fileInfo.completeBaseName() + QString::number(cnt-1) +".tiff");
                     // save function
                     IoWriteTiff(filePath.toStdString().c_str(), (uchar*)buffer, width, height, bit, 1);
 
                 }
                 Fg_stopAcquireEx(currentFg, dmaIndex, memHandle, 0);
-                Qylon::log("Finished grabbing in save mode. Acquired frames:" + QString::number(cnt+1));
+                Qylon::log("Finished grabbing in save mode. Acquired frames:" + QString::number(cnt-1));
                 emit grabbingState(false);
             }
             Fg_FreeMemEx(currentFg, memHandle);
