@@ -1,3 +1,4 @@
+#include <thread>
 #ifdef GRABBER_ENABLED
 #include "Grabber.h"
 #include "GrabberWidget.h"
@@ -45,7 +46,7 @@ bool Qylon::Grabber::loadApplet(QString file){
     return true;
 }
 
-bool Qylon::Grabber::loadConfiguration(QString file){
+bool Qylon::Grabber::loadConfiguration(QString file, bool ignoringError){
     // Deu to the specific bug on VA, This function should not be working properly.
     if(file.isEmpty()){
         Qylon::log("No path");
@@ -57,8 +58,9 @@ bool Qylon::Grabber::loadConfiguration(QString file){
     }
     auto error = Fg_loadConfig(currentFg, file.toStdString().c_str());
     if(0 > error){
-        Qylon::log("Grabber couldn't load a configuration file. " + QString(Fg_getErrorDescription(currentFg, error)) + ". Ignoring error handling policy.");
-        // return false;
+        Qylon::log("Grabber couldn't load a configuration file. " + QString(Fg_getErrorDescription(currentFg, error)));
+        if(!ignoringError) return false;
+        else Qylon::log("Ignoring the error handling policy.");
     }
     Qylon::log(file + " is loaded.");
     emit loadedConfig(file);
@@ -121,7 +123,28 @@ int Qylon::Grabber::getBytesPerPixel(int dmaIndex)
 {
     int format;
     Fg_getParameter(currentFg, FG_FORMAT, &format, dmaIndex);
-    return format;
+    int bytesPerPixel=0;
+    switch (format) {
+    case FG_GRAY:
+        bytesPerPixel = 1;
+        break;
+    case FG_GRAY16:
+        bytesPerPixel = 2;
+        break;
+    case FG_COL24:
+        bytesPerPixel = 3;
+        break;
+    case FG_COL32:
+        bytesPerPixel = 4;
+        break;
+    case FG_COL30:
+        bytesPerPixel = 5;
+        break;
+    case FG_COL48:
+        bytesPerPixel = 6;
+        break;
+    }
+    return bytesPerPixel;
 }
 
 void Qylon::Grabber::setParameterValue(QString typeName, int value, int dmaIndex){
@@ -387,7 +410,7 @@ void Qylon::Grabber::grabThreadLoop(int numFrame, int dmaIndex){
         std::thread([=](){
             int cnt = 0;
             if(Fg_AcquireEx(currentFg, dmaIndex, GRAB_INFINITE, ACQ_STANDARD, memHandle) == FG_OK){
-                Qylon::log("Start grabbing with thread mode." + ((numFrame!=0) ? " Expected frames:" + QString::number(numFrame) : " Continuous mode."));
+                Qylon::log("Start grabbing with threading." + ((numFrame!=0) ? " Expected frames:" + QString::number(numFrame) : " Continuous mode."));
                 emit grabbingState(true);
                 while(!stopFlags[dmaIndex] && (cnt = Fg_getLastPicNumberBlockingEx(currentFg, cnt + 1, dmaIndex, 1000, memHandle))){
                     if(cnt < 0 ){
@@ -399,13 +422,20 @@ void Qylon::Grabber::grabThreadLoop(int numFrame, int dmaIndex){
                     }
                     QImage::Format imageFormat;
                     switch(getBytesPerPixel(dmaIndex)){
-                    case FG_GRAY: imageFormat = QImage::Format_Grayscale8; break;
-                    case FG_GRAY16: imageFormat = QImage::Format_Grayscale16; break;
+                    case 1: imageFormat = QImage::Format_Grayscale8; break;
+                    case 2: imageFormat = QImage::Format_Grayscale16; break;
                     default: qDebug() << "Result is here" << getBytesPerPixel(dmaIndex) << dmaIndex;
                     }
-                    QImage output = QImage((uchar*)Fg_getImagePtrEx(currentFg, cnt, dmaIndex, memHandle),
-                                           getWidth(dmaIndex), getHeight(dmaIndex), imageFormat);
-                    emit sendImage(output.copy(), dmaIndex);
+                    auto width = getWidth(dmaIndex);
+                    auto height = getHeight(dmaIndex);
+                    void *buffer = Fg_getImagePtrEx(currentFg, cnt, dmaIndex, memHandle);
+
+                    auto byteCount = width*height*2;
+                    uchar* copiedBuffer = new uchar[byteCount];
+                    memcpy(copiedBuffer, buffer, byteCount);
+
+                    QImage output = QImage(copiedBuffer, width, height, imageFormat);
+                    emit sendImage(output, dmaIndex);
                 }
                 Fg_stopAcquireEx(currentFg, dmaIndex, memHandle, 0);
                 emit grabbingState(false);

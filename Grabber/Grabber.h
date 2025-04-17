@@ -36,7 +36,7 @@ public:
     Grabber(Qylon *parentQylon = nullptr, unsigned int boardIndex=0);
     static int CallbackFromGrabber(frameindex_t picNr, void *ctx);
     bool loadApplet(QString file);
-    bool loadConfiguration(QString file);
+    bool loadConfiguration(QString file, bool ignoringError=false);
 
     int getDMACount();
     int getWidth(int dmaIndex);

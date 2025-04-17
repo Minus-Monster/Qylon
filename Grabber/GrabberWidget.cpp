@@ -113,7 +113,12 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
             if(!this->lineLoadConfig->text().isEmpty()){
                 bool initConf = this->parent->loadConfiguration(this->lineLoadConfig->text());
                 if(!initConf){
-                    QMessageBox::warning(this, this->windowTitle(), "Config loading failed. \nCheck the config file or the environment.");
+                    int r= QMessageBox::question(this, this->windowTitle(), "Config loading failed. \nCheck the config file or the environment.\nOr ignoring the error handling policy?");
+                    if(r == QMessageBox::Yes){
+                        if(this->parent->loadConfiguration(this->lineLoadConfig->text(),true)){
+                            QMessageBox::information(this, this->windowTitle(), "Ignored the error handling policy. \nLoaded the configuration file.");
+                        }
+                    }
                 }
             }
         }
@@ -131,6 +136,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         lineLoadConfig->setEnabled(false);
         getMCFStructure(this->lineLoadConfig->text());
         buttonEditMCF->setEnabled(true);
+        initTabWidget();
     });
     connect(obj, &Grabber::released, this, [=]{
         lineLoadApplet->setEnabled(true);
@@ -163,9 +169,11 @@ void Qylon::GrabberWidget::initTabWidget()
         tabWidgetDMA = new QTabWidget;
         layout->addWidget(tabWidgetDMA);
     }
+
     if(!parent->isInitialized()) return;
 
     int cntDMA =this->parent->getDMACount();
+    tabWidgetDMA->clear();
     for(int i=0; i<cntDMA; ++i){
         QGroupBox *groupBox = new QGroupBox;
         groupBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
