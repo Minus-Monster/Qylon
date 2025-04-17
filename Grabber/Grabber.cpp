@@ -481,11 +481,7 @@ bool Qylon::Grabber::saveImage(QString dir, QString fileName,int numFrame, int d
                     auto width = getWidth(dmaIndex);
                     auto height = getHeight(dmaIndex);
 
-                    uint bit=0;
-                    switch(getBytesPerPixel(dmaIndex)){
-                    case FG_GRAY: bit = 8; break;
-                    case FG_GRAY16: bit = 16; break;
-                    }
+                    uint bit=getBytesPerPixel(dmaIndex)*8;
 
                     QFileInfo fileInfo(fileName);
                     QString cleanDir = QDir::cleanPath(dir);
