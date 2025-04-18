@@ -353,9 +353,7 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
     mcfEditor->setMinimumSize(400,300);
     widget->setMinimumSize(400,300);
 
-    mcfEditor->setWindowFlags(mcfEditor->windowFlags() & ~Qt::WindowContextHelpButtonHint);
-
-
+    mcfEditor->setWindowFlags(Qt::Window);
     if(file.open(QIODevice::ReadOnly | QIODevice::Text)){
         QTextStream in(&file);
         QTreeWidgetItem *currentParent=nullptr;

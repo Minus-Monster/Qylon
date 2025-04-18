@@ -92,8 +92,11 @@ private:
     int imagePushCnt=0;             // When if use two or more image buffers to put images into grabber, it would be the counter.
     int imageBufferSize=1;          // the buffer size putting images into grabber.
 
-    std::map<int, std::atomic<bool>> stopFlags;
     std::mutex grabberMutex;
+
+    // For the threading mode
+    dma_mem *memHandle=nullptr;
+    std::map<int, std::atomic<bool>> stopFlags;
 
     GrabberWidget *widget;
 

@@ -399,8 +399,12 @@ void Qylon::Grabber::stopGrabAll()
 }
 
 void Qylon::Grabber::grabThreadLoop(int numFrame, int dmaIndex){
+    if(currentFg ==nullptr) return;
+
+    // Waiting thread ends
+    if(memHandle != nullptr) Fg_FreeMemEx(currentFg, memHandle);
     int DMALength = getWidth(dmaIndex)*getHeight(dmaIndex) *getBytesPerPixel(dmaIndex);
-    dma_mem *memHandle = Fg_AllocMemEx(currentFg, DMALength, imageBufferSize);
+    memHandle = Fg_AllocMemEx(currentFg, DMALength, imageBufferSize);
     if(memHandle != NULL){
         {
             std::lock_guard<std::mutex> lock(grabberMutex);
@@ -428,20 +432,14 @@ void Qylon::Grabber::grabThreadLoop(int numFrame, int dmaIndex){
                     }
                     auto width = getWidth(dmaIndex);
                     auto height = getHeight(dmaIndex);
-                    void *buffer = Fg_getImagePtrEx(currentFg, cnt, dmaIndex, memHandle);
-
-                    auto byteCount = width*height*2;
-                    uchar* copiedBuffer = new uchar[byteCount];
-                    memcpy(copiedBuffer, buffer, byteCount);
-
-                    QImage output = QImage(copiedBuffer, width, height, imageFormat);
+                    QImage output = QImage((uchar*)Fg_getImagePtrEx(currentFg, cnt, dmaIndex, memHandle),
+                                           width, height, imageFormat);
                     emit sendImage(output, dmaIndex);
                 }
                 Fg_stopAcquireEx(currentFg, dmaIndex, memHandle, 0);
                 emit grabbingState(false);
                 Qylon::log("Finished grabbing in thread mode. Acquired frames:" + QString::number(cnt-1));
             }
-            Fg_FreeMemEx(currentFg, memHandle);
         }).detach();
     }
 }
@@ -452,10 +450,15 @@ void Qylon::Grabber::stopThreadLoop(int dmaIndex){
         stopFlags[dmaIndex] = true;
         Qylon::log("Requested to stop grabbing thread for dmaIndex: " + QString::number(dmaIndex));
     }
+
 }
 
 bool Qylon::Grabber::saveImage(QString dir, QString fileName,int numFrame, int dmaIndex)
 {
+    if(currentFg ==nullptr) return false;
+
+    // Waiting thread ends
+    if(memHandle != nullptr) Fg_FreeMemEx(currentFg, memHandle);
     int DMALength = getWidth(dmaIndex)*getHeight(dmaIndex) *getBytesPerPixel(dmaIndex);
     dma_mem *memHandle = Fg_AllocMemEx(currentFg, DMALength, imageBufferSize);
     if(memHandle != NULL){
@@ -466,17 +469,16 @@ bool Qylon::Grabber::saveImage(QString dir, QString fileName,int numFrame, int d
 
         std::thread([=](){
             int cnt = 0;
+            int targetFrame= 0;
             if(Fg_AcquireEx(currentFg, dmaIndex, GRAB_INFINITE, ACQ_STANDARD, memHandle) == FG_OK){
                 Qylon::log("Start grabbing with save mode." + ((numFrame!=0) ? " Expected frames:" + QString::number(numFrame) : " Continuous mode."));
                 emit grabbingState(true);
-                while(!stopFlags[dmaIndex] && (cnt = Fg_getLastPicNumberBlockingEx(currentFg, cnt + 1, dmaIndex, 1000, memHandle))){
+                while((cnt = Fg_getLastPicNumberBlockingEx(currentFg, cnt + 1, dmaIndex, 1000, memHandle))){
                     if(cnt < 0 ){
                         Qylon::log("Terminated.");
                         return;
                     }
-                    if(numFrame !=0){
-                        if(cnt > numFrame) break;
-                    }
+                    if(targetFrame == numFrame) break;
                     auto buffer = Fg_getImagePtrEx(currentFg, cnt, dmaIndex, memHandle);
                     auto width = getWidth(dmaIndex);
                     auto height = getHeight(dmaIndex);
@@ -485,13 +487,16 @@ bool Qylon::Grabber::saveImage(QString dir, QString fileName,int numFrame, int d
 
                     QFileInfo fileInfo(fileName);
                     QString cleanDir = QDir::cleanPath(dir);
-                    QString filePath = QDir(cleanDir).filePath(fileInfo.completeBaseName() + QString::number(cnt-1) +".tiff");
+                    QString filePath = QDir(cleanDir).filePath(fileInfo.completeBaseName() + QString::number(targetFrame) +".tiff");
                     // save function
-                    IoWriteTiff(filePath.toStdString().c_str(), (uchar*)buffer, width, height, bit, 1);
-
+                    int r = IoWriteTiff(filePath.toStdString().c_str(), (uchar*)buffer, width, height, bit, 1);
+                    if(r==FG_OK){
+                        qDebug() << cnt;
+                        ++targetFrame;
+                    }
                 }
                 Fg_stopAcquireEx(currentFg, dmaIndex, memHandle, 0);
-                Qylon::log("Finished grabbing in save mode. Acquired frames:" + QString::number(cnt-1));
+                Qylon::log("Finished grabbing in save mode. Acquired frames:" + QString::number(targetFrame+1));
                 emit grabbingState(false);
             }
             Fg_FreeMemEx(currentFg, memHandle);
