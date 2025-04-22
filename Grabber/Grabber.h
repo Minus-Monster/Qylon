@@ -44,6 +44,11 @@ public:
     int getX(int dmaIndex);
     int getY(int dmaIndex);
     int getBytesPerPixel(int dmaIndex=0);
+
+    void setTriggerMode(MeTriggerMode mode){
+        setParameterValue(FG_TRIGGERMODE, mode);
+    }
+
     QString getParameterStringValue(QString typeName, int dmaIndex);
     int getParameterIntValue(QString typeName, int dmaIndex);
     Fg_Struct* getFg();
@@ -80,7 +85,7 @@ public slots:
     void stopGrabAll();
     void grabThreadLoop(int numFrame=0, int dmaIndex=0);
     void stopThreadLoop(int dmaIndex=0);
-    bool saveImage(QString dir, QString fileName, int numFrame=1, int dmaIndex=0);
+    void saveImage(QString dir, QString fileName, int numFrame=1, int dmaIndex=0);
     void setImage(const QImage image, int dmaIndex=1);
     void setBuffer(unsigned short* buffer, int width, int height, int depth, int dmaIndex=1);
 

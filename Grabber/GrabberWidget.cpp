@@ -10,6 +10,7 @@
 #include <QMessageBox>
 #include <QToolButton>
 #include <QMenu>
+#include <QStyledItemDelegate>
 
 Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 {
@@ -130,6 +131,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         lineLoadApplet->setEnabled(false);
         spinBoxImageBuffer->setEnabled(false);
         initTabWidget();
+        buttonInit->setChecked(true);
     });
     connect(obj, &Grabber::loadedConfig, this, [=](QString path){
         lineLoadConfig->setText(path);
@@ -143,6 +145,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         lineLoadConfig->setEnabled(true);
         spinBoxImageBuffer->setEnabled(true);
         buttonEditMCF->setEnabled(false);
+        buttonInit->setChecked(false);
 
         layout->removeWidget(tabWidgetDMA);
         delete tabWidgetDMA;
@@ -173,7 +176,13 @@ void Qylon::GrabberWidget::initTabWidget()
     if(!parent->isInitialized()) return;
 
     int cntDMA =this->parent->getDMACount();
-    tabWidgetDMA->clear();
+    // Clear existing tabs
+    for(int i =0; i<tabWidgetDMA->count(); ++i){
+        auto widget = tabWidgetDMA->widget(i);
+        tabWidgetDMA->removeTab(i);
+        widget->deleteLater();
+    }
+
     for(int i=0; i<cntDMA; ++i){
         QGroupBox *groupBox = new QGroupBox;
         groupBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -259,7 +268,7 @@ void Qylon::GrabberWidget::initTabWidget()
         groupBox->setFlat(true);
         tabWidgetDMA->addTab(groupBox, "DMA:" + QString::number(i));
 
-        connect(parent, &Grabber::updatedParametersValue, this, [=]{
+        connect(parent, &Grabber::updatedParametersValue, groupBox, [=]{
             int width = parent->getWidth(i);
             int height = parent->getHeight(i);
             int x = parent->getX(i);
@@ -354,70 +363,159 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
     widget->setMinimumSize(400,300);
 
     mcfEditor->setWindowFlags(Qt::Window);
-    if(file.open(QIODevice::ReadOnly | QIODevice::Text)){
-        QTextStream in(&file);
-        QTreeWidgetItem *currentParent=nullptr;
-        while(!in.atEnd()){
-            QString line = in.readLine();
-            if(line.isEmpty()) continue;
 
-            if(line.contains(sectionParser)){
-                QTreeWidgetItem *section = new QTreeWidgetItem(widget);
-                section->setText(0, line.remove("[").remove("]"));
-                currentParent = section;
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        QTreeWidgetItem* sectionItem = nullptr;
+
+        while (!in.atEnd()) {
+            QString line = in.readLine().trimmed();
+            if (line.isEmpty()) continue;
+
+            if (line.startsWith("[") && line.endsWith("]")) {
+                sectionItem = new QTreeWidgetItem(widget);
+                sectionItem->setText(0, line.mid(1, line.length() - 2));
                 continue;
             }
-            auto values = line.split(valueParser);
 
-            QTreeWidgetItem *children = new QTreeWidgetItem(currentParent);
-            children->setText(0, values.first());
+            auto values = line.split(valueParser); // e.g. '='
+            if (values.size() < 2) continue;
 
-            QLineEdit *lineEditParameterValue = new QLineEdit(values.last().remove(";"));
-            lineEditParameterValue->setFrame(false);
-            lineEditParameterValue->setObjectName(values.first());
-            connect(lineEditParameterValue, &QLineEdit::returnPressed, this, [lineEditParameterValue, currentParent, this](){
-                int r = QMessageBox::question(mcfEditor, "MCF Editor", "Are you sure to change this value?", QMessageBox::Cancel | QMessageBox::Ok, QMessageBox::Cancel);
-                if(r == QMessageBox::Cancel){
-                    lineEditParameterValue->undo();
-                }
-                QString parent = currentParent->text(0);
-                QString obj = lineEditParameterValue->objectName();
-                QString filterString = "ID";
-                if(parent.startsWith(filterString)){
-                    parent = parent.remove(filterString);
-                    bool isNumeric = false;
-                    lineEditParameterValue->text().toInt(&isNumeric);
-                    if(isNumeric){
-                        this->parent->setParameterValue(obj, lineEditParameterValue->text().toInt(), parent.toInt());
-                    }else{
-                        this->parent->setParameterValue(obj, lineEditParameterValue->text(), parent.toInt());
-                    }
-                    this->refreshMCFValues();
-                    if(obj.contains("FG_")) initTabWidget();
-                }
-            });
+            QString fullKey = values.first().trimmed();  // e.g., Device1_Process0_AppletProperties_Width
+            QString value = values.last().remove(";").trimmed();
 
-            widget->setItemWidget(children, 1, lineEditParameterValue);
-        }
-    }
+            QStringList parts = fullKey.split("_");
+            if (parts.isEmpty()) continue;
 
-    auto filterItems = [widget](const QString &searchText) {
-        for (int i = 0; i < widget->topLevelItemCount(); ++i) {
-            QTreeWidgetItem *topItem = widget->topLevelItem(i);
-            bool matchFound = false;
-            for (int j = 0; j < topItem->childCount(); ++j) {
-                QTreeWidgetItem *childItem = topItem->child(j);
-                if (childItem->text(0).contains(searchText, Qt::CaseInsensitive) ||
-                    qobject_cast<QLineEdit*>(widget->itemWidget(childItem, 1))->text().contains(searchText, Qt::CaseInsensitive)) {
-                    matchFound = true;
-                    childItem->setHidden(false);
+            QTreeWidgetItem* parent = sectionItem;
+            QString lastPrefix;
+
+            QStringList cleanedKeys;
+            for (const QString& part : parts) {
+                if (!lastPrefix.isEmpty() && part.startsWith(lastPrefix)) {
+                    cleanedKeys << part.mid(lastPrefix.length());
                 } else {
-                    childItem->setHidden(true);
+                    cleanedKeys << part;
+                }
+                lastPrefix += part;
+            }
+
+            for (int i = 0; i < cleanedKeys.size() - 1; ++i) {
+                QString key = cleanedKeys[i];
+                QTreeWidgetItem* existing = nullptr;
+
+                for (int j = 0; j < parent->childCount(); ++j) {
+                    if (parent->child(j)->text(0) == key) {
+                        existing = parent->child(j);
+                        break;
+                    }
+                }
+
+                if (existing) {
+                    parent = existing;
+                } else {
+                    QTreeWidgetItem* node = new QTreeWidgetItem(parent);
+                    node->setText(0, key);
+                    parent = node;
                 }
             }
-            topItem->setHidden(!matchFound);
-            topItem->setExpanded(matchFound);
+
+            QString paramKey = cleanedKeys.last();
+            QTreeWidgetItem* leaf = new QTreeWidgetItem(parent);
+            leaf->setText(0, paramKey);
+
+            QLineEdit* lineEdit = new QLineEdit(value);
+            lineEdit->setFrame(false);
+            lineEdit->setObjectName(fullKey);
+
+            connect(lineEdit, &QLineEdit::returnPressed, this, [=]() {
+                int r = QMessageBox::question(
+                    mcfEditor, "MCF Editor",
+                    "Are you sure to change this value?",
+                    QMessageBox::Cancel | QMessageBox::Ok, QMessageBox::Cancel);
+
+                if (r == QMessageBox::Cancel) {
+                    lineEdit->undo();
+                    return;
+                }
+
+                QString parentName = sectionItem ? sectionItem->text(0) : "";
+                QString obj = lineEdit->objectName();
+                QString filterString = "ID";
+
+                if (parentName.startsWith(filterString)) {
+                    parentName.remove(filterString);
+                    bool isNumeric = false;
+                    lineEdit->text().toInt(&isNumeric);
+                    if (isNumeric) {
+                        this->parent->setParameterValue(obj, lineEdit->text().toInt(), parentName.toInt());
+                    } else {
+                        this->parent->setParameterValue(obj, lineEdit->text(), parentName.toInt());
+                    }
+
+                    this->refreshMCFValues();
+                    if (obj.contains("FG_")) {
+                        initTabWidget();
+                    }
+                }
+            });
+            widget->setItemWidget(leaf, 1, lineEdit);
         }
+    }
+    widget->setItemDelegate(new QStyledItemDelegate(widget));
+
+    auto filterItems = [widget](const QString &searchText) {
+        std::function<bool(QTreeWidgetItem*)> filterRecursive = [&](QTreeWidgetItem *item) -> bool {
+            if (!item) return false;
+
+            QString originalText = item->data(0, Qt::UserRole).toString();
+            if (originalText.isEmpty()) {
+                originalText = item->text(0);
+                item->setData(0, Qt::UserRole, originalText);
+            }
+            item->setText(0, originalText);
+
+            bool selfMatch = originalText.contains(searchText, Qt::CaseInsensitive);
+
+            if (selfMatch && !searchText.isEmpty()) {
+                item->setBackground(0, QBrush(Qt::yellow));
+            } else {
+                item->setBackground(0, QBrush());
+            }
+
+            QWidget *editor = widget->itemWidget(item, 1);
+            bool editorMatch = false;
+            if (editor) {
+                QLineEdit *lineEdit = qobject_cast<QLineEdit*>(editor);
+                if (lineEdit) {
+                    editorMatch = lineEdit->text().contains(searchText, Qt::CaseInsensitive);
+                }
+            }
+
+            bool childMatch = false;
+            for (int j = 0; j < item->childCount(); ++j) {
+                childMatch |= filterRecursive(item->child(j));
+            }
+
+            bool finalMatch = selfMatch || editorMatch || childMatch;
+
+            item->setHidden(!finalMatch);
+            item->setExpanded(finalMatch);
+
+            if ((selfMatch || editorMatch) && item->childCount() > 0) {
+                for (int j = 0; j < item->childCount(); ++j) {
+                    item->child(j)->setHidden(false);
+                }
+            }
+            return finalMatch;
+        };
+
+        widget->setUpdatesEnabled(false);
+        for (int i = 0; i < widget->topLevelItemCount(); ++i) {
+            filterRecursive(widget->topLevelItem(i));
+        }
+
+        widget->setUpdatesEnabled(true);
     };
     connect(lineEditSearch, &QLineEdit::textChanged, filterItems);
 }
@@ -427,30 +525,49 @@ void Qylon::GrabberWidget::refreshMCFValues()
 {
     if (!mcfEditor) return;
 
-    QTreeWidget *widget = mcfEditor->findChild<QTreeWidget*>();
-    if (!widget) return;
+    auto treeWidget = mcfEditor->findChild<QTreeWidget*>();
+    if (!treeWidget) return;
 
-    for (int i = 0; i < widget->topLevelItemCount(); ++i) {
-        QTreeWidgetItem *topItem = widget->topLevelItem(i);
-        for (int j = 0; j < topItem->childCount(); ++j) {
-            QTreeWidgetItem *childItem = topItem->child(j);
-            QLineEdit *lineEdit = qobject_cast<QLineEdit*>(widget->itemWidget(childItem, 1));
+    std::function<void(QTreeWidgetItem*)> refreshItemRecursive = [&](QTreeWidgetItem* item) {
+        if (!item) return;
+
+        QWidget* widget = treeWidget->itemWidget(item, 1);
+        if (widget) {
+            QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget);
             if (lineEdit) {
-                QString parameter = childItem->text(0);
-                QString section = topItem->text(0);
+                QString fullKey = lineEdit->objectName(); // 예: Device1_Process0_AppletProperties_Width
+                QString sectionName;
+                QTreeWidgetItem* sectionItem = item;
+                while (sectionItem && sectionItem->parent()) {
+                    sectionItem = sectionItem->parent();
+                }
+                if (sectionItem) sectionName = sectionItem->text(0);
+
                 QString filterString = "ID";
-                if (section.startsWith(filterString)) {
-                    section = section.remove(filterString);
-                    bool isNumeric = false;
-                    lineEdit->text().toInt(&isNumeric);
-                    if (isNumeric) {
-                        lineEdit->setText(QString::number(this->parent->getParameterIntValue(parameter, section.toInt())));
-                    } else {
-                        lineEdit->setText(this->parent->getParameterStringValue(parameter, section.toInt()));
+                if (sectionName.startsWith(filterString)) {
+                    sectionName.remove(filterString);
+                    bool ok = false;
+                    int sectionIndex = sectionName.toInt(&ok);
+                    if (ok) {
+                        QVariant newValue = parent->getParameterIntValue(fullKey, sectionIndex);
+                        if (newValue.isValid()) {
+                            QString newText = newValue.toString();
+                            if (lineEdit->text() != newText) {
+                                lineEdit->setText(newText);
+                            }
+                        }
                     }
                 }
             }
         }
+
+        for (int i = 0; i < item->childCount(); ++i) {
+            refreshItemRecursive(item->child(i));
+        }
+    };
+
+    for (int i = 0; i < treeWidget->topLevelItemCount(); ++i) {
+        refreshItemRecursive(treeWidget->topLevelItem(i));
     }
 }
 
