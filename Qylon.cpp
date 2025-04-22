@@ -26,7 +26,7 @@ void Qylon::Qylon::initialize(){
     Pylon::PylonAutoInitTerm initTerm;
 
     Pylon::PylonInitialize();
-    log("Start pylon initializing");
+    log("Start pylon initializing...");
     tlFactory = &Pylon::CTlFactory::GetInstance();
 
     log("Enumerating Basler devices");
@@ -41,9 +41,9 @@ void Qylon::Qylon::updateCameraList(){
     /// All camera name(QString) are written in "cameraList"
     /// After that, "updatedCameraInformation" will be called for updating each QylonObject if available
 
-    log("Updating available cameras list");
+    log("Updating available cameras list.");
     auto cnt = tlFactory->EnumerateDevices(*devices);
-    log("Found " + QString::number(cnt) + " Camera(s)");
+    log("Found " + QString::number(cnt) + " Camera(s).");
 
     currentCameraList.clear();
     for(size_t i=0; i < devices->size(); i++){
@@ -68,7 +68,7 @@ vTools *Qylon::Qylon::addVTools()
 {
     vTools *obj = new vTools(this);
     vToolsList.push_back(obj);
-    log("new Qylon vTools generated");
+    log("new Qylon vTools generated.");
 
     return obj;
 }
@@ -110,7 +110,7 @@ Grabber *Qylon::Qylon::addGrabber(int boardNumIndex)
     Grabber *obj = new Grabber(this, boardNumIndex);
     grabberList.push_back(obj);
 
-    log("new Qylon Grabber generated");
+    log("new Qylon Grabber generated.");
     return obj;
 }
 #endif
