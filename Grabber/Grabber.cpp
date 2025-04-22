@@ -475,9 +475,11 @@ void Qylon::Grabber::saveImage(QString dir, QString fileName,int numFrame, int d
     if(currentFg ==nullptr) return;
 
     // Waiting thread ends
-    if(memHandle != nullptr) Fg_FreeMemEx(currentFg, memHandle);
+    if(memHandle != nullptr){
+        Fg_FreeMemEx(currentFg, memHandle);
+    }
     int DMALength = getWidth(dmaIndex)*getHeight(dmaIndex) *getBytesPerPixel(dmaIndex);
-    dma_mem *memHandle = Fg_AllocMemEx(currentFg, DMALength, imageBufferSize);
+    memHandle = Fg_AllocMemEx(currentFg, DMALength, 1);
     if(memHandle != NULL){
         {
             std::lock_guard<std::mutex> lock(grabberMutex);
@@ -486,37 +488,49 @@ void Qylon::Grabber::saveImage(QString dir, QString fileName,int numFrame, int d
 
         std::thread([=](){
             int cnt = 0;
-            int targetFrame= 0;
             if(Fg_AcquireEx(currentFg, dmaIndex, GRAB_INFINITE, ACQ_STANDARD, memHandle) == FG_OK){
-                Qylon::log("Start grabbing with save mode." + ((numFrame!=0) ? " Expected frames:" + QString::number(numFrame) : " Continuous mode."));
+                // Software trigger mode
+                if(numFrame !=0){
+                    setParameterValue("Device1_Process0_Parameter_EnableTrigger", 1);
+                    setParameterValue("Device1_Process0_Parameter_SoftwareTirgger", 2);
+                }else{
+                    setParameterValue("Device1_Process0_Parameter_EnableTrigger", 0);
+                }
+                Qylon::log("Start grabbing with saving." + ((numFrame!=0) ? " Expected frames:" + QString::number(numFrame) : " Continuous mode."));
+
+                int targetFrame = 0;
                 emit grabbingState(true);
-                while((cnt = Fg_getLastPicNumberBlockingEx(currentFg, cnt + 1, dmaIndex, 1000, memHandle))){
+                while(!(stopFlags[dmaIndex])){
+                    cnt = Fg_getLastPicNumberBlockingEx(currentFg, cnt + 1, dmaIndex, 3, memHandle);
                     if(cnt < 0 ){
-                        Qylon::log("Terminated.");
+                        Qylon::log("Failed to get a result image from this grabber.");
+                        emit grabbingState(false);
+                        Fg_stopAcquireEx(currentFg, dmaIndex, memHandle, 0);
                         return;
                     }
-                    if(targetFrame == numFrame) break;
-                    auto buffer = Fg_getImagePtrEx(currentFg, cnt, dmaIndex, memHandle);
+
+                    QImage::Format imageFormat;
+                    uint bit = getBytesPerPixel(dmaIndex)*8;
                     auto width = getWidth(dmaIndex);
                     auto height = getHeight(dmaIndex);
-
-                    uint bit=getBytesPerPixel(dmaIndex)*8;
-
+                    auto buffer = Fg_getImagePtrEx(currentFg, cnt, dmaIndex, memHandle);
                     QFileInfo fileInfo(fileName);
                     QString cleanDir = QDir::cleanPath(dir);
                     QString filePath = QDir(cleanDir).filePath(fileInfo.completeBaseName() + QString::number(targetFrame) +".tiff");
                     // save function
                     int r = IoWriteTiff(filePath.toStdString().c_str(), (uchar*)buffer, width, height, bit, 1);
                     if(r==FG_OK){
-                        qDebug() << cnt;
                         ++targetFrame;
+                    }
+
+                    if((!(numFrame > targetFrame)) && (numFrame != 0)){
+                        break;
                     }
                 }
                 Fg_stopAcquireEx(currentFg, dmaIndex, memHandle, 0);
-                Qylon::log("Finished grabbing in save mode. Acquired frames:" + QString::number(targetFrame+1));
                 emit grabbingState(false);
+                Qylon::log("Finished grabbing in save mode. Acquired frames:" + QString::number(targetFrame));
             }
-            Fg_FreeMemEx(currentFg, memHandle);
         }).detach();
     }
 }
