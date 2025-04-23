@@ -1,3 +1,17 @@
+#
+#
+# If you want to use Qylon on your project,
+# You can declare below codes on your CMakeLists.txt
+#
+#
+# set(WITH_GRABBER ON CACHE BOOL "Build with Grabber")
+# set(WITH_PYLON ON CACHE BOOL "Build with pylon")
+#
+# add_subdirectory("Qylon" Qylon) # writing your current Qylon directory path
+# target_link_libraries(${PROJECT_NAME} PUBLIC Qylon)
+#
+#
+
 cmake_minimum_required(VERSION 3.14)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
