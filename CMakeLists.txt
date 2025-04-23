@@ -63,7 +63,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 message(STATUS "[${PROJECT_NAME}] WITH_PYLON=${WITH_PYLON}, WITH_GRABBER=${WITH_GRABBER}")
-# Pylon Loading
+# pylon Loading
 # Locate the cmake find module for pylon ...
 if(WITH_PYLON AND NOT pylon_FOUND)
     find_path(pylon_cmake Findpylon.cmake
@@ -134,59 +134,56 @@ endif()
 
 # Grabber Loading
 if(WITH_GRABBER)
+    find_path(BASLER_FG_SDK_DIR
+        NAMES cmake/modules/FindFgLib5.cmake
+        HINTS
+            "/opt/Basler/FramegrabberSDK"
+            "/usr/local/Basler/FramegrabberSDK"
+            "C:/Program Files/Basler/FramegrabberSDK"
+            "C:/Basler/FramegrabberSDK"
+    )
     if(NOT DEFINED BASLER_FG_SDK_DIR AND DEFINED ENV{BASLER_FG_SDK_DIR})
         set(BASLER_FG_SDK_DIR $ENV{BASLER_FG_SDK_DIR})
     endif()
 
-    if(NOT BASLER_FG_SDK_DIR)
-        find_path(BASLER_FG_SDK_DIR
-            NAMES cmake/modules/FindFgLib5.cmake
-            HINTS
-                "/opt/Basler/FramegrabberSDK"
-                "/usr/local/Basler/FramegrabberSDK"
-                "C:/Program Files/Basler/FramegrabberSDK"
-                "C:/Basler/FramegrabberSDK"
-        )
-        if(BASLER_FG_SDK_DIR)
-            set(ENV{BASLER_FG_SDK_DIR} "${BASLER_FG_SDK_DIR}")
-            set(Fg_cmake "${BASLER_FG_SDK_DIR}/cmake/modules")
-            list(APPEND CMAKE_MODULE_PATH ${Fg_cmake})
+    if(BASLER_FG_SDK_DIR)
+        set(ENV{BASLER_FG_SDK_DIR} "${BASLER_FG_SDK_DIR}")
+        set(Fg_cmake "${BASLER_FG_SDK_DIR}/cmake/modules" "${CMAKE_INSTALL_PREFIX}/cmake/modules")
+        list(APPEND CMAKE_MODULE_PATH ${Fg_cmake})
 
-            find_package(FgLib5 REQUIRED)
-            if(FgLib5_FOUND)
-                target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
-                add_definitions(${SISOPLATFORM_DEFINITIONS})
-                message(STATUS "[${PROJECT_NAME}] Framegrabber SDK ${FgLib5_VERSION_STRING} found")
-                target_include_directories(${PROJECT_NAME} PUBLIC ${FgLib5_INCLUDE_DIR})
-                target_link_libraries(${PROJECT_NAME} PUBLIC ${FgLib5_LIBRARY})
+        find_package(FgLib5 REQUIRED)
+        if(FgLib5_FOUND)
+            target_compile_definitions(${PROJECT_NAME} PUBLIC GRABBER_ENABLED)
+            add_definitions(${SISOPLATFORM_DEFINITIONS})
+            message(STATUS "[${PROJECT_NAME}] Framegrabber SDK ${FgLib5_VERSION_STRING} found")
+            target_include_directories(${PROJECT_NAME} PUBLIC ${FgLib5_INCLUDE_DIR})
+            target_link_libraries(${PROJECT_NAME} PUBLIC ${FgLib5_LIBRARY})
 
-                find_package(ClSerSis REQUIRED)
-                if(ClSerSis_FOUND)
-                    target_include_directories(${PROJECT_NAME} PUBLIC ${ClSerSis_INCLUDE_DIR})
-                    target_link_libraries(${PROJECT_NAME} PUBLIC ${ClSerSis_LIBRARY})
-                endif(ClSerSis_Found)
+            find_package(ClSerSis REQUIRED)
+            if(ClSerSis_FOUND)
+                target_include_directories(${PROJECT_NAME} PUBLIC ${ClSerSis_INCLUDE_DIR})
+                target_link_libraries(${PROJECT_NAME} PUBLIC ${ClSerSis_LIBRARY})
+            endif(ClSerSis_Found)
 
-                find_package(SisoIoLib REQUIRED)
-                if(SisoIoLib_FOUND)
-                    target_include_directories(${PROJECT_NAME} PUBLIC ${SisoIoLib_INCLUDE_DIR})
-                    target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoIoLib_LIBRARY})
-                endif(SisoIoLib_FOUND)
+            find_package(SisoIoLib REQUIRED)
+            if(SisoIoLib_FOUND)
+                target_include_directories(${PROJECT_NAME} PUBLIC ${SisoIoLib_INCLUDE_DIR})
+                target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoIoLib_LIBRARY})
+            endif(SisoIoLib_FOUND)
 
-                find_package(SisoPlatform REQUIRED)
-                if(SisoPlatform_FOUND)
-                    target_include_directories(${PROJECT_NAME} PUBLIC ${SisoPlatform_INCLUDE_DIR})
-                    target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoPlatform_LIBRARY})
-                endif(SisoPlatform_FOUND)
+            find_package(SisoPlatform REQUIRED)
+            if(SisoPlatform_FOUND)
+                target_include_directories(${PROJECT_NAME} PUBLIC ${SisoPlatform_INCLUDE_DIR})
+                target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoPlatform_LIBRARY})
+            endif(SisoPlatform_FOUND)
 
-                find_package(SisoGenicamLib REQUIRED)
-                if(SisoGenicamLib_FOUND)
-                    target_include_directories(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_INCLUDE_DIR})
-                    target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_LIBRARY})
-                endif(SisoGenicamLib_FOUND)
-            endif(FgLib5_FOUND)
-        else()
-            message(FATAL_ERROR "[${PROJECT_NAME}] FramegrabberSDK not found! Set BASLER_FG_SDK_DIR manually.")
-        endif()
+            find_package(SisoGenicamLib REQUIRED)
+            if(SisoGenicamLib_FOUND)
+                target_include_directories(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_INCLUDE_DIR})
+                target_link_libraries(${PROJECT_NAME} PUBLIC ${SisoGenicamLib_LIBRARY})
+            endif(SisoGenicamLib_FOUND)
+        endif(FgLib5_FOUND)
+    else()
+        message(FATAL_ERROR "[${PROJECT_NAME}] FramegrabberSDK not found! Set BASLER_FG_SDK_DIR manually.")
     endif()
 endif(WITH_GRABBER)
-
