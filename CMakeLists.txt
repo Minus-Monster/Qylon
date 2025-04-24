@@ -177,7 +177,7 @@ if(WITH_GRABBER)
             if(ClSerSis_FOUND)
                 target_include_directories(${PROJECT_NAME} PUBLIC ${ClSerSis_INCLUDE_DIR})
                 target_link_libraries(${PROJECT_NAME} PUBLIC ${ClSerSis_LIBRARY})
-            endif(ClSerSis_Found)
+            endif(ClSerSis_FOUND)
 
             find_package(SisoIoLib REQUIRED)
             if(SisoIoLib_FOUND)
