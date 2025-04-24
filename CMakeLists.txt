@@ -22,8 +22,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-option(WITH_PYLON "Add pylon SDK for Qylon" ON)
-option(WITH_GRABBER "Add Framegrabber SDK for Qylon" ON)
+option(WITH_PYLON "Add pylon SDK for Qylon" OFF)
+option(WITH_GRABBER "Add Framegrabber SDK for Qylon" OFF)
 
 set(QYLON_HEADERS
     Qylon.h
