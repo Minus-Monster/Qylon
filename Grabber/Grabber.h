@@ -3,6 +3,7 @@
 #ifdef GRABBER_ENABLED
 #include "basler_fg.h"
 #include "fg_struct.h"
+#include "sisoIo.h"
 #undef Sleep // define to avoid the conflict with the Sleep macro in os_funcs.h
 
 #include <QObject>
