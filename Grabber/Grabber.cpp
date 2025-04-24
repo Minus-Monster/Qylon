@@ -1,5 +1,7 @@
 #include <thread>
 #ifdef GRABBER_ENABLED
+#include "sisoIo.h"
+
 #include "Grabber.h"
 #include "GrabberWidget.h"
 #include "Qylon.h"
