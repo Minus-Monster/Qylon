@@ -60,6 +60,7 @@ public:
     int getLastFrameCount(int dmaIndex);
 
     void setParameterValue(QString typeName, int value, int dmaIndex=0);
+    void setParameterValue(QString typeName, double value, int dmaIndex=0);
     void setParameterValue(QString typeName, QString value, int dmaIndex=0);
     void setParameterValue(int typeNum, int value, int dmaIndex=0);
 

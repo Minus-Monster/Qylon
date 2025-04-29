@@ -140,11 +140,10 @@ FgParamTypes Qylon::Grabber::getParameterDataType(QString typeName, int dmaIndex
 {
     auto parameterID = Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str());
 
-    char value[1000];
+    char value[10000];
     int bufLen = sizeof(value);
     auto result = Fg_getParameterPropertyEx(currentFg, parameterID, FgProperty::PROP_ID_DATATYPE, dmaIndex, &value, &bufLen);
     if(result != FG_OK){
-        Qylon::log("Error reading parameter:" + typeName);
         return FG_PARAM_TYPE_INVALID;
     }
     int dataType = atoi(value);
@@ -184,6 +183,15 @@ void Qylon::Grabber::setParameterValue(QString typeName, int value, int dmaIndex
 
     Qylon::log(QString("DMA:" + QString::number(dmaIndex) + " " + typeName + " tries to be set to "
                        + QString::number(value) + " (Result:" + QString::number(getParameterIntValue(typeName, dmaIndex)) +")"));
+    emit updatedParametersValue();
+}
+
+void Qylon::Grabber::setParameterValue(QString typeName, double value, int dmaIndex)
+{
+    Fg_setParameterWithType(currentFg, Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str()), value, dmaIndex);
+
+    Qylon::log(QString("DMA:" + QString::number(dmaIndex) + " " + typeName + " tries to be set to "
+                       + QString::number(value) + " (Result:" + QString::number(getParameterDoubleValue(typeName, dmaIndex)) +")"));
     emit updatedParametersValue();
 }
 

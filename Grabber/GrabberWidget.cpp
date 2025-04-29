@@ -445,12 +445,31 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
 
                 if (parentName.startsWith(filterString)) {
                     parentName.remove(filterString);
-                    bool isNumeric = false;
-                    lineEdit->text().toInt(&isNumeric);
-                    if (isNumeric) {
+
+                    switch(this->parent->getParameterDataType(obj, parentName.toInt())){
+                    case FG_PARAM_TYPE_SIZE_T:
+                    case FG_PARAM_TYPE_INT32_T:
+                    case FG_PARAM_TYPE_UINT32_T:
+                    case FG_PARAM_TYPE_INT64_T:
+                    case FG_PARAM_TYPE_UINT64_T:{
                         this->parent->setParameterValue(obj, lineEdit->text().toInt(), parentName.toInt());
-                    } else {
+                    }break;
+                    case FG_PARAM_TYPE_DOUBLE:{
+                        this->parent->setParameterValue(obj, lineEdit->text().toDouble(), parentName.toInt());
+                    }break;
+                    case FG_PARAM_TYPE_CHAR_PTR_PTR:
+                    case FG_PARAM_TYPE_CHAR_PTR:{
                         this->parent->setParameterValue(obj, lineEdit->text(), parentName.toInt());
+                    }break;
+                    case FG_PARAM_TYPE_STRUCT_FIELDPARAMACCESS:
+                    case FG_PARAM_TYPE_STRUCT_FIELDPARAMINT:
+                    case FG_PARAM_TYPE_STRUCT_FIELDPARAMINT64:
+                    case FG_PARAM_TYPE_STRUCT_FIELDPARAMDOUBLE:
+                    case FG_PARAM_TYPE_COMPLEX_DATATYPE:
+                    case FG_PARAM_TYPE_AUTO:
+                    case FG_PARAM_TYPE_INVALID:
+                    default: this->parent->setParameterValue(obj, lineEdit->text().toInt(), parentName.toInt());
+                        break;
                     }
 
                     this->refreshMCFValues();
@@ -573,7 +592,8 @@ void Qylon::GrabberWidget::refreshMCFValues()
                         case FG_PARAM_TYPE_COMPLEX_DATATYPE:
                         case FG_PARAM_TYPE_AUTO:
                         case FG_PARAM_TYPE_INVALID:
-                        default: break;
+                        default: newValue = parent->getParameterIntValue(fullKey, sectionIndex);
+                            break;
                         }
                         QString newText = newValue.toString();
                         if (lineEdit->text() != newText) {
