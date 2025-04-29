@@ -535,7 +535,7 @@ void Qylon::GrabberWidget::refreshMCFValues()
         if (widget) {
             QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget);
             if (lineEdit) {
-                QString fullKey = lineEdit->objectName(); // 예: Device1_Process0_AppletProperties_Width
+                QString fullKey = lineEdit->objectName(); // Device1_Process0_AppletProperties_Width
                 QString sectionName;
                 QTreeWidgetItem* sectionItem = item;
                 while (sectionItem && sectionItem->parent()) {
@@ -549,12 +549,35 @@ void Qylon::GrabberWidget::refreshMCFValues()
                     bool ok = false;
                     int sectionIndex = sectionName.toInt(&ok);
                     if (ok) {
-                        QVariant newValue = parent->getParameterIntValue(fullKey, sectionIndex);
-                        if (newValue.isValid()) {
-                            QString newText = newValue.toString();
-                            if (lineEdit->text() != newText) {
-                                lineEdit->setText(newText);
-                            }
+                        QVariant newValue;
+                        auto dataType = parent->getParameterDataType(fullKey, sectionIndex);
+                        switch(dataType){
+                        case FG_PARAM_TYPE_SIZE_T:
+                        case FG_PARAM_TYPE_INT32_T:
+                        case FG_PARAM_TYPE_UINT32_T:
+                        case FG_PARAM_TYPE_INT64_T:
+                        case FG_PARAM_TYPE_UINT64_T:{
+                            newValue = parent->getParameterIntValue(fullKey, sectionIndex);
+                        }break;
+                        case FG_PARAM_TYPE_DOUBLE:{
+                            newValue = parent->getParameterDoubleValue(fullKey, sectionIndex);
+                        }break;
+                        case FG_PARAM_TYPE_CHAR_PTR_PTR:
+                        case FG_PARAM_TYPE_CHAR_PTR:{
+                            newValue = parent->getParameterStringValue(fullKey, sectionIndex);
+                        }break;
+                        case FG_PARAM_TYPE_STRUCT_FIELDPARAMACCESS:
+                        case FG_PARAM_TYPE_STRUCT_FIELDPARAMINT:
+                        case FG_PARAM_TYPE_STRUCT_FIELDPARAMINT64:
+                        case FG_PARAM_TYPE_STRUCT_FIELDPARAMDOUBLE:
+                        case FG_PARAM_TYPE_COMPLEX_DATATYPE:
+                        case FG_PARAM_TYPE_AUTO:
+                        case FG_PARAM_TYPE_INVALID:
+                        default: break;
+                        }
+                        QString newText = newValue.toString();
+                        if (lineEdit->text() != newText) {
+                            lineEdit->setText(newText);
                         }
                     }
                 }

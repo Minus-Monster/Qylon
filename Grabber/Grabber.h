@@ -50,8 +50,11 @@ public:
         setParameterValue(FG_TRIGGERMODE, mode);
     }
 
+    FgParamTypes getParameterDataType(QString typeName, int dmaIndex);
     QString getParameterStringValue(QString typeName, int dmaIndex);
     int getParameterIntValue(QString typeName, int dmaIndex);
+    double getParameterDoubleValue(QString typeName, int dmaIndex);
+
     Fg_Struct* getFg();
     APC *getAPC(int dmaIndex);
     int getLastFrameCount(int dmaIndex);

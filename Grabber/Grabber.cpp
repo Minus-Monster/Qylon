@@ -109,15 +109,46 @@ int Qylon::Grabber::getY(int dmaIndex)
 QString Qylon::Grabber::getParameterStringValue(QString typeName, int dmaIndex)
 {
     std::string buf;
-    Fg_getParameterWithType(currentFg, Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str()), buf, dmaIndex);
+    auto result = Fg_getParameterWithType(currentFg, Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str()), buf, dmaIndex);
+    if(result != FG_OK){
+        Qylon::log("Error occurred while reading(S) parameter:" + typeName + "(" + QString::number(dmaIndex) + "). " + Fg_getLastErrorDescription(currentFg));
+    }
     return QString::fromStdString(buf);
 }
 
 int Qylon::Grabber::getParameterIntValue(QString typeName, int dmaIndex)
 {
     int val;
-    Fg_getParameterWithType(currentFg, Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str()), &val, dmaIndex);
+    auto result = Fg_getParameterWithType(currentFg, Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str()), &val, dmaIndex);
+    if(result != FG_OK){
+        Qylon::log("Error occurred while reading(I) parameter:" + typeName + "(" + QString::number(dmaIndex) + "). " + Fg_getLastErrorDescription(currentFg));
+    }
     return val;
+}
+
+double Qylon::Grabber::getParameterDoubleValue(QString typeName, int dmaIndex)
+{
+    double val;
+    auto result = Fg_getParameterWithType(currentFg, Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str()), &val, dmaIndex);
+    if(result != FG_OK){
+        Qylon::log("Error occurred while reading(D) parameter:" + typeName + "(" + QString::number(dmaIndex) + "). " + Fg_getLastErrorDescription(currentFg));
+    }
+    return val;
+}
+
+FgParamTypes Qylon::Grabber::getParameterDataType(QString typeName, int dmaIndex)
+{
+    auto parameterID = Fg_getParameterIdByName(currentFg, typeName.toStdString().c_str());
+
+    char value[1000];
+    int bufLen = sizeof(value);
+    auto result = Fg_getParameterPropertyEx(currentFg, parameterID, FgProperty::PROP_ID_DATATYPE, dmaIndex, &value, &bufLen);
+    if(result != FG_OK){
+        Qylon::log("Error reading parameter:" + typeName);
+        return FG_PARAM_TYPE_INVALID;
+    }
+    int dataType = atoi(value);
+    return FgParamTypes(dataType);
 }
 
 int Qylon::Grabber::getBytesPerPixel(int dmaIndex)
