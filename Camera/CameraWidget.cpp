@@ -8,6 +8,7 @@
 #include <QSpinBox>
 #include <QLineEdit>
 #include <QAction>
+#define NO_CAMERA "No camera found"
 
 Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
 {
@@ -20,7 +21,7 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
 
     status = new QLabel("Camera Status : ");
     buttonRefresh = new QToolButton(this);
-    buttonRefresh->setIconSize(QSize(20,20));
+    buttonRefresh->setIconSize(QSize(24,24));
     buttonRefresh->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-refresh-48.png"),"Refresh"));
     buttonRefresh->setAutoRaise(true);
     connect(buttonRefresh, &QToolButton::triggered, this, [=]{
@@ -30,7 +31,7 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     buttonConnect = new QToolButton(this);
     buttonConnect->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-connect-48.png"),"Connect"));
     buttonConnect->setAutoRaise(true);
-    buttonConnect->setIconSize(QSize(20,20));
+    buttonConnect->setIconSize(QSize(24,24));
     connect(buttonConnect, &QToolButton::triggered, this, [=]{
         this->connectCamera();
     });
@@ -39,7 +40,7 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     buttonDisconnect->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-disconnected-48.png"),"Disconnect"));
     buttonDisconnect->setAutoRaise(true);
     buttonDisconnect->setEnabled(false);
-    buttonDisconnect->setIconSize(QSize(20,20));
+    buttonDisconnect->setIconSize(QSize(24,24));
     connect(buttonDisconnect, &QToolButton::triggered, this, [=]{
         this->disconnectCamera();
     });
@@ -77,11 +78,17 @@ void Qylon::CameraWidget::updateCameraList()
 {
     list->clear();
     parent->getQylon()->updateCameraList();
-    list->addItems(parent->getQylon()->getCameraList());
+    auto cameraList = parent->getQylon()->getCameraList();
+    if(cameraList.size()==0)
+        list->addItem(NO_CAMERA);
+    else
+        list->addItems(parent->getQylon()->getCameraList());
 }
 
 void Qylon::CameraWidget::connectCamera()
 {
+    if(list->currentText() == NO_CAMERA) return;
+
     if(parent->openCamera(list->currentText())){
         list->setEnabled(false);
         buttonConnect->setEnabled(false);
