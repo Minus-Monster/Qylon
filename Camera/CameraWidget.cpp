@@ -8,6 +8,8 @@
 #include <QSpinBox>
 #include <QLineEdit>
 #include <QAction>
+#include <QStatusBar>
+#include <QPalette>
 #define NO_CAMERA "No camera found"
 
 Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
@@ -19,7 +21,6 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     widget = new QTreeWidget;
     widget->setHeaderLabels(QStringList() << "Feature" << "Value");
 
-    status = new QLabel("Camera Status : ");
     buttonRefresh = new QToolButton(this);
     buttonRefresh->setIconSize(QSize(24,24));
     buttonRefresh->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-refresh-48.png"),"Refresh"));
@@ -57,19 +58,24 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     buttonLayout->setSpacing(-1);
 
     QHBoxLayout *camAndButton = new QHBoxLayout;
+    camAndButton->setContentsMargins(9,9,9,9);
     camAndButton->addLayout(camNamelayout);
     camAndButton->addLayout(buttonLayout);
 
 
-    QVBoxLayout *treeAndStatus = new QVBoxLayout;
-    treeAndStatus->addWidget(widget);
-    treeAndStatus->addWidget(status);
+    QVBoxLayout *tree = new QVBoxLayout;
+    tree->setContentsMargins(9,0,9,0);
+    tree->addWidget(widget);
 
 
     QVBoxLayout *layout = new QVBoxLayout;
+    layout->setContentsMargins(0,0,0,0);
     layout->addLayout(camAndButton);
-    layout->addLayout(treeAndStatus);
+    layout->addLayout(tree);
 
+    statusBar = new QStatusBar(this);
+    statusBar->setContentsMargins(0,0,0,0);
+    layout->addWidget(statusBar);
     setLayout(layout);
     updateCameraList();
 }
@@ -97,7 +103,7 @@ void Qylon::CameraWidget::connectCamera()
 
         //        updateTreeWidget();
         widgetGenerator(&parent->getInstantCamera()->GetNodeMap());
-        status->setText("Camera Status : connected the camera");
+        statusBar->showMessage("Connected: " + list->currentText());
     }
 }
 
@@ -109,7 +115,7 @@ void Qylon::CameraWidget::disconnectCamera()
     buttonDisconnect->setEnabled(false);
     parent->closeCamera();
     widget->clear();
-    status->setText("Camera Status : disconnected the camera");
+    statusBar->showMessage("Disconnected: " + list->currentText());
 }
 
 void Qylon::CameraWidget::connectedCameraFromOutside()
@@ -119,7 +125,7 @@ void Qylon::CameraWidget::connectedCameraFromOutside()
     buttonRefresh->setEnabled(false);
     buttonDisconnect->setEnabled(true);
     widgetGenerator(&this->parent->getInstantCamera()->GetNodeMap());
-    status->setText("Camera Status : connected the camera");
+    statusBar->showMessage("Connected: " + list->currentText());
 }
 
 void Qylon::CameraWidget::widgetGenerator(GenApi::INodeMap *nodemap)
@@ -426,7 +432,7 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
 void Qylon::CameraWidget::statusMessage(QString message)
 {
     Qylon::log(message);
-    status->setText("Camera Status : " + message);
+    statusBar->showMessage(message);
 }
 
 #endif

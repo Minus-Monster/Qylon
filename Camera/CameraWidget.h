@@ -9,7 +9,7 @@
 #include <QLabel>
 #include <QSpinBox>
 #include <QToolButton>
-
+#include <QStatusBar>
 #include "Camera.h"
 
 
@@ -25,7 +25,6 @@ public:
     void generateChildrenWidgetItem(QTreeWidgetItem *parent, GenApi::NodeList_t children);
     void generateChildrenWidgetItem(QTreeWidget *parent, GenApi::NodeList_t children);
     void statusMessage(QString message);
-    QLabel *status;
 
 public slots:
     void connectCamera();
@@ -41,11 +40,11 @@ private:
     QTreeWidget *widget;
     QList<QTreeWidgetItem*> manageItems;
     QComboBox *list;
-
     // QPushButton *refreshButton;
     // QPushButton *connectButton;
     // QPushButton *disconnectButton;
 
+    QStatusBar *statusBar;
     QToolButton *buttonRefresh;
     QToolButton *buttonConnect;
     QToolButton *buttonDisconnect;

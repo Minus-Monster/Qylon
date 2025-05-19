@@ -16,6 +16,7 @@
 #include <QGroupBox>
 #include <QTabWidget>
 #include <QKeyEvent>
+#include <QStatusBar>
 #include "Grabber.h"
 
 
@@ -34,6 +35,7 @@ private:
     QVBoxLayout *layout;
     QTabWidget *tabWidgetDMA=nullptr;
 
+    QStatusBar *statusBar;
     QLineEdit *lineLoadApplet;
     QLineEdit *lineLoadConfig;
 

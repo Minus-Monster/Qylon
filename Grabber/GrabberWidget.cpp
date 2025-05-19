@@ -18,6 +18,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     setWindowIcon(QIcon(":/Resources/Icon.png"));
 
     layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0,0,0,0);
     setLayout(layout);
     setMinimumWidth(270);
 
@@ -35,6 +36,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     lineLoadApplet = new QLineEdit;
     lineLoadApplet->setPlaceholderText("Load an applet");
     // lineLoadApplet->setText("/opt/Basler/FramegrabberSDK/dll/mE5-MA-VCL/libAcq_SingleFullAreaGray.so");
+    layoutLoadApplet->setContentsMargins(9,9,9,5);
     layoutLoadApplet->addWidget(buttonLoadApplet);
     layoutLoadApplet->addWidget(lineLoadApplet);
 
@@ -61,11 +63,13 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     lineLoadConfig = new QLineEdit;
     lineLoadConfig->setPlaceholderText("Load a configuration file");
 
+    layoutLoadConfig->setContentsMargins(9,0,9,5);
     layoutLoadConfig->addWidget(buttonLoadConfig);
     layoutLoadConfig->addWidget(lineLoadConfig);
     layoutLoadConfig->addWidget(buttonEditMCF);
     layout->addLayout(layoutLoadApplet);
     layout->addLayout(layoutLoadConfig);
+
 
     QSpinBox *spinBoxImageBuffer = new QSpinBox;
     spinBoxImageBuffer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
@@ -74,6 +78,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     QHBoxLayout *layoutImageBuffer = new QHBoxLayout;
     layoutImageBuffer->addWidget(new QLabel("Image Buffer"));
     layoutImageBuffer->addWidget(spinBoxImageBuffer);
+    layoutImageBuffer->setContentsMargins(9,0,9,5);
     layout->addLayout(layoutImageBuffer);
 
     QToolButton *buttonInit = new QToolButton;
@@ -125,7 +130,10 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
             }
         }
     });
-    layout->addSpacerItem(new QSpacerItem(0, 20, QSizePolicy::Minimum, QSizePolicy::Minimum));
+    layout->addSpacerItem(new QSpacerItem(0, 10  , QSizePolicy::Minimum, QSizePolicy::Minimum));
+
+    statusBar = new QStatusBar(this);
+    layout->addWidget(statusBar);
 
     connect(obj, &Grabber::loadedApplet, this, [=](QString path){
         lineLoadApplet->setText(path);
