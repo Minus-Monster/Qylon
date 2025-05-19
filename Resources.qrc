@@ -56,16 +56,23 @@
         <file>Resources/Icon/icons8-statistics-48.png</file>
         <file>Resources/Icon/icons8-close-window-48.png</file>
         <file>Resources/Icon/icons8-images-folder-48.png</file>
-        <file>Resources/Icon/icons8-maximize-window-48.png</file>
         <file>Resources/Icon/icons8-measure-48.png</file>
         <file>Resources/Icon/icons8-minimize-window-48.png</file>
         <file>Resources/Icon/icons8-ruler-48.png</file>
         <file>Resources/Icon/icons8-surface-48.png</file>
         <file>Resources/Icon/icons8-toggle-full-screen-48.png</file>
-        <file>Resources/Icon/icons8-close-48.png</file>
-        <file>Resources/Icon/icons8-minimize-48.png</file>
-        <file>Resources/Icon/icons8-restore-window-48.png</file>
         <file>StyleSheet.qss</file>
         <file>Resources/Icon_white.png</file>
+        <file>Resources/Icon/icons8-secured-file-48-2.png</file>
+        <file>Resources/Icon/icons8-secured-file-48.png</file>
+        <file>Resources/Icon/icons8-network-card-48-5.png</file>
+        <file>Resources/Icon/icons8-network-card-48-4.png</file>
+        <file>Resources/Icon/icons8-network-card-48-3.png</file>
+        <file>Resources/Icon/icons8-network-card-48-2.png</file>
+        <file>Resources/Icon/icons8-network-card-48.png</file>
+        <file>Resources/Icon/icons8-live-video-on-48.png</file>
+        <file>Resources/Icon/icons8-link-48.png</file>
+        <file>Resources/Icon/icons8-camera-48-2.png</file>
+        <file>Resources/Icon/icons8-add-camera-48.png</file>
     </qresource>
 </RCC>
