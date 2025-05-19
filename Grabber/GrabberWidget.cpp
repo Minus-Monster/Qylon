@@ -24,8 +24,8 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     QHBoxLayout *layoutLoadApplet = new QHBoxLayout;
     QToolButton *buttonLoadApplet = new QToolButton;
     buttonLoadApplet->setAutoRaise(true);
-    buttonLoadApplet->setIconSize(QSize(20,20));
-    buttonLoadApplet->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-opened-folder-48.png"), "Load applet"));
+    buttonLoadApplet->setIconSize(QSize(24,24));
+    buttonLoadApplet->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-network-card-48-5.png"), "Load applet"));
     connect(buttonLoadApplet, &QToolButton::triggered, this, [=](){
         auto get = QFileDialog::getOpenFileName(this, "Load an applet", QDir::homePath(), "*.hap *.dll *.so");
         if(get.isEmpty()) return;
@@ -43,15 +43,15 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     buttonEditMCF->setEnabled(false);
     buttonEditMCF->setAutoRaise(true);
     buttonEditMCF->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-note-48.png"),"MCF Editor"));
-    buttonEditMCF->setIconSize(QSize(20,20));
+    buttonEditMCF->setIconSize(QSize(24,24));
     buttonEditMCF->setEnabled(false);
     connect(buttonEditMCF, &QToolButton::triggered, this, [&](){
         if(mcfEditor!=nullptr) mcfEditor->exec();
     });
     QToolButton *buttonLoadConfig = new QToolButton;
     buttonLoadConfig->setAutoRaise(true);
-    buttonLoadConfig->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-opened-folder-48.png"), "Load configuration file"));
-    buttonLoadConfig->setIconSize(QSize(20,20));
+    buttonLoadConfig->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-network-card-48-4.png"), "Load configuration file"));
+    buttonLoadConfig->setIconSize(QSize(24,24));
     connect(buttonLoadConfig, &QToolButton::triggered, this, [=](){
         auto get = QFileDialog::getOpenFileName(this, "Load a configuration file", QDir::homePath(), "*.mcf");
         if(get.isEmpty()) return;
@@ -109,6 +109,7 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
                 if(!actionWithoutAPC->isChecked()) parent->registerAPCHandler(spinBoxImageBuffer->value());
             }else{
                 QMessageBox::warning(this, this->windowTitle(), "Applet loading failed. \nCheck the applet file or the environment.");
+                action->setChecked(false);
                 return;
             }
             if(!this->lineLoadConfig->text().isEmpty()){
