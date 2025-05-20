@@ -47,8 +47,8 @@ public:
     Qylon *getQylon();
     Pylon::CBaslerUniversalInstantCamera *getInstantCamera();
     QWidget *getWidget();
-    GenApi::INode *getNodemap(GenICam::gcstring nodeName);
-    GenApi::CIntegerPtr setNodeValue(QString node, int &value);
+    GenApi::INode *getNode(QString nodeName);
+    int setNode(QString node, int &value);
     void setNode(QString node, float &value);
     void setNode(QString node, bool &value);
     void setNode(QString node, QString &value);

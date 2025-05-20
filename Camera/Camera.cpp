@@ -208,28 +208,35 @@ QWidget *Qylon::Camera::getWidget(){
     return widget;
 }
 
-GenApi::INode *Qylon::Camera::getNodemap(GenICam::gcstring nodeName)
+GenApi::INode *Qylon::Camera::getNode(QString nodeName)
 {
     /// Packet size : GevSCPSPacketSize , Interpacketdelay = GevSCPD
     try {
-        return currentInstantCamera.GetNodeMap().GetNode(nodeName);
+        return currentInstantCamera.GetNodeMap().GetNode(nodeName.toStdString().c_str());
     } catch (const Pylon::GenericException &e) {
-        getQylon()->log(e.GetDescription());
+        Qylon::log(nodeName + ": " + e.GetDescription());
     }
     return nullptr;
 
 }
 
-GenApi::CIntegerPtr Qylon::Camera::setNodeValue(QString node, int &value)
+int Qylon::Camera::setNode(QString node, int &value)
 {
+    int defaultValue = -9999;
     try{
-        GenApi::CIntegerPtr ptr = getNodemap(node.toStdString().c_str());
-        ptr->SetValue(value);
-        return ptr;
+        GenApi::CIntegerPtr ptr = getNode(node);
+        if(GenApi::IsWritable(ptr)){
+            defaultValue = ptr->GetValue();
+            ptr->SetValue(value);
+            Qylon::log(node + " sets to " + QString::number(value) + " (Result:" + QString::number(ptr->GetValue()) + ")");
+            return ptr->GetValue();
+        }else{
+            Qylon::log(node + " is not writable.");
+        }
     }catch(const Pylon::GenericException &e){
-        parent->log(e.GetDescription());
+        Qylon::log(node + " " + e.GetDescription());
     }
-    return nullptr;
+    return defaultValue;
 }
 
 void Qylon::Camera::OnImagesSkipped(Pylon::CInstantCamera &camera, size_t countOfSkippedImages)
@@ -312,40 +319,40 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
 }
 void Qylon::Camera::OnAttached(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is attached");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is attached.");
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnDetached(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is detached");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is detached.");
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnDestroy(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " will be destroyed");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " will be destroyed.");
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnOpened(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is opened");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is opened.");
     emit connectionStatus(true);
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnClosed(Pylon::CInstantCamera &camera)
 {
     emit connectionStatus(false);
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is closed");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is closed.");
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnGrabStarted(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is starting to grab");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is starting to grab.");
     emit grabbingState(true);
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnGrabStopped(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is stopped grabbing");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is stopped grabbing.");
     emit grabbingState(false);
     PYLON_UNUSED( camera );
 }
@@ -356,7 +363,7 @@ void Qylon::Camera::OnGrabError(Pylon::CInstantCamera &camera, const char *error
 }
 void Qylon::Camera::OnCameraDeviceRemoved(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is removed");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is removed.");
     emit connectionStatus(false);
 
     PYLON_UNUSED( camera );

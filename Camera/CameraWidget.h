@@ -23,7 +23,7 @@ public:
     void updateCameraList();
     void widgetGenerator(GenApi::INodeMap *nodemap);
     void generateChildrenWidgetItem(QTreeWidgetItem *parent, GenApi::NodeList_t children);
-    void generateChildrenWidgetItem(QTreeWidget *parent, GenApi::NodeList_t children);
+    // void generateChildrenWidgetItem(QTreeWidget *parent, GenApi::NodeList_t children);
     void statusMessage(QString message);
 
 public slots:
