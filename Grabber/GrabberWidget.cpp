@@ -35,7 +35,6 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     });
     lineLoadApplet = new QLineEdit;
     lineLoadApplet->setPlaceholderText("Load an applet");
-    // lineLoadApplet->setText("/opt/Basler/FramegrabberSDK/dll/mE5-MA-VCL/libAcq_SingleFullAreaGray.so");
     layoutLoadApplet->setContentsMargins(9,9,9,5);
     layoutLoadApplet->addWidget(buttonLoadApplet);
     layoutLoadApplet->addWidget(lineLoadApplet);
