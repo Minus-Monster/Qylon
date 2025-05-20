@@ -27,9 +27,9 @@ public:
     void statusMessage(QString message);
 
 public slots:
+    void connectionStatus(bool connected);
     void connectCamera();
     void disconnectCamera();
-    void connectedCameraFromOutside();
 
 signals:
     void nodeUpdated();

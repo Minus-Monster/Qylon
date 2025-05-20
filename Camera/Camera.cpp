@@ -14,10 +14,8 @@ Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
     connect(this, &Camera::grabbingState, widget, [=](bool grabbing){
         // should have sending a message that grabbing is started
         emit widget->grabbingState(grabbing);
-
     });
-    connect(this, &Camera::removed, widget, &CameraWidget::disconnectCamera);
-    connect(this, &Camera::connected, widget, &CameraWidget::connectedCameraFromOutside);
+    connect(this, &Camera::connectionStatus, widget, &CameraWidget::connectionStatus);
 
     acquireConfig = new Pylon::CAcquireContinuousConfiguration;
     // The order of these codes is critically importatnt
@@ -198,9 +196,8 @@ QImage Qylon::Camera::softwareTrigger()
         }
     }catch(const Pylon::GenericException &e){
         Qylon::log("Software trigger acquisition is failed.");
-        return QImage();
     }
-
+    return QImage();
 }
 
 Pylon::CBaslerUniversalInstantCamera *Qylon::Camera::getInstantCamera(){
@@ -331,12 +328,12 @@ void Qylon::Camera::OnDestroy(Pylon::CInstantCamera &camera)
 void Qylon::Camera::OnOpened(Pylon::CInstantCamera &camera)
 {
     parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is opened");
-    emit connected();
+    emit connectionStatus(true);
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnClosed(Pylon::CInstantCamera &camera)
 {
-
+    emit connectionStatus(false);
     parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is closed");
     PYLON_UNUSED( camera );
 }
@@ -360,7 +357,7 @@ void Qylon::Camera::OnGrabError(Pylon::CInstantCamera &camera, const char *error
 void Qylon::Camera::OnCameraDeviceRemoved(Pylon::CInstantCamera &camera)
 {
     parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is removed");
-    emit removed();
+    emit connectionStatus(false);
 
     PYLON_UNUSED( camera );
 }

@@ -96,36 +96,14 @@ void Qylon::CameraWidget::connectCamera()
     if(list->currentText() == NO_CAMERA) return;
 
     if(parent->openCamera(list->currentText())){
-        list->setEnabled(false);
-        buttonConnect->setEnabled(false);
-        buttonRefresh->setEnabled(false);
-        buttonDisconnect->setEnabled(true);
-
-        //        updateTreeWidget();
-        widgetGenerator(&parent->getInstantCamera()->GetNodeMap());
         statusBar->showMessage("Connected: " + list->currentText());
     }
 }
 
 void Qylon::CameraWidget::disconnectCamera()
 {
-    list->setEnabled(true);
-    buttonConnect->setEnabled(true);
-    buttonRefresh->setEnabled(true);
-    buttonDisconnect->setEnabled(false);
     parent->closeCamera();
-    widget->clear();
     statusBar->showMessage("Disconnected: " + list->currentText());
-}
-
-void Qylon::CameraWidget::connectedCameraFromOutside()
-{
-    list->setEnabled(false);
-    buttonConnect->setEnabled(false);
-    buttonRefresh->setEnabled(false);
-    buttonDisconnect->setEnabled(true);
-    widgetGenerator(&this->parent->getInstantCamera()->GetNodeMap());
-    statusBar->showMessage("Connected: " + list->currentText());
 }
 
 void Qylon::CameraWidget::widgetGenerator(GenApi::INodeMap *nodemap)
@@ -434,6 +412,22 @@ void Qylon::CameraWidget::statusMessage(QString message)
     Qylon::log(message);
     statusBar->showMessage(message);
 }
+
+void Qylon::CameraWidget::connectionStatus(bool connected)
+{
+    list->setEnabled(!connected);
+    buttonConnect->setEnabled(!connected);
+    buttonRefresh->setEnabled(!connected);
+    buttonDisconnect->setEnabled(connected);
+
+    if(connected){
+        widgetGenerator(&parent->getInstantCamera()->GetNodeMap());
+    }else{
+        widget->clear();
+    }
+}
+
+
 
 #endif
 

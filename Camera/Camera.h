@@ -67,8 +67,7 @@ signals:
     void grabbedConfidence();
     void grabbedIntensity();
     void grabbingState(bool isGrabbing);
-    void removed();
-    void connected();
+    void connectionStatus(bool connected);
 
 private:
     Qylon *parent = nullptr;
