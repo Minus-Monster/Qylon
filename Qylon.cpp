@@ -63,6 +63,16 @@ Camera *Qylon::Qylon::addCamera(){
 
     return obj;
 }
+
+void Qylon::removeCamera(Camera* camera){
+    for(auto cam : cameraList){
+        if(cam == camera){
+            cameraList.removeOne(camera);
+            delete camera;
+        }
+    }
+}
+
 #ifdef VTOOLS_ENABLED
 vTools *Qylon::Qylon::addVTools()
 {
@@ -112,6 +122,16 @@ Grabber *Qylon::Qylon::addGrabber(int boardNumIndex)
 
     log("new Qylon Grabber generated.");
     return obj;
+}
+
+void Qylon::removeGrabber(Grabber *grabber)
+{
+    for(auto g : grabberList){
+        if(g == grabber){
+            grabberList.removeOne(grabber);
+            delete grabber;
+        }
+    }
 }
 #endif
 }

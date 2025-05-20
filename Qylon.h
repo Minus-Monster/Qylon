@@ -32,12 +32,14 @@ public:
     const Pylon::CDeviceInfo getCameraIndexfromName(QString cameraName);
     const Pylon::CDeviceInfo getCameraIndexfromNumber(unsigned int number);
     Camera *addCamera();
+    void removeCamera(Camera* camera);
 #ifdef VTOOLS_ENABLED
     vTools *addVTools();
 #endif
 #endif
 #ifdef GRABBER_ENABLED
     Grabber *addGrabber(int boardNumIndex =0);
+    void removeGrabber(Grabber* grabber);
 #endif
 //    QDC::QDC *addQDC();
 

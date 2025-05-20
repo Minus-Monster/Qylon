@@ -12,6 +12,12 @@ Qylon::Grabber::Grabber(Qylon *parentQylon, unsigned int boardIndex)
     Fg_InitLibraries(nullptr);
 }
 
+Qylon::Grabber::~Grabber()
+{
+    Fg_FreeGrabber(currentFg);
+    delete widget;
+}
+
 int Qylon::Grabber::CallbackFromGrabber(frameindex_t picNr, void *ctx)
 {
     auto data = reinterpret_cast<APC*>(ctx);
@@ -44,6 +50,7 @@ bool Qylon::Grabber::loadApplet(QString file){
     }
     Qylon::log(file + " is loaded.");
     emit loadedApplet(file);
+    emit connectionStatus(true);
     return true;
 }
 
@@ -315,7 +322,9 @@ QWidget *Qylon::Grabber::getWidget()
 }
 
 void Qylon::Grabber::release(){
-    Qylon::log("Release all grabber's memories.");
+    Qylon::log("Release the grabber's memory.");
+    emit connectionStatus(false);
+
     if(currentFg == nullptr) return;
     if(memHandle!= nullptr){
         Fg_FreeMemEx(currentFg, memHandle);

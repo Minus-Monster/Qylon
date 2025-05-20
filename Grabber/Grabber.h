@@ -35,6 +35,7 @@ public:
     };
 
     Grabber(Qylon *parentQylon = nullptr, unsigned int boardIndex=0);
+    ~Grabber();
     static int CallbackFromGrabber(frameindex_t picNr, void *ctx);
     bool loadApplet(QString file);
     bool loadConfiguration(QString file, bool ignoringError=false);
@@ -77,8 +78,8 @@ signals:
     void sendImage(const QImage &image, unsigned int dmaIdx=0);
     void loadedApplet(QString appletPath);
     void loadedConfig(QString configPath);
+    void connectionStatus(bool connected);
     void grabbingState(bool isGrabbing);
-    void initializingState(bool isInitialized);
     void updatedParametersValue();
     void released();
 
