@@ -48,7 +48,6 @@ public:
     Pylon::CBaslerUniversalInstantCamera *getInstantCamera();
     QWidget *getWidget();
     GenApi::INode *getNode(QString nodeName);
-    int setNode(QString node, int &value);
     void setNode(QString node, float &value);
     void setNode(QString node, bool &value);
     void setNode(QString node, QString &value);

@@ -46,6 +46,7 @@ const void *Qylon::Camera::getBuffer() const
 /// It will return True or False depending on the result.
 bool Qylon::Camera::openCamera(QString cameraName){
     QMutexLocker lock(&memberLock);
+
     try{
         Pylon::IPylonDevice* pDevice = Pylon::CTlFactory::GetInstance().CreateDevice(parent->getCameraIndexfromName(cameraName));
         currentInstantCamera.Attach(pDevice, Pylon::Cleanup_Delete);
@@ -218,25 +219,6 @@ GenApi::INode *Qylon::Camera::getNode(QString nodeName)
     }
     return nullptr;
 
-}
-
-int Qylon::Camera::setNode(QString node, int &value)
-{
-    int defaultValue = -9999;
-    try{
-        GenApi::CIntegerPtr ptr = getNode(node);
-        if(GenApi::IsWritable(ptr)){
-            defaultValue = ptr->GetValue();
-            ptr->SetValue(value);
-            Qylon::log(node + " sets to " + QString::number(value) + " (Result:" + QString::number(ptr->GetValue()) + ")");
-            return ptr->GetValue();
-        }else{
-            Qylon::log(node + " is not writable.");
-        }
-    }catch(const Pylon::GenericException &e){
-        Qylon::log(node + " " + e.GetDescription());
-    }
-    return defaultValue;
 }
 
 void Qylon::Camera::OnImagesSkipped(Pylon::CInstantCamera &camera, size_t countOfSkippedImages)
