@@ -74,5 +74,11 @@
         <file>Resources/Icon/icons8-camera-48-2.png</file>
         <file>Resources/Icon/icons8-add-camera-48.png</file>
         <file>Resources/Icon/icons8-network-card-48.png</file>
+        <file>Resources/Icon/icons8-camera-48 (2).png</file>
+        <file>Resources/Icon/icons8-connect-48 (2).png</file>
+        <file>Resources/Icon/icons8-pause-48.png</file>
+        <file>Resources/Icon/icons8-pause-48-2.png</file>
+        <file>Resources/Icon/icons8-photo-editor-48.png</file>
+        <file>Resources/Icon/icons8-share-48.png</file>
     </qresource>
 </RCC>
