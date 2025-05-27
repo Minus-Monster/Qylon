@@ -14,7 +14,8 @@ Qylon::Grabber::Grabber(Qylon *parentQylon, unsigned int boardIndex)
 
 Qylon::Grabber::~Grabber()
 {
-    Fg_FreeGrabber(currentFg);
+    if(currentFg) Fg_FreeGrabber(currentFg);
+    Fg_FreeLibraries();
     delete widget;
 }
 
@@ -35,6 +36,7 @@ int Qylon::Grabber::CallbackFromGrabber(frameindex_t picNr, void *ctx)
                                 app->getHeight(idx),
                                 imageFormat);
     emit app->sendImage(outputImage, idx);
+    emit app->grabbed();
     return 0;
 }
 
@@ -396,7 +398,7 @@ void Qylon::Grabber::singleGrab(int dmaIndex)
         Qylon::log("Grabber is not initialized");
         return;
     }
-    Qylon::log("Try to capture an one shot.");
+    Qylon::log("Try to capture one shot.");
     allocateImageBuffer(dmaIndex);
     auto val = Fg_AcquireEx(currentFg, dmaIndex, 1 ,ACQ_STANDARD, apcDataList.at(dmaIndex)->memBuf);
     if(val != 0) Qylon::log(Fg_getErrorDescription(currentFg, val));

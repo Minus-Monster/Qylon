@@ -10,7 +10,6 @@
 #include <QImage>
 #include <QDebug>
 #include <QThread>
-#include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
 
 #include <map>
@@ -36,6 +35,7 @@ public:
 
     Grabber(Qylon *parentQylon = nullptr, unsigned int boardIndex=0);
     ~Grabber();
+    Qylon* getQylon(){ return parent; }
     static int CallbackFromGrabber(frameindex_t picNr, void *ctx);
     bool loadApplet(QString file);
     bool loadConfiguration(QString file, bool ignoringError=false);
@@ -76,6 +76,7 @@ public:
 
 signals:
     void sendImage(const QImage &image, unsigned int dmaIdx=0);
+    void grabbed();
     void loadedApplet(QString appletPath);
     void loadedConfig(QString configPath);
     void connectionStatus(bool connected);

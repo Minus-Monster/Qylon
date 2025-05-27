@@ -33,6 +33,7 @@ public:
 private:
     Grabber *parent;
     QVBoxLayout *layout;
+    QVBoxLayout *layoutTabWidget;
     QTabWidget *tabWidgetDMA=nullptr;
 
     QStatusBar *statusBar;

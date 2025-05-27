@@ -9,6 +9,7 @@
 #include <QAction>
 #include <QMessageBox>
 #include <QToolButton>
+#include <QLayout>
 #include <QMenu>
 #include <QStyledItemDelegate>
 
@@ -71,8 +72,9 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 
 
     QSpinBox *spinBoxImageBuffer = new QSpinBox;
-    spinBoxImageBuffer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
-    spinBoxImageBuffer->setRange(1,10);
+    spinBoxImageBuffer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    spinBoxImageBuffer->setMinimumWidth(80);
+    spinBoxImageBuffer->setRange(1,9);
     spinBoxImageBuffer->setValue(1);
     QHBoxLayout *layoutImageBuffer = new QHBoxLayout;
     layoutImageBuffer->addWidget(new QLabel("Image Buffer"));
@@ -99,7 +101,6 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
 
     connect(buttonInit, &QToolButton::triggered, this, [=](QAction *action){
         if(action == actionWithoutAPC) return;
-
         if(!action->isChecked()){ // Release function
             parent->release();
         }else{ // Init function
@@ -130,10 +131,6 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         }
     });
     layout->addSpacerItem(new QSpacerItem(0, 10  , QSizePolicy::Minimum, QSizePolicy::Minimum));
-
-    statusBar = new QStatusBar(this);
-    layout->addWidget(statusBar);
-
     connect(obj, &Grabber::loadedApplet, this, [=](QString path){
         lineLoadApplet->setText(path);
         lineLoadApplet->setEnabled(false);
@@ -154,15 +151,14 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
         spinBoxImageBuffer->setEnabled(true);
         buttonEditMCF->setEnabled(false);
         buttonInit->setChecked(false);
-
-        layout->removeWidget(tabWidgetDMA);
-        delete tabWidgetDMA;
-        tabWidgetDMA = nullptr;
+        tabWidgetDMA->clear();
+        tabWidgetDMA->hide();
 
         delete mcfEditor;
         mcfEditor = nullptr;
 
         layout->invalidate();
+        layoutTabWidget->invalidate();
         adjustSize();
     });
     connect(obj, &Grabber::grabbingState, this, [=](bool on){
@@ -172,15 +168,21 @@ Qylon::GrabberWidget::GrabberWidget(Grabber *obj): parent(obj)
     connect(obj, &Grabber::updatedParametersValue, this, [=]{
         refreshMCFValues();
     });
+
+    tabWidgetDMA = new QTabWidget(this);
+    tabWidgetDMA->hide();
+    layoutTabWidget = new QVBoxLayout;
+    layoutTabWidget->addWidget(tabWidgetDMA);
+    layoutTabWidget->setContentsMargins(9,0,9,0);
+
+    layout->addLayout(layoutTabWidget);
+
+    statusBar = new QStatusBar(this);
+    layout->addWidget(statusBar);
 }
 
 void Qylon::GrabberWidget::initTabWidget()
 {
-    if(tabWidgetDMA == nullptr){
-        tabWidgetDMA = new QTabWidget;
-        layout->addWidget(tabWidgetDMA);
-    }
-
     if(!parent->isInitialized()) return;
 
     int cntDMA =this->parent->getDMACount();
@@ -190,9 +192,10 @@ void Qylon::GrabberWidget::initTabWidget()
         tabWidgetDMA->removeTab(i);
         widget->deleteLater();
     }
+    tabWidgetDMA->show();
 
     for(int i=0; i<cntDMA; ++i){
-        QGroupBox *groupBox = new QGroupBox;
+        QGroupBox *groupBox = new QGroupBox(tabWidgetDMA);
         groupBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
         // ROI
@@ -288,7 +291,7 @@ void Qylon::GrabberWidget::initTabWidget()
             spinBoxY->setValue(y);
         });
     }
-    tabWidgetDMA->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    tabWidgetDMA->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 }
 
 void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
@@ -546,7 +549,6 @@ void Qylon::GrabberWidget::getMCFStructure(QString mcfPath)
     };
     connect(lineEditSearch, &QLineEdit::textChanged, filterItems);
 }
-
 
 void Qylon::GrabberWidget::refreshMCFValues()
 {
