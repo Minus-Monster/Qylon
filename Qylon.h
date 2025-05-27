@@ -33,6 +33,8 @@ public:
     const Pylon::CDeviceInfo getCameraIndexfromNumber(unsigned int number);
     Camera *addCamera();
     void removeCamera(Camera* camera);
+    QList<Camera*> getAddedCameraList(){ return cameraList; }
+
 #ifdef VTOOLS_ENABLED
     vTools *addVTools();
 #endif
@@ -40,6 +42,7 @@ public:
 #ifdef GRABBER_ENABLED
     Grabber *addGrabber(int boardNumIndex =0);
     void removeGrabber(Grabber* grabber);
+    QList<Grabber*> getAddedGrabberList(){ return grabberList; }
 #endif
 //    QDC::QDC *addQDC();
 

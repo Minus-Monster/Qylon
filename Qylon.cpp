@@ -65,9 +65,10 @@ Camera *Qylon::Qylon::addCamera(){
 }
 
 void Qylon::removeCamera(Camera* camera){
-    for(auto cam : cameraList){
+    for(const auto &cam : std::as_const(cameraList)){
         if(cam == camera){
             cameraList.removeOne(camera);
+            Qylon::log("Camera class is removed.");
             delete camera;
         }
     }
@@ -126,9 +127,10 @@ Grabber *Qylon::Qylon::addGrabber(int boardNumIndex)
 
 void Qylon::removeGrabber(Grabber *grabber)
 {
-    for(auto g : grabberList){
+    for(const auto &g : std::as_const(grabberList)){
         if(g == grabber){
             grabberList.removeOne(grabber);
+            Qylon::log("Grabber class is removed.");
             delete grabber;
         }
     }
