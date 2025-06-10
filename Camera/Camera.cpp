@@ -11,10 +11,7 @@
 
 Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
     widget = new CameraWidget(this);
-    connect(this, &Camera::grabbingState, widget, [=](bool grabbing){
-        // should have sending a message that grabbing is started
-        emit widget->grabbingState(grabbing);
-    });
+    connect(this, &Camera::grabbingState, widget, &CameraWidget::grabbingState);
     connect(this, &Camera::connectionStatus, widget, &CameraWidget::connectionStatus);
 
     acquireConfig = new Pylon::CAcquireContinuousConfiguration;
@@ -229,76 +226,70 @@ void Qylon::Camera::OnImagesSkipped(Pylon::CInstantCamera &camera, size_t countO
 
 void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::CGrabResultPtr &grabResult)
 {
+    // Lock to ensure thread safety while working with shared resources
     QMutexLocker lockGrab(&memberLock);
-    lockGrab.unlock();
-
     QMutexLocker lockImage(&imageLock);
-    if(!(grabResult.IsValid() && grabResult->GrabSucceeded())) return;
+    if (!(grabResult.IsValid() && grabResult->GrabSucceeded())) return;
 
-    /// If you need anything of image processing from this buffer
-    /// you should implement codes here
-
-    if(QString(camera.GetDeviceInfo().GetModelName().c_str()).contains("blaze")){
-        // If this buffer is of blaze camera, The buffer image above code lines is a depth image.
+    // Only process images if the camera is "blaze"
+    if (QString(camera.GetDeviceInfo().GetModelName().c_str()).contains("blaze")) {
 #ifdef PCL_ENABLED
-        try{
+        try {
             auto container = grabResult->GetDataContainer();
-            for(size_t i = 0; i < container.GetDataComponentCount(); ++i){
-                auto component = container.GetDataComponent(i);
-                if(component.IsValid()){
-                    switch (component.GetComponentType()){
-                    case Pylon::ComponentType_Intensity:{
-                        try{
-                            currentIntensity = QImage(component.GetWidth(), component.GetHeight(),QImage::Format_Grayscale16);
-                            memcpy(currentIntensity.bits(), component.GetData(), component.GetDataSize());
 
+            // Use OpenMP to process components in parallel
+#pragma omp parallel for
+            for (size_t i = 0; i < container.GetDataComponentCount(); ++i) {
+                auto component = container.GetDataComponent(i);
+                if (component.IsValid()) {
+                    switch (component.GetComponentType()) {
+                    case Pylon::ComponentType_Intensity:
+                        try {
+                            currentIntensity = QImage(component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
+                            memcpy(currentIntensity.bits(), component.GetData(), component.GetDataSize());
                             emit grabbedIntensity();
-                        }catch(const Pylon::GenericException &e){
-                            qDebug()<< e.what();
+                        } catch (const Pylon::GenericException &e) {
+                            Qylon::log(e.GetDescription());
                         }
                         break;
-                    }
-                    case Pylon::ComponentType_Range:{
+
+                    case Pylon::ComponentType_Range:   // Point Cloud Data
                         pcPtr = convertGrabResultToPointCloud(grabResult);
                         emit grabbedPointCloud();
-                    }break;
-                    case Pylon::ComponentType_Confidence:{
-                        currentConfidence = QImage(component.GetWidth(), component.GetHeight(),QImage::Format_Grayscale16);
-                        memcpy(currentConfidence.bits(), component.GetData(), component.GetDataSize());
-
-                        emit grabbedConfidence();
-                    }break;
-                    case Pylon::ComponentType_Undefined:
-                    case Pylon::ComponentType_Reflectance:
-                    case Pylon::ComponentType_Scatter:
-                    case Pylon::ComponentType_Disparity:
-                    case Pylon::ComponentType_IntensityCombined_STA:
-                    case Pylon::ComponentType_Error_STA:
-                    case Pylon::ComponentType_RawCombined_STA:
-                    case Pylon::ComponentType_Calibration_STA:
                         break;
+
+                    case Pylon::ComponentType_Confidence:
+                        currentConfidence = QImage(component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
+                        memcpy(currentConfidence.bits(), component.GetData(), component.GetDataSize());
+                        emit grabbedConfidence();
+                        break;
+
+                    default:
+                        break;  // Skip undefined or unsupported components
                     }
                 }
             }
             emit grabbed();
-        }catch(const Pylon::GenericException &e){
-            qDebug() << "[ERROR WHILE MAKING GRABBED IMAGE]" << e.what();
+        } catch (const Pylon::GenericException &e) {
+            Qylon::log("[ERROR WHILE MAKING GRABBED IMAGE]");
         }
 #endif
-    }else{
-        try{
+    } else {  // Handle non-blaze cameras
+        try {
             Pylon::CPylonImage image;
             image.AttachGrabResultBuffer(grabResult);
             currentImage = convertPylonImageToQImage(image);
             emit grabbed();
-        }catch(const Pylon::GenericException &e){
+        } catch (const Pylon::GenericException &e) {
             Qylon::log(QString("Image conversion error occurred.") + e.what());
         }
     }
-    lockImage.unlock();
-
-    PYLON_UNUSED( camera );
+    lockGrab.unlock();
+    lockImage.unlock();  // Unlock the mutex after the image processing
+    PYLON_UNUSED(camera);
 }
+
+
 void Qylon::Camera::OnAttached(Pylon::CInstantCamera &camera)
 {
     parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is attached.");
@@ -354,6 +345,7 @@ void Qylon::Camera::OnCameraEvent(Pylon::CInstantCamera &camera, intptr_t userPr
 {
     qDebug() << "The event is occured from" << camera.GetDeviceInfo().GetFriendlyName()  << pNode->GetDisplayName() << pNode->GetNodeMap()->GetNode("TriggerMode");
 }
+
 QMutex *Qylon::Camera::drawLock() const
 {
     return &imageLock;
@@ -369,7 +361,8 @@ struct Point{
     float y;
     float z;
 };
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::convertGrabResultToPointCloud(const Pylon::CGrabResultPtr &grabResult)
+
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::convertGrabResultToPointCloud(const Pylon::CGrabResultPtr& grabResult)
 {
     const auto container = grabResult->GetDataContainer();
     const auto rangeComponent = container.GetDataComponent(0);
@@ -377,65 +370,32 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::convertGrabResultToPointCl
 
     const uint32_t width = rangeComponent.GetWidth();
     const uint32_t height = rangeComponent.GetHeight();
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr ptrPointCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    ptrPointCloud->width = width;
-    ptrPointCloud->height = height;
-    ptrPointCloud->points.resize(width * height);
-    ptrPointCloud->is_dense = false; // Organized point cloud
 
-    const auto* pSrcPoint = (const Point*)rangeComponent.GetData();
-    const auto* pIntensity = (const uint16_t*)intensityComponent.GetData();
+    auto cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+    cloud->width = width;
+    cloud->height = height;
+    cloud->is_dense = false;
+    cloud->points.resize(width * height);
 
-    // Find minZ and maxZ
-    float minZ = std::numeric_limits<float>::max();
-    float maxZ = std::numeric_limits<float>::min();
-
-#pragma omp parallel
-    {
-        float local_minZ = minZ;
-        float local_maxZ = maxZ;
-
-#pragma omp for nowait
-        for (uint32_t i = 0; i < height * width; ++i) {
-            float z = pSrcPoint[i].z;
-            if (z < local_minZ) local_minZ = z;
-            if (z > local_maxZ) local_maxZ = z;
-        }
-
-#pragma omp critical
-        {
-            if (local_minZ < minZ) minZ = local_minZ;
-            if (local_maxZ > maxZ) maxZ = local_maxZ;
-        }
-    }
-
-    float rangeZ = maxZ - minZ;
+    const auto* pSrcPoint = reinterpret_cast<const Point*>(rangeComponent.GetData());
+    const auto* pIntensity = reinterpret_cast<const uint16_t*>(intensityComponent.GetData());
 
 #pragma omp parallel for
-    for (uint32_t i = 0; i < height * width; ++i){
-        pcl::PointXYZRGB& dstPoint = ptrPointCloud->points[i];
+    for (uint32_t i = 0; i < width * height; ++i) {
+        auto& pt = cloud->points[i];
+        const auto& src = pSrcPoint[i];
 
-        dstPoint.x = pSrcPoint[i].x;
-        dstPoint.y = pSrcPoint[i].y;
-        dstPoint.z = pSrcPoint[i].z;
+        pt.x = src.x;
+        pt.y = src.y;
+        pt.z = src.z;
 
-        // Normalize the intensity value (assuming 16-bit intensity)
-        float intensity = pIntensity[i] / 65535.0f;
-
-        // Combine distance and intensity for coloring
-        float z = dstPoint.z;
-        float ratio = (z - minZ) / rangeZ;
-
-        // Apply a weight to intensity for more vivid colors
-        float intensityWeight = 0.5f;  // Adjust this weight as needed
-        float combinedIntensity = ratio * (1 - intensityWeight) + intensity * intensityWeight;
-
-        dstPoint.r = static_cast<uint8_t>(255 * (1 - combinedIntensity));
-        dstPoint.g = static_cast<uint8_t>(255 * (1 - fabs(2 * combinedIntensity - 1)));
-        dstPoint.b = static_cast<uint8_t>(255 * combinedIntensity);
+        pt.r = pt.g = pt.b = (uint8_t)(pIntensity[i] >>8);
     }
-    return ptrPointCloud;
+
+    return cloud;
 }
+
+
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr Qylon::Camera::getPointCloudData()
 {
     return pcPtr;
