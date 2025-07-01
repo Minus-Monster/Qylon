@@ -40,14 +40,13 @@ private:
     QTreeWidget *widget;
     QList<QTreeWidgetItem*> manageItems;
     QComboBox *list;
-    // QPushButton *refreshButton;
-    // QPushButton *connectButton;
-    // QPushButton *disconnectButton;
 
     QStatusBar *statusBar;
     QToolButton *buttonRefresh;
     QToolButton *buttonConnect;
-    QToolButton *buttonDisconnect;
+    QToolButton *buttonSingleGrab;
+    QToolButton *buttonLiveGrab;
+
 
 };
 }

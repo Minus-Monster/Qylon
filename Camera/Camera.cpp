@@ -56,8 +56,6 @@ bool Qylon::Camera::openCamera(QString cameraName){
             if (genDCStreamingMode.IsWritable()){
                 genDCStreamingMode.SetValue("On");
             }
-            //Enable all image components, send range data as point cloud.
-            //            /*
             auto componentSelector = Pylon::CEnumParameter(nodemap, "ComponentSelector");
             auto componentEnable = Pylon::CBooleanParameter(nodemap, "ComponentEnable");
             auto pixelFormat = Pylon::CEnumParameter(nodemap, "PixelFormat");

@@ -30,43 +30,72 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     });
 
     buttonConnect = new QToolButton(this);
-    buttonConnect->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-connect-48.png"),"Connect"));
+    QIcon connectIcon;
+    connectIcon.addFile(":/Resources/Icon/icons8-connect-48.png", QSize(24,24), QIcon::Normal, QIcon::Off);
+    connectIcon.addFile(":/Resources/Icon/icons8-disconnected-48.png", QSize(24,24), QIcon::Normal, QIcon::On);
+    QAction* actionConnect = new QAction("Connect", this);
+    actionConnect->setCheckable(true);
+    actionConnect->setIcon(connectIcon);
+    connect(actionConnect, &QAction::toggled, this, [=](bool on){
+        actionConnect->setText(on ? "Disconnect" : "Connect");
+        if(on) this->connectCamera();
+        else this->disconnectCamera();
+    });
     buttonConnect->setAutoRaise(true);
     buttonConnect->setIconSize(QSize(24,24));
-    connect(buttonConnect, &QToolButton::triggered, this, [=]{
-        this->connectCamera();
+    buttonConnect->setDefaultAction(actionConnect);
+
+    buttonSingleGrab = new QToolButton(this);
+    buttonSingleGrab->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-camera-48.png"), "Single Grab"));
+    buttonSingleGrab->setAutoRaise(true);
+    buttonSingleGrab->setEnabled(false);
+    buttonSingleGrab->setIconSize(QSize(24,24));
+    connect(buttonSingleGrab, &QToolButton::triggered, this, [=]{
+        this->parent->singleGrab();
     });
 
-    buttonDisconnect = new QToolButton(this);
-    buttonDisconnect->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-disconnected-48.png"),"Disconnect"));
-    buttonDisconnect->setAutoRaise(true);
-    buttonDisconnect->setEnabled(false);
-    buttonDisconnect->setIconSize(QSize(24,24));
-    connect(buttonDisconnect, &QToolButton::triggered, this, [=]{
-        this->disconnectCamera();
+    buttonLiveGrab = new QToolButton(this);
+    QIcon grabbingIcon;
+    grabbingIcon.addFile(":/Resources/Icon/icons8-cameras-48.png", QSize(24,24),QIcon::Normal, QIcon::Off);
+    grabbingIcon.addFile(":/Resources/Icon/icons8-pause-48.png", QSize(24,24),QIcon::Normal, QIcon::On);
+    QAction *actionGrabbing = new QAction("Continuous Grab", this);
+    actionGrabbing->setCheckable(true);
+    actionGrabbing->setIcon(grabbingIcon);
+    connect(actionGrabbing, &QAction::toggled, this, [=](bool on){
+        actionGrabbing->setText(on ? "Stop Grabbing" : "Continuous Grab");
+        if(on) this->parent->continuousGrab();
+        else this->parent->stopGrab();
+    });
+    buttonLiveGrab->setDefaultAction(actionGrabbing);
+    buttonLiveGrab->setAutoRaise(true);
+    buttonLiveGrab->setEnabled(false);
+    buttonLiveGrab->setIconSize(QSize(24,24));
+
+    connect(this, &CameraWidget::grabbingState, this, [=](bool on){
+        buttonSingleGrab->setEnabled(!on);
+        buttonConnect->setEnabled(!on);
     });
 
     QHBoxLayout *camNamelayout = new QHBoxLayout;
     camNamelayout->addWidget(list);
-    // camNamelayout->addWidget(refreshButton);
     camNamelayout->addWidget(buttonRefresh);
     camNamelayout->setSpacing(-1);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;
     buttonLayout->addWidget(buttonConnect);
-    buttonLayout->addWidget(buttonDisconnect);
     buttonLayout->setSpacing(-1);
+    buttonLayout->addSpacerItem(new QSpacerItem(5,5));
+    buttonLayout->addWidget(buttonSingleGrab);
+    buttonLayout->addWidget(buttonLiveGrab);
 
     QHBoxLayout *camAndButton = new QHBoxLayout;
     camAndButton->setContentsMargins(9,9,9,9);
     camAndButton->addLayout(camNamelayout);
     camAndButton->addLayout(buttonLayout);
 
-
     QVBoxLayout *tree = new QVBoxLayout;
     tree->setContentsMargins(9,0,9,0);
     tree->addWidget(widget);
-
 
     QVBoxLayout *layout = new QVBoxLayout;
     layout->setContentsMargins(0,0,0,0);
@@ -78,10 +107,6 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     layout->addWidget(statusBar);
     setLayout(layout);
     updateCameraList();
-
-    // connect(this, &CameraWidget::nodeUpdated, this, [this]{
-    // widgetGenerator(&parent->getInstantCamera()->GetNodeMap());
-    // });
 }
 
 void Qylon::CameraWidget::updateCameraList()
@@ -434,14 +459,18 @@ void Qylon::CameraWidget::statusMessage(QString message)
 void Qylon::CameraWidget::connectionStatus(bool connected)
 {
     list->setEnabled(!connected);
-    buttonConnect->setEnabled(!connected);
     buttonRefresh->setEnabled(!connected);
-    buttonDisconnect->setEnabled(connected);
+    buttonSingleGrab->setEnabled(connected);
 
     if(connected){
+        buttonLiveGrab->setEnabled(true);
         widgetGenerator(&parent->getInstantCamera()->GetNodeMap());
     }else{
+        buttonConnect->defaultAction()->setChecked(false);
+        buttonLiveGrab->defaultAction()->setChecked(false);
+        buttonLiveGrab->setEnabled(false);
         widget->clear();
+
     }
 }
 
