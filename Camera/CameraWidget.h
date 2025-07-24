@@ -25,10 +25,12 @@ public:
     void generateChildrenWidgetItem(QTreeWidgetItem *parent, GenApi::NodeList_t children);
     // void generateChildrenWidgetItem(QTreeWidget *parent, GenApi::NodeList_t children);
     void statusMessage(QString message);
+    QAction* getSingleGrabAction(){ return actionSingleGrab; }
+    QAction* getContinuousGrabAction(){ return actionLiveGrab; }
 
 public slots:
     void connectionStatus(bool connected);
-    void connectCamera();
+    bool connectCamera();
     void disconnectCamera();
 
 signals:
@@ -36,7 +38,7 @@ signals:
     void grabbingState(bool isGrabbing);
 
 private:
-    Camera *parent;
+    Camera *camera;
     QTreeWidget *widget;
     QList<QTreeWidgetItem*> manageItems;
     QComboBox *list;
@@ -46,6 +48,8 @@ private:
     QToolButton *buttonConnect;
     QToolButton *buttonSingleGrab;
     QToolButton *buttonLiveGrab;
+    QAction *actionSingleGrab;
+    QAction *actionLiveGrab;
 
 
 };

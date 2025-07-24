@@ -29,6 +29,7 @@ public:
 #ifdef PYLON_ENABLED
     void updateCameraList();
     QStringList getCameraList();
+    bool isAccessibleCamera(QString cameraName);
     const Pylon::CDeviceInfo getCameraIndexfromName(QString cameraName);
     const Pylon::CDeviceInfo getCameraIndexfromNumber(unsigned int number);
     Camera *addCamera();

@@ -10,15 +10,33 @@
 #endif
 
 Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
-    widget = new CameraWidget(this);
-    connect(this, &Camera::grabbingState, widget, &CameraWidget::grabbingState);
-    connect(this, &Camera::connectionStatus, widget, &CameraWidget::connectionStatus);
-
     acquireConfig = new Pylon::CAcquireContinuousConfiguration;
     // The order of these codes is critically importatnt
     currentInstantCamera.RegisterImageEventHandler(this, Pylon::RegistrationMode_ReplaceAll, Pylon::Cleanup_None);
     currentInstantCamera.RegisterConfiguration(acquireConfig, Pylon::RegistrationMode_ReplaceAll, Pylon::Cleanup_Delete );
     currentInstantCamera.RegisterConfiguration(this, Pylon::RegistrationMode_Append, Pylon::Cleanup_None );
+
+    /// ACTION ICONS
+    actionSingleGrab = new QAction(QIcon(":/Resources/Icon/icons8-camera-48.png"), "Single Grab", this);
+    connect(actionSingleGrab, &QAction::triggered, this, [=]{
+        singleGrab();
+    });
+    QIcon liveGrabIcon(":/Resources/Icon/icons8-cameras-48.png");
+    liveGrabIcon.addFile(":/Resources/Icon/icons8-pause-48.png", QSize(24,24),QIcon::Normal, QIcon::On);
+    actionContinuousGrab = new QAction(liveGrabIcon, "Continuous Grab", this);
+    actionContinuousGrab->setCheckable(true);
+    connect(actionContinuousGrab, &QAction::toggled, this, [=](bool on){
+        actionContinuousGrab->setText(on ? "Stop Grabbing" : "Continuous Grab");
+        if(on){
+            if(!continuousGrab()){
+                actionContinuousGrab->setChecked(false);
+            }
+        }else stopGrab();
+    });
+
+    widget = new CameraWidget(this);
+    connect(this, &Camera::grabbingState, widget, &CameraWidget::grabbingState);
+    connect(this, &Camera::connectionStatus, widget, &CameraWidget::connectionStatus);
 }
 
 Qylon::Camera::~Camera(){
@@ -79,6 +97,7 @@ bool Qylon::Camera::openCamera(QString cameraName){
                 currentInstantCamera.Scan3dInvalidDataValue.SetValue(std::numeric_limits<float>::quiet_NaN());
             }
         }
+        getQylon()->updateCameraList();
         return true;
     }catch (const Pylon::GenericException &e){
         Qylon::log(e.GetDescription());
@@ -101,6 +120,7 @@ void Qylon::Camera::closeCamera(){
         QImage dummy;
         currentImage.swap(dummy);
         currentInstantCamera.DestroyDevice();
+        getQylon()->updateCameraList();
     }
     catch(const Pylon::GenericException &e){ Qylon::log(QString::fromStdString(e.GetDescription()));}
     catch(QString e){ Qylon::log(e);}
@@ -117,24 +137,28 @@ void Qylon::Camera::singleGrab()
     catch(const Pylon::GenericException &e){ parent->log(("Single Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
 }
 
-void Qylon::Camera::sequentialGrab(int numFrame)
+bool Qylon::Camera::sequentialGrab(int numFrame)
 {
     try{
         if(!this->isOpened()) throw QString("Camera is not opened.");
         currentInstantCamera.AcquisitionMode.TrySetValue(Basler_UniversalCameraParams::AcquisitionMode_MultiFrame);
         currentInstantCamera.StartGrabbing(numFrame, Pylon::GrabStrategy_OneByOne, Pylon::GrabLoop_ProvidedByInstantCamera);
+        return true;
     }catch(const QString error){ Qylon::log("Sequential Grabbing Failed. " + error);}
     catch(const Pylon::GenericException &e){ Qylon::log(("Sequential Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
+    return false;
 }
 
-void Qylon::Camera::continuousGrab()
+bool Qylon::Camera::continuousGrab()
 {
     try{
         if(!this->isOpened()) throw QString("Camera is not opened.");
         currentInstantCamera.AcquisitionMode.TrySetValue(Basler_UniversalCameraParams::AcquisitionMode_Continuous);
         currentInstantCamera.StartGrabbing(Pylon::GrabStrategy_OneByOne, Pylon::GrabLoop_ProvidedByInstantCamera);
+        return true;
     }catch(const QString error){ Qylon::log("Continuous Grabbing Failed. " + error);}
     catch(const Pylon::GenericException &e){ Qylon::log(("Continuous Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
+    return false;
 }
 
 void Qylon::Camera::stopGrab()
@@ -143,6 +167,7 @@ void Qylon::Camera::stopGrab()
         if(!this->isOpened()) throw QString("Camera is not opened.");
         currentInstantCamera.StopGrabbing();
     }catch(const Pylon::GenericException &e){ Qylon::log(QString::fromStdString(e.GetDescription()));}
+    catch(const QString &e){ Qylon::log(e); }
 }
 
 bool Qylon::Camera::isOpened(){
@@ -317,13 +342,13 @@ void Qylon::Camera::OnClosed(Pylon::CInstantCamera &camera)
 }
 void Qylon::Camera::OnGrabStarted(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is starting to grab.");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " started to grab.");
     emit grabbingState(true);
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnGrabStopped(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is stopped grabbing.");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " stopped grabbing.");
     emit grabbingState(false);
     PYLON_UNUSED( camera );
 }
@@ -334,7 +359,7 @@ void Qylon::Camera::OnGrabError(Pylon::CInstantCamera &camera, const char *error
 }
 void Qylon::Camera::OnCameraDeviceRemoved(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is removed.");
+    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " removed.");
     emit connectionStatus(false);
 
     PYLON_UNUSED( camera );

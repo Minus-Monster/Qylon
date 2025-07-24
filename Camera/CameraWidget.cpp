@@ -12,7 +12,7 @@
 #include <QPalette>
 #define NO_CAMERA "No camera found"
 
-Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
+Qylon::CameraWidget::CameraWidget(Camera *obj) : camera(obj)
 {
     setWindowTitle("Basler pylon Camera Configuration");
     setWindowIcon(QIcon(":/Resources/Icon.png"));
@@ -26,47 +26,38 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
     buttonRefresh->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-refresh-48.png"),"Refresh"));
     buttonRefresh->setAutoRaise(true);
     connect(buttonRefresh, &QToolButton::triggered, this, [=]{
+        camera->getQylon()->updateCameraList();
+    });
+    connect(camera->getQylon(), &Qylon::updatedCameraInformation, this, [=]{
         this->updateCameraList();
     });
 
     buttonConnect = new QToolButton(this);
-    QIcon connectIcon;
-    connectIcon.addFile(":/Resources/Icon/icons8-connect-48.png", QSize(24,24), QIcon::Normal, QIcon::Off);
+    QIcon connectIcon(":/Resources/Icon/icons8-connect-48.png");
     connectIcon.addFile(":/Resources/Icon/icons8-disconnected-48.png", QSize(24,24), QIcon::Normal, QIcon::On);
-    QAction* actionConnect = new QAction("Connect", this);
+    QAction* actionConnect = new QAction(connectIcon, "Connect", this);
     actionConnect->setCheckable(true);
-    actionConnect->setIcon(connectIcon);
     connect(actionConnect, &QAction::toggled, this, [=](bool on){
         actionConnect->setText(on ? "Disconnect" : "Connect");
-        if(on) this->connectCamera();
-        else this->disconnectCamera();
+        if(on){
+            if(!this->connectCamera()){
+                actionConnect->setChecked(false);
+            }
+        }else this->disconnectCamera();
     });
     buttonConnect->setAutoRaise(true);
     buttonConnect->setIconSize(QSize(24,24));
     buttonConnect->setDefaultAction(actionConnect);
 
     buttonSingleGrab = new QToolButton(this);
-    buttonSingleGrab->setDefaultAction(new QAction(QIcon(":/Resources/Icon/icons8-camera-48.png"), "Single Grab"));
+    buttonSingleGrab->setDefaultAction(camera->getSingleGrabAction());
     buttonSingleGrab->setAutoRaise(true);
     buttonSingleGrab->setEnabled(false);
     buttonSingleGrab->setIconSize(QSize(24,24));
-    connect(buttonSingleGrab, &QToolButton::triggered, this, [=]{
-        this->parent->singleGrab();
-    });
+
 
     buttonLiveGrab = new QToolButton(this);
-    QIcon grabbingIcon;
-    grabbingIcon.addFile(":/Resources/Icon/icons8-cameras-48.png", QSize(24,24),QIcon::Normal, QIcon::Off);
-    grabbingIcon.addFile(":/Resources/Icon/icons8-pause-48.png", QSize(24,24),QIcon::Normal, QIcon::On);
-    QAction *actionGrabbing = new QAction("Continuous Grab", this);
-    actionGrabbing->setCheckable(true);
-    actionGrabbing->setIcon(grabbingIcon);
-    connect(actionGrabbing, &QAction::toggled, this, [=](bool on){
-        actionGrabbing->setText(on ? "Stop Grabbing" : "Continuous Grab");
-        if(on) this->parent->continuousGrab();
-        else this->parent->stopGrab();
-    });
-    buttonLiveGrab->setDefaultAction(actionGrabbing);
+    buttonLiveGrab->setDefaultAction(camera->getContinuousGrabAction());
     buttonLiveGrab->setAutoRaise(true);
     buttonLiveGrab->setEnabled(false);
     buttonLiveGrab->setIconSize(QSize(24,24));
@@ -111,27 +102,36 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : parent(obj)
 
 void Qylon::CameraWidget::updateCameraList()
 {
+    if(camera->isOpened()){
+        return;
+    }
+
     list->clear();
-    parent->getQylon()->updateCameraList();
-    auto cameraList = parent->getQylon()->getCameraList();
+    auto cameraList = camera->getQylon()->getCameraList();
     if(cameraList.size()==0)
         list->addItem(NO_CAMERA);
-    else
-        list->addItems(parent->getQylon()->getCameraList());
+    else{
+        for(const auto c : cameraList){
+            if(camera->getQylon()->isAccessibleCamera(c))
+                list->addItem(c);
+        }
+    }
 }
 
-void Qylon::CameraWidget::connectCamera()
+bool Qylon::CameraWidget::connectCamera()
 {
-    if(list->currentText() == NO_CAMERA) return;
+    if(list->currentText() == NO_CAMERA) return false;
 
-    if(parent->openCamera(list->currentText())){
+    if(camera->openCamera(list->currentText())){
         statusBar->showMessage("Connected: " + list->currentText());
+        return true;
     }
+    return false;
 }
 
 void Qylon::CameraWidget::disconnectCamera()
 {
-    parent->closeCamera();
+    camera->closeCamera();
     statusBar->showMessage("Disconnected: " + list->currentText());
 }
 
@@ -142,7 +142,7 @@ void Qylon::CameraWidget::widgetGenerator(GenApi::INodeMap *nodemap)
 
     GenApi::NodeList_t nodes;
     nodemap->GetNodes(nodes);
-    QTreeWidgetItem *cameraFeatures = new QTreeWidgetItem(widget, QStringList() << QString(this->parent->getInstantCamera()->GetDeviceInfo().GetFriendlyName()));
+    QTreeWidgetItem *cameraFeatures = new QTreeWidgetItem(widget, QStringList() << QString(camera->getInstantCamera()->GetDeviceInfo().GetFriendlyName()));
     manageItems.push_back(cameraFeatures);
     for(auto cat : nodes){
         if(cat->GetName() == "Root") continue;
@@ -372,7 +372,7 @@ void Qylon::CameraWidget::generateChildrenWidgetItem(QTreeWidgetItem *parent, Ge
             connect(this, &CameraWidget::nodeUpdated, comboBox, [=](){
                 comboBox->blockSignals(true);
                 try{
-                    GenApi::CEnumerationPtr ptr = this->parent->getNode(comboBox->accessibleName().toStdString().c_str());
+                    GenApi::CEnumerationPtr ptr = camera->getNode(comboBox->accessibleName().toStdString().c_str());
                     comboBox->setCurrentText(ptr->GetCurrentEntry()->GetNode()->GetDisplayName().c_str());
                 }catch(const Pylon::GenericException &e){
                     statusMessage(e.GetDescription());
@@ -464,7 +464,7 @@ void Qylon::CameraWidget::connectionStatus(bool connected)
 
     if(connected){
         buttonLiveGrab->setEnabled(true);
-        widgetGenerator(&parent->getInstantCamera()->GetNodeMap());
+        widgetGenerator(&camera->getInstantCamera()->GetNodeMap());
     }else{
         buttonConnect->defaultAction()->setChecked(false);
         buttonLiveGrab->defaultAction()->setChecked(false);

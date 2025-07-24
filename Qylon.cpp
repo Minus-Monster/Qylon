@@ -31,7 +31,7 @@ void Qylon::Qylon::initialize(){
 
     log("Enumerating Basler devices");
     devices = new Pylon::DeviceInfoList_t;
-//    tlFactory->EnumerateDevices(*devices);
+    updateCameraList();
 #endif
 }
 
@@ -42,7 +42,7 @@ void Qylon::Qylon::updateCameraList(){
     /// After that, "updatedCameraInformation" will be called for updating each QylonObject if available
 
     log("Updating available cameras list.");
-    auto cnt = tlFactory->EnumerateDevices(*devices);
+    auto cnt = tlFactory->EnumerateDevices(*devices, *devices);
     log("Found " + QString::number(cnt) + " Camera(s).");
 
     currentCameraList.clear();
@@ -87,6 +87,11 @@ vTools *Qylon::Qylon::addVTools()
 QStringList Qylon::Qylon::getCameraList()
 {
     return currentCameraList;
+}
+
+bool Qylon::isAccessibleCamera(QString cameraName)
+{
+    return tlFactory->IsDeviceAccessible(getCameraIndexfromName(cameraName));
 }
 
 const Pylon::CDeviceInfo Qylon::Qylon::getCameraIndexfromName(QString cameraName)

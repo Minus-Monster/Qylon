@@ -11,6 +11,7 @@
 
 #include <QObject>
 #include <QImage>
+#include <QAction>
 #include <QMutexLocker>
 #include <QThread>
 #include <pylon/PylonIncludes.h>
@@ -36,8 +37,8 @@ public:
     void closeCamera();
 
     void singleGrab();
-    void sequentialGrab(int numFrame);
-    void continuousGrab();
+    bool sequentialGrab(int numFrame);
+    bool continuousGrab();
     void stopGrab();
     bool isOpened();
 
@@ -52,6 +53,9 @@ public:
     void setNode(QString node, bool &value);
     void setNode(QString node, QString &value);
     QMutex* drawLock() const;
+
+    QAction* getSingleGrabAction(){ return actionSingleGrab; }
+    QAction* getContinuousGrabAction(){ return actionContinuousGrab; }
 
 #ifdef PCL_ENABLED
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr convertGrabResultToPointCloud(const Pylon::CGrabResultPtr& grabResult);
@@ -71,7 +75,6 @@ signals:
 private:
     Qylon *parent = nullptr;
     Pylon::CBaslerUniversalInstantCamera currentInstantCamera;
-
     bool softwareTriggerMode = false;
 
     mutable QMutex memberLock;
@@ -80,6 +83,9 @@ private:
     void* currentBuffer;
     QImage currentConfidence;
     QImage currentIntensity;
+
+    QAction* actionSingleGrab;
+    QAction* actionContinuousGrab;
 
     Pylon::CImageFormatConverter formatConverter;
     Pylon::CAcquireContinuousConfiguration* acquireConfig = nullptr;
