@@ -23,8 +23,6 @@ void Qylon::Qylon::initialize(){
     /// This function should be called only once when Qylon class generated
     /// Also Qylon should be declared only one time on the program
 #ifdef PYLON_ENABLED
-    Pylon::PylonAutoInitTerm initTerm;
-
     Pylon::PylonInitialize();
     log("Start pylon initializing...");
     tlFactory = &Pylon::CTlFactory::GetInstance();
@@ -42,7 +40,7 @@ void Qylon::Qylon::updateCameraList(){
     /// After that, "updatedCameraInformation" will be called for updating each QylonObject if available
 
     log("Updating available cameras list.");
-    auto cnt = tlFactory->EnumerateDevices(*devices, *devices);
+    auto cnt = tlFactory->EnumerateDevices(*devices);
     log("Found " + QString::number(cnt) + " Camera(s).");
 
     currentCameraList.clear();

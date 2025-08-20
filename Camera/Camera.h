@@ -65,12 +65,13 @@ public:
 #endif
 
 signals:
-    void grabbed();
+    void grabbed(const QImage &);
     void grabbedPointCloud();
     void grabbedConfidence();
     void grabbedIntensity();
     void grabbingState(bool isGrabbing);
-    void connectionStatus(bool connected);
+    void connectionStatus(QString cameraName, bool connected);
+    void removed();
 
 private:
     Qylon *parent = nullptr;
@@ -224,8 +225,10 @@ inline QImage convertPylonImageToQImage(Pylon::CPylonImage pylonImg){
     if(format != QImage::Format_RGB32){
         int width = pylonImg.GetWidth();
         int height = pylonImg.GetHeight();
+        int bpp = (format == QImage::Format_Grayscale16) ? 2 : 1;
+        const int stride = width * bpp;
         const uchar* buffer = static_cast<const uchar*>(pylonImg.GetBuffer());
-        outImage = QImage(buffer, width, height, width, format).copy();
+        outImage = QImage(buffer, width, height, stride, format).copy();
     }else{
         converter.OutputPixelFormat = Pylon::PixelType_BGRA8packed;
         converter.Convert(outImage.bits(), outImage.sizeInBytes(), pylonImg);

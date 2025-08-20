@@ -27,6 +27,7 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : camera(obj)
     buttonRefresh->setAutoRaise(true);
     connect(buttonRefresh, &QToolButton::triggered, this, [=]{
         camera->getQylon()->updateCameraList();
+        // this->updateCameraList();
     });
     connect(camera->getQylon(), &Qylon::updatedCameraInformation, this, [=]{
         this->updateCameraList();
@@ -37,13 +38,18 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : camera(obj)
     connectIcon.addFile(":/Resources/Icon/icons8-disconnected-48.png", QSize(24,24), QIcon::Normal, QIcon::On);
     QAction* actionConnect = new QAction(connectIcon, "Connect", this);
     actionConnect->setCheckable(true);
+
     connect(actionConnect, &QAction::toggled, this, [=](bool on){
         actionConnect->setText(on ? "Disconnect" : "Connect");
+
         if(on){
             if(!this->connectCamera()){
                 actionConnect->setChecked(false);
             }
-        }else this->disconnectCamera();
+        }else{
+            this->disconnectCamera();
+            actionConnect->setChecked(false);
+        }
     });
     buttonConnect->setAutoRaise(true);
     buttonConnect->setIconSize(QSize(24,24));
@@ -98,6 +104,28 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : camera(obj)
     layout->addWidget(statusBar);
     setLayout(layout);
     updateCameraList();
+
+    setStyleSheet(R"(
+        QToolButton {
+            min-height: 16px;
+            min-width: 16px;
+
+            padding: 1px;
+            margin: 2px;
+            border: none;
+        }
+        QToolButton:hover {
+            background-color: #e0e0e0;
+            border-radius: 5px;
+        }
+        QToolButton:pressed {
+            background-color: #c0c0c0;
+        }
+        QToolButton:checked {
+            background-color: #c0c0c0;
+            border-radius: 5px;
+        }
+    )");
 }
 
 void Qylon::CameraWidget::updateCameraList()
@@ -105,16 +133,22 @@ void Qylon::CameraWidget::updateCameraList()
     if(camera->isOpened()){
         return;
     }
-
+    QString beforeSelected = list->currentText();
     list->clear();
+
     auto cameraList = camera->getQylon()->getCameraList();
-    if(cameraList.size()==0)
-        list->addItem(NO_CAMERA);
-    else{
-        for(const auto c : cameraList){
-            if(camera->getQylon()->isAccessibleCamera(c))
-                list->addItem(c);
+    for(const auto& c : cameraList) {
+        if (camera->getQylon()->isAccessibleCamera(c)) {
+            list->addItem(c);
         }
+    }
+    for(int i = 0; i < list->count(); ++i) {
+        if(beforeSelected == list->itemText(i)){
+            list->setCurrentIndex(i);
+        }
+    }
+    if(list->count() == 0){
+        list->addItem(NO_CAMERA);
     }
 }
 
@@ -456,21 +490,31 @@ void Qylon::CameraWidget::statusMessage(QString message)
     statusBar->showMessage(message);
 }
 
-void Qylon::CameraWidget::connectionStatus(bool connected)
+void Qylon::CameraWidget::connectionStatus(QString cameraName, bool connected)
 {
     list->setEnabled(!connected);
     buttonRefresh->setEnabled(!connected);
     buttonSingleGrab->setEnabled(connected);
+    buttonLiveGrab->setEnabled(connected);
+
+
+    buttonConnect->blockSignals(true);
+    auto action = buttonConnect->defaultAction();
+    action->blockSignals(true);
+    action->setChecked(connected);
+    action->setText(connected ? "Disconnect" : "Connect");
+    action->blockSignals(false);
+    buttonConnect->blockSignals(false);
 
     if(connected){
-        buttonLiveGrab->setEnabled(true);
         widgetGenerator(&camera->getInstantCamera()->GetNodeMap());
-    }else{
-        buttonConnect->defaultAction()->setChecked(false);
+        list->setCurrentText(cameraName);
+    }else{  // Disconnected
+        // In case that the connection is disconnected during grabbing
+        buttonLiveGrab->defaultAction()->blockSignals(true);
         buttonLiveGrab->defaultAction()->setChecked(false);
-        buttonLiveGrab->setEnabled(false);
+        buttonLiveGrab->defaultAction()->blockSignals(false);
         widget->clear();
-
     }
 }
 

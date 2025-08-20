@@ -29,7 +29,7 @@ public:
     QAction* getContinuousGrabAction(){ return actionLiveGrab; }
 
 public slots:
-    void connectionStatus(bool connected);
+    void connectionStatus(QString cameraName, bool connected);
     bool connectCamera();
     void disconnectCamera();
 

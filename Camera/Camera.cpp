@@ -18,6 +18,7 @@ Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
 
     /// ACTION ICONS
     actionSingleGrab = new QAction(QIcon(":/Resources/Icon/icons8-camera-48.png"), "Single Grab", this);
+    actionSingleGrab->setEnabled(false);
     connect(actionSingleGrab, &QAction::triggered, this, [=]{
         singleGrab();
     });
@@ -25,6 +26,7 @@ Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
     liveGrabIcon.addFile(":/Resources/Icon/icons8-pause-48.png", QSize(24,24),QIcon::Normal, QIcon::On);
     actionContinuousGrab = new QAction(liveGrabIcon, "Continuous Grab", this);
     actionContinuousGrab->setCheckable(true);
+    actionContinuousGrab->setEnabled(false);
     connect(actionContinuousGrab, &QAction::toggled, this, [=](bool on){
         actionContinuousGrab->setText(on ? "Stop Grabbing" : "Continuous Grab");
         if(on){
@@ -36,11 +38,14 @@ Qylon::Camera::Camera(Qylon *parentQylon) : parent(parentQylon){
 
     widget = new CameraWidget(this);
     connect(this, &Camera::grabbingState, widget, &CameraWidget::grabbingState);
-    connect(this, &Camera::connectionStatus, widget, &CameraWidget::connectionStatus);
+    connect(this, &Camera::connectionStatus, widget, [=](QString camera, bool on){
+        actionSingleGrab->setEnabled(on);
+        actionContinuousGrab->setEnabled(on);
+        widget->connectionStatus(camera, on);
+    });
 }
 
 Qylon::Camera::~Camera(){
-    deleteLater();
     delete widget;
 }
 
@@ -63,7 +68,10 @@ bool Qylon::Camera::openCamera(QString cameraName){
     QMutexLocker lock(&memberLock);
 
     try{
-        Pylon::IPylonDevice* pDevice = Pylon::CTlFactory::GetInstance().CreateDevice(parent->getCameraIndexfromName(cameraName));
+        auto idx = parent->getCameraIndexfromName(cameraName);
+        // if(!idx.IsDeviceFactoryAvailable()) return false;
+        if(Pylon::CDeviceInfo() == idx) return false;
+        Pylon::IPylonDevice* pDevice = Pylon::CTlFactory::GetInstance().CreateDevice(idx);
         currentInstantCamera.Attach(pDevice, Pylon::Cleanup_Delete);
         currentInstantCamera.Open();
 
@@ -155,6 +163,9 @@ bool Qylon::Camera::continuousGrab()
         if(!this->isOpened()) throw QString("Camera is not opened.");
         currentInstantCamera.AcquisitionMode.TrySetValue(Basler_UniversalCameraParams::AcquisitionMode_Continuous);
         currentInstantCamera.StartGrabbing(Pylon::GrabStrategy_OneByOne, Pylon::GrabLoop_ProvidedByInstantCamera);
+        actionContinuousGrab->blockSignals(true);
+        actionContinuousGrab->setChecked(true);
+        actionContinuousGrab->blockSignals(false);
         return true;
     }catch(const QString error){ Qylon::log("Continuous Grabbing Failed. " + error);}
     catch(const Pylon::GenericException &e){ Qylon::log(("Continuous Grabbing Failed. " + QString::fromStdString(e.GetDescription())));}
@@ -238,135 +249,139 @@ GenApi::INode *Qylon::Camera::getNode(QString nodeName)
         Qylon::log(nodeName + ": " + e.GetDescription());
     }
     return nullptr;
-
 }
 
 void Qylon::Camera::OnImagesSkipped(Pylon::CInstantCamera &camera, size_t countOfSkippedImages)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " image skipped " + QString::number(countOfSkippedImages));
+    Qylon::log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " image skipped " + QString::number(countOfSkippedImages));
     PYLON_UNUSED( camera );
 }
 
 void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::CGrabResultPtr &grabResult)
 {
-    // Lock to ensure thread safety while working with shared resources
-    QMutexLocker lockGrab(&memberLock);
-    QMutexLocker lockImage(&imageLock);
-    if (!(grabResult.IsValid() && grabResult->GrabSucceeded())) return;
+    try{
+        if (!(grabResult.IsValid() && grabResult->GrabSucceeded())) return;
 
-    // Only process images if the camera is "blaze"
-    if (QString(camera.GetDeviceInfo().GetModelName().c_str()).contains("blaze")) {
+        // Only process images if the camera is "blaze"
+        if (QString(camera.GetDeviceInfo().GetModelName().c_str()).contains("blaze")) {
 #ifdef PCL_ENABLED
-        try {
-            auto container = grabResult->GetDataContainer();
+            try {
+                auto container = grabResult->GetDataContainer();
 
-            // Use OpenMP to process components in parallel
+// Use OpenMP to process components in parallel
 #pragma omp parallel for
-            for (size_t i = 0; i < container.GetDataComponentCount(); ++i) {
-                auto component = container.GetDataComponent(i);
-                if (component.IsValid()) {
-                    switch (component.GetComponentType()) {
-                    case Pylon::ComponentType_Intensity:
-                        try {
-                            currentIntensity = QImage(component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
-                            memcpy(currentIntensity.bits(), component.GetData(), component.GetDataSize());
-                            emit grabbedIntensity();
-                        } catch (const Pylon::GenericException &e) {
-                            Qylon::log(e.GetDescription());
+                for (size_t i = 0; i < container.GetDataComponentCount(); ++i) {
+                    auto component = container.GetDataComponent(i);
+                    if (component.IsValid()) {
+                        switch (component.GetComponentType()) {
+                        case Pylon::ComponentType_Intensity:
+                            try {
+                                currentIntensity = QImage(component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
+                                memcpy(currentIntensity.bits(), component.GetData(), component.GetDataSize());
+                                emit grabbedIntensity();
+                            } catch (const Pylon::GenericException &e) {
+                                Qylon::log(e.GetDescription());
+                            }
+                            break;
+                        case Pylon::ComponentType_Range:   // Point Cloud Data
+                            pcPtr = convertGrabResultToPointCloud(grabResult);
+                            emit grabbedPointCloud();
+                            break;
+
+                        case Pylon::ComponentType_Confidence:
+                            currentConfidence = QImage(component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
+                            memcpy(currentConfidence.bits(), component.GetData(), component.GetDataSize());
+                            emit grabbedConfidence();
+                            break;
+
+                        default:
+                            break;  // Skip undefined or unsupported components
                         }
-                        break;
-
-                    case Pylon::ComponentType_Range:   // Point Cloud Data
-                        pcPtr = convertGrabResultToPointCloud(grabResult);
-                        emit grabbedPointCloud();
-                        break;
-
-                    case Pylon::ComponentType_Confidence:
-                        currentConfidence = QImage(component.GetWidth(), component.GetHeight(), QImage::Format_Grayscale16);
-                        memcpy(currentConfidence.bits(), component.GetData(), component.GetDataSize());
-                        emit grabbedConfidence();
-                        break;
-
-                    default:
-                        break;  // Skip undefined or unsupported components
                     }
                 }
+                emit grabbed();
+            } catch (const Pylon::GenericException &e) {
+                Qylon::log("[ERROR WHILE MAKING GRABBED IMAGE]");
             }
-            emit grabbed();
-        } catch (const Pylon::GenericException &e) {
-            Qylon::log("[ERROR WHILE MAKING GRABBED IMAGE]");
-        }
 #endif
-    } else {  // Handle non-blaze cameras
-        try {
-            Pylon::CPylonImage image;
-            image.AttachGrabResultBuffer(grabResult);
-            currentImage = convertPylonImageToQImage(image);
-            emit grabbed();
-        } catch (const Pylon::GenericException &e) {
-            Qylon::log(QString("Image conversion error occurred.") + e.what());
+        } else {  // Handle non-blaze cameras
+            try {
+                Pylon::CPylonImage image;
+                image.AttachGrabResultBuffer(grabResult);
+                auto converted = convertPylonImageToQImage(image);
+                {
+                    QMutexLocker lockImage(&imageLock);
+                    currentImage.swap(converted);
+                }
+                emit grabbed(converted);
+            } catch (const Pylon::GenericException &e) {
+                Qylon::log(QString("Image conversion error occurred.") + e.what());
+            }
         }
+    }catch(...){
+        Qylon::log("Error occurred while image conversion. Need to check the status.");
     }
-    lockGrab.unlock();
-    lockImage.unlock();  // Unlock the mutex after the image processing
+
     PYLON_UNUSED(camera);
 }
 
 
 void Qylon::Camera::OnAttached(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is attached.");
+    Qylon::log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is attached.");
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnDetached(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is detached.");
+    Qylon::log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is detached.");
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnDestroy(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " will be destroyed.");
+    Qylon::log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " will be destroyed.");
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnOpened(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is opened.");
-    emit connectionStatus(true);
+    Qylon::log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is opened.");
+    emit connectionStatus(camera.GetDeviceInfo().GetFriendlyName().c_str(), true);
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnClosed(Pylon::CInstantCamera &camera)
 {
-    emit connectionStatus(false);
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is closed.");
+    emit connectionStatus(camera.GetDeviceInfo().GetFriendlyName().c_str(), false);
+    Qylon::log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " is closed.");
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnGrabStarted(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " started to grab.");
+    Qylon::log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " started to grab.");
     emit grabbingState(true);
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnGrabStopped(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " stopped grabbing.");
+    Qylon::log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " stopped grabbing.");
     emit grabbingState(false);
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnGrabError(Pylon::CInstantCamera &camera, const char *errorMessage)
 {
-    this->parent->log(errorMessage);
+    Qylon::log(errorMessage);
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnCameraDeviceRemoved(Pylon::CInstantCamera &camera)
 {
-    parent->log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " removed.");
-    emit connectionStatus(false);
-
+    Qylon::log(QString(camera.GetDeviceInfo().GetFriendlyName().c_str()) + " removed.");
+    currentInstantCamera.Close();
+    emit connectionStatus(camera.GetDeviceInfo().GetFriendlyName().c_str(), false);
+    emit getQylon()->updatedCameraInformation();
+    emit removed();
     PYLON_UNUSED( camera );
 }
 void Qylon::Camera::OnCameraEvent(Pylon::CInstantCamera &camera, intptr_t userProvidedId, GenApi::INode *pNode)
 {
-    qDebug() << "The event is occured from" << camera.GetDeviceInfo().GetFriendlyName()  << pNode->GetDisplayName() << pNode->GetNodeMap()->GetNode("TriggerMode");
+    // qDebug() << "The event is occured from" << camera.GetDeviceInfo().GetFriendlyName()  << pNode->GetDisplayName() << pNode->GetNodeMap()->GetNode("TriggerMode");
 }
 
 QMutex *Qylon::Camera::drawLock() const
