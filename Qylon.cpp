@@ -1,11 +1,13 @@
 #include <Qylon.h>
+Qylon::Qylon *q=nullptr;
 namespace Qylon{
 void Qylon::Qylon::log(QString strings){
-    qDebug().noquote() << "[QYLON]" << QTime::currentTime().toString() << ":" << strings;
+    qDebug().noquote() << strings;
+    emit q->logMessage(strings);
 }
 
 Qylon::Qylon::Qylon(){
-    initialize();
+    q = this;
 }
 
 Qylon::Qylon::~Qylon(){
@@ -27,7 +29,7 @@ void Qylon::Qylon::initialize(){
     log("Start pylon initializing...");
     tlFactory = &Pylon::CTlFactory::GetInstance();
 
-    log("Enumerating Basler devices");
+    log("Enumerating Basler devices...");
     devices = new Pylon::DeviceInfoList_t;
     updateCameraList();
 #endif
@@ -39,7 +41,7 @@ void Qylon::Qylon::updateCameraList(){
     /// All camera name(QString) are written in "cameraList"
     /// After that, "updatedCameraInformation" will be called for updating each QylonObject if available
 
-    log("Updating available cameras list.");
+    log("Updating available cameras list...");
     auto cnt = tlFactory->EnumerateDevices(*devices);
     log("Found " + QString::number(cnt) + " Camera(s).");
 

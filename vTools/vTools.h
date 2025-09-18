@@ -32,8 +32,10 @@ public:
     vTools(Qylon *parentQylon=nullptr);
     ~vTools();
     bool loadRecipe(QString path);
-    void startRecipe();
+    void startRecipe(int count=-1);
     void stopRecipe();
+    QString getCurrentRecipePath(){ return currentRecipePath; }
+    Pylon::DataProcessing::CRecipe *getRecipe(){ return &currentRecipe; }
     void run() override;
 
     void OutputDataPush(Pylon::DataProcessing::CRecipe &recipe,
@@ -53,7 +55,9 @@ public:
     QString toString(Pylon::DataProcessing::SEllipseF ellipse);
     QString toString(Pylon::DataProcessing::SCircleF circle);
     QString getLastError(){ return lastError; }
-    Result getResult(){ return resultsQueue.takeFirst(); }
+    Result getResult();
+
+    Result getContainerResult(Pylon::DataProcessing::CVariantContainer container);
 
 signals:
     void finishedProcessing();
@@ -62,6 +66,8 @@ private:
     Qylon *parent = nullptr;
     QMutex mutex;
     QString lastError = "";
+    int counter = 0;
+    QString currentRecipePath;
 
     Pylon::DataProcessing::CRecipe currentRecipe;
     Pylon::CLock _memberLock;

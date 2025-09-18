@@ -50,6 +50,7 @@ public:
 
 signals:
     void updatedCameraInformation();
+    void logMessage(QString);
 
 private:
     //pylon setting

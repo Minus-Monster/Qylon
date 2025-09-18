@@ -61,7 +61,6 @@
         <file>Resources/Icon/icons8-ruler-48.png</file>
         <file>Resources/Icon/icons8-surface-48.png</file>
         <file>Resources/Icon/icons8-toggle-full-screen-48.png</file>
-        <file>StyleSheet.qss</file>
         <file>Resources/Icon_white.png</file>
         <file>Resources/Icon/icons8-secured-file-48-2.png</file>
         <file>Resources/Icon/icons8-secured-file-48.png</file>
@@ -80,5 +79,14 @@
         <file>Resources/Icon/icons8-pause-48-2.png</file>
         <file>Resources/Icon/icons8-photo-editor-48.png</file>
         <file>Resources/Icon/icons8-share-48.png</file>
+        <file>Resources/Icon/icons8-checked-checkbox-48.png</file>
+        <file>Resources/Icon/icons8-unchecked-checkbox-48.png</file>
+        <file>Resources/Icon/icons8-check-48.png</file>
+        <file>Resources/Icon/icons8-close-50.png</file>
+        <file>Resources/Icon/icons8-restore-window-50.png</file>
+        <file>Resources/Icon/icons8-export-48.png</file>
+        <file>Resources/Icon/icons8-export-csv-48.png</file>
+        <file>Resources/Icon/icons8-import-48.png</file>
+        <file>Resources/Style.qss</file>
     </qresource>
 </RCC>

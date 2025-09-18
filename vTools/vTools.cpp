@@ -24,22 +24,32 @@ bool Qylon::vTools::loadRecipe(QString path)
         currentRecipe.Load(path.toStdString().c_str());
         currentRecipe.PreAllocateResources();
         currentRecipe.RegisterAllOutputsObserver(this, Pylon::RegistrationMode_ReplaceAll);
+        currentRecipePath = path;
 
         if(widget !=nullptr) delete widget;
         widget = new vToolsWidget(this);
         widget->loadRecipeConfiguration(&currentRecipe);
     }catch (const Pylon::GenericException &e){
         lastError = e.GetDescription();
-        this->parent->log("vTools faced an error " + QString(e.GetDescription()));
+        Qylon::log(QString(e.GetDescription()));
         return false;
     }
     return true;
 }
 
-void Qylon::vTools::startRecipe()
+void Qylon::vTools::startRecipe(int count)
 {
+    if(!currentRecipe.IsLoaded()) return;
+
+    {
+        Pylon::AutoLock scopedLock(_memberLock);
+        resultsQueue.clear();
+    }
+
+    _waitObject.Reset();
+    counter = count;
     start();
-    Qylon::log("Starting recipe");
+    Qylon::log("Start recipe.");
 }
 
 void Qylon::vTools::stopRecipe()
@@ -51,11 +61,9 @@ void Qylon::vTools::stopRecipe()
         currentRecipe.Stop();
         currentRecipe.DeallocateResources();
 
-        QMutexLocker locker(&mutex);
-        locker.unlock();
         wait();
 
-        Qylon::log("Recipe stopped");
+        Qylon::log("Recipe stopped.");
     }catch(const Pylon::GenericException &e){
         qDebug() << e.what();
     }
@@ -63,15 +71,17 @@ void Qylon::vTools::stopRecipe()
 
 void Qylon::vTools::run()
 {
-    if(!currentRecipe.IsLoaded()) return;
     currentRecipe.Start();
-    while(!isInterruptionRequested()){
+    while(!isInterruptionRequested() && (counter != 0)){
         if(!currentRecipe.IsStarted()){
             return;
         }
+        if (counter > 0) --counter;
         if(getWaitObject().Wait(1000)){
-            emit finishedProcessing();
             _waitObject.Reset();
+            emit finishedProcessing();
+        }else{
+            Qylon::log("Error occurred...");
         }
     }
 }
@@ -81,11 +91,12 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
     PYLON_UNUSED(recipe);
     PYLON_UNUSED(update);
     PYLON_UNUSED(userProvidedId);
-
+/*
     // QPair<Object Name, Object context>
     QList <QPair<QString, Pylon::CPylonImage>> images;
     QList <QPair<QString, QGraphicsItem*>> items;
     QStringList outputTextList;
+
 
     try{
         for(const auto &value : valueContainer){
@@ -96,7 +107,10 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
                 }
             }
             if(pass) continue;
-
+            if(value.second.HasError()){
+                outputTextList.push_back(QString(value.first.c_str()) + "=[ERROR]");
+                continue;
+            }
             switch(value.second.GetDataType()){
             case Pylon::DataProcessing::EVariantDataType::VariantDataType_Boolean:
             case Pylon::DataProcessing::VariantDataType_Int64:
@@ -293,11 +307,22 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
         result.items = items;
         result.strings = outputTextList;
 
+        // qDebug() << "\n\n=============================";
+        // qDebug() << "Result brief: images:" << images.size() << " items:" << items.size() << " Strings:" << outputTextList;
+        // qDebug() << "=============================\n\n";
+
         resultsQueue.push_back(result);
-        _waitObject.Signal();
     }catch(const Pylon::GenericException &e){
-        qDebug() << e.GetDescription();
+        Qylon::log("Error occurred whilng processing on OutputDataPush:" + QString(e.GetDescription()));
     }
+*/
+
+    {
+        Pylon::AutoLock scopedLock(_memberLock);
+        resultsQueue.push_back(std::move(getContainerResult(valueContainer)));
+    }
+
+    _waitObject.Signal();
 }
 
 QImage Qylon::vTools::getSelectedImage(QList<QPair<QString, Pylon::CPylonImage> > images){
@@ -360,6 +385,170 @@ QString Qylon::vTools::toString(Pylon::DataProcessing::SEllipseF ellipse)
 QString Qylon::vTools::toString(Pylon::DataProcessing::SCircleF circle)
 {
     return "CenterXY-Radius[" + QString::number(circle.Center.X) + "," + QString::number(circle.Center.Y) + "," + QString::number(circle.Radius) +"]";
+}
+
+Qylon::vTools::Result Qylon::vTools::getContainerResult(Pylon::DataProcessing::CVariantContainer container)
+{
+    QList<QPair<QString, Pylon::CPylonImage>> images;
+    QList<QPair<QString, QGraphicsItem*>> items;
+    QStringList outputTextList;
+
+    try {
+        for (const auto& value : container) {
+            QString name = QString::fromStdString(value.first.c_str());
+
+            bool pass = false;
+            for(int i=0; i < filter->items.size(); ++i){
+                if(filter->items.at(i).first == value.first && !filter->items.at(i).second){
+                    pass = true;
+                }
+            }
+            if(pass) continue;
+            if(value.second.HasError()){
+                outputTextList.push_back(name + "=[ERROR]");
+                continue;
+            }
+            auto addOutput = [&](const QString& text) {
+                outputTextList.push_back(valueCombinationToString(name, text));
+            };
+            auto addItem = [&](QGraphicsItem* item) {
+                items.push_back(qMakePair(name, item));
+            };
+            auto processArrayOrSingle = [&](std::function<void(const Pylon::DataProcessing::CVariant&)> func) {
+                if (value.second.IsArray()) {
+                    for (int i = 0; i < value.second.GetNumArrayValues(); ++i)
+                        func(value.second.GetArrayValue(i));
+                } else {
+                    func(value.second);
+                }
+            };
+
+            using namespace Pylon::DataProcessing;
+
+            switch (value.second.GetDataType()) {
+            case VariantDataType_Boolean:
+            case VariantDataType_Int64:
+            case VariantDataType_UInt64:
+            case VariantDataType_String:
+            case VariantDataType_Float:
+                processArrayOrSingle([&](const CVariant& v) {
+                    addOutput(QString::fromStdString(v.Convert(VariantDataType_String).ToString().c_str()));
+                });
+                break;
+
+            case VariantDataType_PylonImage:
+                processArrayOrSingle([&](const CVariant& v) {
+                    images.push_back(qMakePair(name, v.ToImage()));
+                });
+                break;
+
+            case VariantDataType_Region:
+                processArrayOrSingle([&](const CVariant& v) {
+                    auto region = v.ToRegion();
+                    QRect rect(QPoint(region.GetBoundingBoxTopLeftX(), region.GetBoundingBoxTopLeftY()),
+                               QSize(region.GetBoundingBoxWidth(), region.GetBoundingBoxHeight()));
+                    if (region.GetRegionType() == RegionType_RLE32) {
+                        const SRegionEntryRLE32* data = reinterpret_cast<const SRegionEntryRLE32*>(region.GetBufferConst());
+                        size_t count = region.GetDataSize() / sizeof(SRegionEntryRLE32);
+                        for (size_t j = 0; j < count; ++j) {
+                            auto* line = new QGraphicsLineItem(data[j].StartX, data[j].Y, data[j].EndX, data[j].Y);
+                            addItem(line);
+                        }
+                    } else {
+                        addItem(new QGraphicsRectItem(rect));
+                    }
+                    addOutput(toString(rect));
+                });
+                break;
+
+            case VariantDataType_PointF2D:
+                processArrayOrSingle([&](const CVariant& v) {
+                    auto p = v.ToPointF2D();
+                    auto* circle = new QGraphicsEllipseItem(QRectF(p.X - 1, p.Y - 1, 2, 2));
+                    addItem(circle);
+                    addOutput(toString(QPointF(p.X, p.Y)));
+                });
+                break;
+
+            case VariantDataType_LineF2D:
+                processArrayOrSingle([&](const CVariant& v) {
+                    auto l = v.ToLineF2D();
+                    auto* line = new QGraphicsLineItem(l.PointA.X, l.PointA.Y, l.PointB.X, l.PointB.Y);
+                    addItem(line);
+                    addOutput(toString(line->line()));
+                });
+                break;
+
+            case VariantDataType_RectangleF:
+                processArrayOrSingle([&](const CVariant& v) {
+                    auto r = v.ToRectangleF();
+                    QRectF rect(r.Center.X - r.Width / 2, r.Center.Y - r.Height / 2, r.Width, r.Height);
+                    auto* item = new QGraphicsRectItem(rect);
+                    item->setTransformOriginPoint(rect.center());
+                    item->setRotation(-r.Rotation * 180.0 / M_PI);
+                    addItem(item);
+                    addOutput(toString(rect));
+                });
+                break;
+            case VariantDataType_CircleF:
+                processArrayOrSingle([&](const CVariant& v) {
+                    auto c = v.ToCircleF();
+                    QRectF rect(c.Center.X - c.Radius, c.Center.Y - c.Radius, c.Radius * 2, c.Radius * 2);
+                    auto* item = new QGraphicsEllipseItem(rect);
+                    addItem(item);
+                    addOutput(toString(c));
+                });
+                break;
+
+            case VariantDataType_EllipseF:
+                processArrayOrSingle([&](const CVariant& v) {
+                    auto e = v.ToEllipseF();
+                    QRectF rect(e.Center.X - e.Radius1, e.Center.Y - e.Radius2, e.Radius1 * 2, e.Radius2 * 2);
+                    auto* item = new QGraphicsEllipseItem(rect);
+                    item->setTransformOriginPoint(QPointF(e.Center.X, e.Center.Y));
+                    item->setRotation(e.Rotation * 180.0 / M_PI);
+                    addItem(item);
+                    addOutput(toString(e));
+                });
+                break;
+            case VariantDataType_TransformationData:
+                qDebug() << "Transformation";
+                break;
+
+            case VariantDataType_Composite:
+                qDebug() << "Composite";
+                break;
+
+            case VariantDataType_None:
+                qDebug() << "None";
+                break;
+
+            default:
+                break;
+            }
+        }
+
+        Result result;
+        result.images = images;
+        result.items = items;
+        result.strings = outputTextList;
+        return result;
+
+    } catch (const Pylon::GenericException& e) {
+        Qylon::log("Error occurred while processing OutputDataPush: " + QString::fromStdString(e.GetDescription()));
+    }
+
+    return {};
+}
+
+
+Qylon::vTools::Result Qylon::vTools::getResult(){
+    Pylon::AutoLock scopedLock(_memberLock);
+    if(resultsQueue.empty()){
+        return Result();
+    }
+
+    return resultsQueue.takeFirst();
 }
 
 #endif
