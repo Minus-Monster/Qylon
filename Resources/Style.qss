@@ -266,6 +266,7 @@ QStatusBar{
     border: 1px solid lightgray;
     border-top : none;
     background-color: white;
+    color: black;
 }
 
 /* QLabel */
@@ -463,3 +464,8 @@ QMenu::separator {
     background: lightgray;
     margin: 4px 0px;
 }
+
+QMenuBar{
+    color: black;
+}
+
