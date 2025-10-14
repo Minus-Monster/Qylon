@@ -88,5 +88,8 @@
         <file>Resources/Icon/icons8-export-csv-48.png</file>
         <file>Resources/Icon/icons8-import-48.png</file>
         <file>Resources/Style.qss</file>
+        <file>Resources/Icon/icons8-copy-48.png</file>
+        <file>Resources/Icon/icons8-information-96.png</file>
+        <file>Resources/Icon/icons8-warning-96.png</file>
     </qresource>
 </RCC>

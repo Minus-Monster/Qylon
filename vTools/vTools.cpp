@@ -12,7 +12,7 @@ Qylon::vTools::vTools(Qylon *parentQylon) : parent(parentQylon), _waitObject(Pyl
 
 Qylon::vTools::~vTools()
 {
-    delete widget;
+    // delete widget;
 }
 
 bool Qylon::vTools::loadRecipe(QString path)
@@ -26,9 +26,9 @@ bool Qylon::vTools::loadRecipe(QString path)
         currentRecipe.RegisterAllOutputsObserver(this, Pylon::RegistrationMode_ReplaceAll);
         currentRecipePath = path;
 
-        if(widget !=nullptr) delete widget;
-        widget = new vToolsWidget(this);
-        widget->loadRecipeConfiguration(&currentRecipe);
+        // if(widget) delete widget;
+        // widget = new vToolsWidget(this);
+        // widget->loadRecipeConfiguration(&currentRecipe);
     }catch (const Pylon::GenericException &e){
         lastError = e.GetDescription();
         Qylon::log(QString(e.GetDescription()));
@@ -91,7 +91,7 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
     PYLON_UNUSED(recipe);
     PYLON_UNUSED(update);
     PYLON_UNUSED(userProvidedId);
-/*
+    /*
     // QPair<Object Name, Object context>
     QList <QPair<QString, Pylon::CPylonImage>> images;
     QList <QPair<QString, QGraphicsItem*>> items;
@@ -327,30 +327,19 @@ void Qylon::vTools::OutputDataPush(Pylon::DataProcessing::CRecipe &recipe, Pylon
 
 QImage Qylon::vTools::getSelectedImage(QList<QPair<QString, Pylon::CPylonImage> > images){
     Pylon::CPylonImage selected;
-    for(int i=0; i<images.size(); ++i){
-        if(images.at(i).first == filter->currentImage){
-            selected = images.at(i).second;
-            break;
+    if(filter){
+        for(int i=0; i<images.size(); ++i){
+            if(images.at(i).first == filter->currentImage){
+                selected = images.at(i).second;
+                break;
+            }
         }
+    }else{
+        selected = images.first().second;
     }
     return convertPylonImageToQImage(selected);
 }
 
-QString Qylon::vTools::getParseredString(QStringList strings){
-    QString outputText;
-    for(int i=0; i<filter->items.size(); ++i){
-        if(!filter->items.at(i).second){
-            for(int j=0; j<strings.size(); ++j){
-                if(strings.at(j).contains(filter->items.at(i).first)){
-                    strings.removeAll(strings.at(j));
-                }
-            }
-        }
-    }
-    if(strings.isEmpty()) outputText = "";
-    else outputText = strings.join(filter->itemDelimiter) + filter->itemDelimiter;
-    return outputText;
-}
 
 QWidget *Qylon::vTools::getWidget()
 {
@@ -359,7 +348,9 @@ QWidget *Qylon::vTools::getWidget()
 
 QString Qylon::vTools::valueCombinationToString(QString object, QString value)
 {
-    return object + filter->keyValueDelimiter + value;
+    if(filter) return object + filter->keyValueDelimiter + value;
+    else return object +"="+ value;
+
 }
 
 QString Qylon::vTools::toString(QLineF line)
@@ -397,13 +388,15 @@ Qylon::vTools::Result Qylon::vTools::getContainerResult(Pylon::DataProcessing::C
         for (const auto& value : container) {
             QString name = QString::fromStdString(value.first.c_str());
 
-            bool pass = false;
-            for(int i=0; i < filter->items.size(); ++i){
-                if(filter->items.at(i).first == value.first && !filter->items.at(i).second){
-                    pass = true;
+            if(filter){
+                bool pass = false;
+                for(int i=0; i < filter->items.size(); ++i){
+                    if(filter->items.at(i).first == value.first && !filter->items.at(i).second){
+                        pass = true;
+                    }
                 }
+                if(pass) continue;
             }
-            if(pass) continue;
             if(value.second.HasError()){
                 outputTextList.push_back(name + "=[ERROR]");
                 continue;

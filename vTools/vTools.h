@@ -44,7 +44,6 @@ public:
                         intptr_t userProvidedId) override;
     Qylon *getQylon(){ return parent; }
     QImage getSelectedImage(QList<QPair<QString, Pylon::CPylonImage>> images);
-    QString getParseredString(QStringList strings);
     const Pylon::WaitObject& getWaitObject(){ return _waitObject; }
     void setResultFilter(ResultFilter *resultFilter){ filter = resultFilter;}
     QWidget *getWidget();
@@ -74,7 +73,7 @@ private:
     Pylon::WaitObjectEx _waitObject;
 
     QList<Result> resultsQueue;
-    ResultFilter *filter;
+    ResultFilter *filter=nullptr;
     vToolsWidget *widget=nullptr;
 };
 }
