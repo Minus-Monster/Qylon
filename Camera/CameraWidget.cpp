@@ -109,6 +109,9 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : camera(obj)
     updateCameraList();
 
     setStyleSheet(R"(
+        QStatusBar{
+            border:none;
+        }
         QToolButton {
             min-height: 16px;
             min-width: 16px;
