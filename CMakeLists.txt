@@ -85,12 +85,9 @@ message(STATUS "[${PROJECT_NAME}] WITH_PYLON=${WITH_PYLON}, WITH_GRABBER=${WITH_
 # pylon Loading
 # Locate the cmake find module for pylon ...
 if(WITH_PYLON AND NOT pylon_FOUND)
-    find_path(pylon_cmake Findpylon.cmake
-        HINTS "$ENV{PYLON_DEV_DIR}/lib/cmake"
-        "$ENV{PYLON_ROOT}/lib/cmake"
+    find_path(pylon_cmake Findpylon.cmake HINTS
+        "$ENV{PYLON_DEV_DIR}/lib/cmake"
         "$ENV{PYLON_ROOT}/Development/lib/cmake"
-        "$ENV{ProgramFiles}/Basler/pylon 8/Development/lib/cmake"
-        "$ENV{ProgramFiles}/Basler/pylon 7/Development/lib/cmake"
         "/opt/pylon/lib/cmake"
     )
     list(APPEND CMAKE_MODULE_PATH ${pylon_cmake})
@@ -124,7 +121,7 @@ if(WITH_PYLON AND NOT pylon_FOUND)
         target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
         target_compile_definitions(${PROJECT_NAME} PUBLIC OPENCV_ENABLED)
     else()
-        message(WARNING "[${PROJECT_NAME}] OpenCV not found.")
+        message(STATUS "[${PROJECT_NAME}] OpenCV not found")
     endif()
 
     # PCL Loading
