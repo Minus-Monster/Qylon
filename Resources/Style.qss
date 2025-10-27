@@ -1,3 +1,14 @@
+/*
+QFile file(":/Resources/Style.qss");
+if(file.open(QFile::ReadOnly | QFile::Text)){
+    QTextStream stream(&file);
+    QString styleSheet = stream.readAll();
+    a.setStyleSheet(styleSheet);
+    file.close();
+}
+*/
+
+
 
 /* QMainWindow */
 QMainWindow {
