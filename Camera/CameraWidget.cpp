@@ -85,6 +85,9 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : camera(obj)
     buttonLayout->addWidget(buttonSingleGrab);
     buttonLayout->addWidget(buttonLiveGrab);
 
+    QSpacerItem *spacer = new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
+    buttonLayout->addItem(spacer);
+
     QHBoxLayout *camAndButton = new QHBoxLayout;
     camAndButton->setContentsMargins(9,9,9,9);
     camAndButton->addLayout(camNamelayout);
