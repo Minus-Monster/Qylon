@@ -299,7 +299,6 @@ void Qylon::Camera::OnImageGrabbed(Pylon::CInstantCamera &camera, const Pylon::C
                         }
                     }
                 }
-                emit grabbed();
             } catch (const Pylon::GenericException &e) {
                 Qylon::log("[ERROR WHILE MAKING GRABBED IMAGE]");
             }
