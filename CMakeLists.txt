@@ -46,7 +46,7 @@ set(QYLON_RESOURCES
 )
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui Widgets SerialPort Network)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui Widgets)
 if(Qt6_FOUND)
     message(STATUS "[${PROJECT_NAME}] Configuring for Qt6")
     qt_add_resources(QYLON_RESOURCES_RCC ${QYLON_RESOURCES})
@@ -62,8 +62,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::Widgets
-    Qt${QT_VERSION_MAJOR}::SerialPort
-    Qt${QT_VERSION_MAJOR}::Network
 )
 
 set(INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
