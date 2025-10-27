@@ -56,6 +56,7 @@ void Qylon::Qylon::updateCameraList(){
 
 
 Camera *Qylon::Qylon::addCamera(){
+    initialize();
     Camera *obj = new Camera(this);
     cameraList.push_back(obj);
 
