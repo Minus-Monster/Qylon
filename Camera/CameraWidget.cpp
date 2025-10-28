@@ -14,6 +14,7 @@
 
 Qylon::CameraWidget::CameraWidget(Camera *obj) : camera(obj)
 {
+    setObjectName("CameraWidget");
     setWindowTitle("Basler pylon Camera Configuration");
     setWindowIcon(QIcon(":/Resources/Icon.png"));
     list = new QComboBox;
@@ -109,6 +110,9 @@ Qylon::CameraWidget::CameraWidget(Camera *obj) : camera(obj)
     updateCameraList();
 
     setStyleSheet(R"(
+        QWidget#CameraWidget{
+            background:white;
+        }
         QStatusBar{
             border:none;
         }
